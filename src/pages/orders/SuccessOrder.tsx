@@ -1,0 +1,193 @@
+import { useLocation, useNavigate } from 'react-router-dom'
+import NavbarDashboard from '../../components/layout/Navbar'
+import Footer from '../../components/layout/Footer'
+import lapangF1 from '../../assets/layanan/Lapang F1.png'
+
+/* -------------------------------------------------------------------------
+   Tipe data
+   ------------------------------------------------------------------------- */
+interface SuccessState {
+  transactionNumber?: string
+  paidAt?: string
+  method?: string
+  facility?: string
+  schedule?: string
+  duration?: string
+  subtotal?: number
+  serviceFee?: number
+  promoLabel?: string
+  promo?: number
+  bookingCode?: string
+}
+
+/* -------------------------------------------------------------------------
+   Data (ganti dengan data dari API / services/paymentService.js)
+   ------------------------------------------------------------------------- */
+// TODO: nama user sementara hardcode, ganti dari auth context / API
+const USER_NAME = 'Budiman Santoso'
+
+const FONT_MONTSERRAT = "font-['Montserrat',sans-serif]"
+
+// Fallback bila halaman dibuka tanpa state (sesuai desain)
+const DEFAULTS = {
+  transactionNumber: 'TX-88201992',
+  paidAt: '12 Mar 2026, 08:32 WIB',
+  method: 'QRIS Dinamis Otomatis',
+  facility: 'Futsal Premium Hall A',
+  schedule: 'Sabtu, 14 Mar (16:00 - 18:00)',
+  duration: '2 Jam',
+  subtotal: 250000,
+  serviceFee: 2500,
+  promoLabel: 'Promo Diskon Akhir Pekan',
+  promo: 25000,
+  bookingCode: 'OBC-FUT-9021',
+}
+
+const formatRupiah = (value: number) => `Rp ${value.toLocaleString('id-ID')}`
+
+function SuccesOrder() {
+  const navigate = useNavigate()
+  const location = useLocation()
+  const data = { ...DEFAULTS, ...((location.state as SuccessState | null) ?? {}) }
+
+  const total = data.subtotal + data.serviceFee - data.promo
+
+  const handleDownloadTicket = () => {
+    // TODO: unduh e-ticket PDF dari API (services/ticketService.js)
+  }
+
+  return (
+    <div className="flex min-h-screen flex-col bg-white font-body text-[#343133]">
+      <NavbarDashboard userName={USER_NAME} />
+
+      <main className="mx-auto flex w-full max-w-[1068px] flex-1 items-center px-6 py-12">
+        <div className="grid w-full items-center gap-12 lg:grid-cols-[1fr_480px]">
+          {/* ================= Kiri: konfirmasi ================= */}
+          <div>
+            <span className="inline-block rounded-full bg-[#E6F0E0] px-3 py-2 font-heading text-[11px] font-bold leading-none text-[#265021]">
+              PEMBAYARAN DISETUJUI &amp; BERHASIL
+            </span>
+
+            <h1
+              className={`${FONT_MONTSERRAT} mt-5 text-[38px] font-bold leading-[48px] text-[#343133]`}
+            >
+              Selamat! Lapangan Anda Berhasil Dipesan
+            </h1>
+
+            <p className="mt-5 font-heading text-[15px] leading-6 text-[#343133]">
+              E-ticket Anda telah aktif secara otomatis. Kode booking telah dikirimkan ke
+              WhatsApp Anda. Silakan tunjukkan QR Code atau Kode Booking di bawah ini kepada
+              petugas lapangan saat kedatangan.
+            </p>
+
+            {/* Kode booking */}
+            <div className="mt-5 flex items-center gap-5 rounded-xl border border-[#E5E5E5] bg-white p-4">
+              <img
+                src={lapangF1}
+                alt={data.facility}
+                className="h-[78px] w-[172px] shrink-0 rounded-lg object-cover"
+              />
+              <div>
+                <p className="font-heading text-[11px] uppercase leading-4 text-[#343133]">
+                  Kode Booking Utama
+                </p>
+                <p className={`${FONT_MONTSERRAT} text-[22px] font-bold leading-8 text-[#404F14]`}>
+                  {data.bookingCode}
+                </p>
+                <p className="font-heading text-[11px] leading-4 text-[#265021]">
+                  Tunjukkan QR Code ini di Kasir
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-6 flex flex-wrap items-center gap-4">
+              <button
+                type="button"
+                onClick={handleDownloadTicket}
+                className="h-9 w-[249px] max-w-full cursor-pointer rounded-lg bg-[#CDF178] font-heading text-xs text-[#404F14] transition-colors hover:bg-[#9AAD3E]"
+              >
+                Unduh E-Ticket (PDF)
+              </button>
+              <button
+                type="button"
+                onClick={() => navigate('/home')}
+                className="h-[45px] w-[192px] cursor-pointer rounded-lg border border-[#404F14] bg-white font-heading text-sm font-bold text-[#404F14] transition-colors hover:bg-[#F5FAF3]"
+              >
+                Kembali ke Beranda
+              </button>
+            </div>
+          </div>
+
+          {/* ================= Kanan: rincian pembayaran ================= */}
+          <section className="rounded-2xl border border-[#D4D4D4] bg-white p-8 shadow-[0_4px_16px_rgba(0,0,0,0.08)]">
+            <h2 className={`${FONT_MONTSERRAT} text-xl font-semibold leading-7 text-[#343133]`}>
+              Rincian Pembayaran
+            </h2>
+
+            <dl className="mt-3 space-y-2.5 font-heading text-[13px]">
+              <div className="flex items-center justify-between gap-3">
+                <dt className="text-[#343133]">Nomor Transaksi</dt>
+                <dd className="font-bold text-[#121212]">{data.transactionNumber}</dd>
+              </div>
+              <div className="flex items-center justify-between gap-3">
+                <dt className="text-[#343133]">Waktu Pembayaran</dt>
+                <dd className="font-bold text-[#121212]">{data.paidAt}</dd>
+              </div>
+              <div className="flex items-center justify-between gap-3">
+                <dt className="text-[#343133]">Metode Pembayaran</dt>
+                <dd className="font-bold text-[#404F14]">{data.method}</dd>
+              </div>
+            </dl>
+
+            <hr className="my-2.5 border-[#D4D4D4]" />
+
+            <dl className="space-y-2.5 font-heading text-[13px]">
+              <div className="flex items-center justify-between gap-3">
+                <dt className="text-[#343133]">Fasilitas / Lapangan</dt>
+                <dd className="font-bold text-[#121212]">{data.facility}</dd>
+              </div>
+              <div className="flex items-center justify-between gap-3">
+                <dt className="text-[#343133]">Jadwal Main</dt>
+                <dd className="font-bold text-[#121212]">{data.schedule}</dd>
+              </div>
+              <div className="flex items-center justify-between gap-3">
+                <dt className="text-[#343133]">Durasi Sewa</dt>
+                <dd className="font-bold text-[#121212]">{data.duration}</dd>
+              </div>
+            </dl>
+
+            <hr className="my-2.5 border-[#D4D4D4]" />
+
+            <dl className="space-y-2.5 font-heading text-[13px]">
+              <div className="flex items-center justify-between gap-3">
+                <dt className="text-[#343133]">Subtotal Sewa</dt>
+                <dd className="text-[#343133]">{formatRupiah(data.subtotal)}</dd>
+              </div>
+              <div className="flex items-center justify-between gap-3">
+                <dt className="text-[#343133]">Biaya Layanan &amp; Pajak</dt>
+                <dd className="text-[#343133]">{formatRupiah(data.serviceFee)}</dd>
+              </div>
+              <div className="flex items-center justify-between gap-3">
+                <dt className="font-bold text-[#265021]">{data.promoLabel}</dt>
+                <dd className="font-bold text-[#265021]">- {formatRupiah(data.promo)}</dd>
+              </div>
+            </dl>
+
+            <hr className="my-3 border-[#D4D4D4]" />
+
+            <div className="flex items-center justify-between">
+              <span className="font-heading text-sm font-bold text-[#121212]">Total Terbayar</span>
+              <span className={`${FONT_MONTSERRAT} text-[22px] font-bold text-[#404F14]`}>
+                {formatRupiah(total)}
+              </span>
+            </div>
+          </section>
+        </div>
+      </main>
+
+      <Footer />
+    </div>
+  )
+}
+
+export default SuccesOrder
