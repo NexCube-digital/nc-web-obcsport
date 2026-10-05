@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
+import { ArrowLeft, Clock, Download } from 'lucide-react'
 import NavbarDashboard from '../../components/layout/Navbar'
 import Footer from '../../components/layout/Footer'
 
@@ -27,10 +28,21 @@ const DEFAULT_TRANSACTION_ID = 'OBC-20260112-985A'
 // TODO: hitung sisa waktu dari waktu kedaluwarsa transaksi yang dikirim API
 const DEFAULT_SECONDS = 14 * 60 + 45
 
+// TODO: kode verifikasi unik (3 digit terakhir nominal) sementara hardcode, ambil dari API.
+// Jika total dari API sudah termasuk kode unik, hapus penambahan UNIQUE_CODE di mobileTotal.
+const UNIQUE_CODE = 124
+
 const PAYMENT_STEPS: string[] = [
   'Buka M-Banking (BCA, Mandiri) atau E-Wallet (GoPay, OVO).',
   'Pilih Scan QR dan arahkan kamera ke kode QR.',
   'Pastikan merchant bernama OBC SPORT CENTER dan bayar.',
+]
+
+// Petunjuk scan versi mobile (sesuai desain)
+const MOBILE_STEPS: string[] = [
+  'Buka aplikasi e-wallet Anda (GoPay, OVO, Dana) atau M-Banking.',
+  'Pilih menu "Scan" atau "Bayar" lalu arahkan kamera ke QRIS.',
+  'Pastikan nominal pembayaran sama persis dengan angka di atas.',
 ]
 
 /* -------------------------------------------------------------------------
@@ -42,7 +54,13 @@ const formatRupiah = (value: number) => `Rp ${value.toLocaleString('id-ID')}`
  * Placeholder kode QR (pola acak tetap + 3 penanda sudut).
  * TODO: ganti dengan gambar / string QRIS asli dari API pembayaran.
  */
-function QrPlaceholder() {
+const QrPlaceholder = ({
+  className = 'h-[62px] w-[62px]',
+  svgRef,
+}: {
+  className?: string
+  svgRef?: React.Ref<SVGSVGElement>
+}) => {
   const size = 25
   const cells: { x: number; y: number }[] = []
   let seed = 7
@@ -64,8 +82,10 @@ function QrPlaceholder() {
 
   return (
     <svg
+      ref={svgRef}
+      xmlns="http://www.w3.org/2000/svg"
       viewBox={`0 0 ${size} ${size}`}
-      className="h-[62px] w-[62px]"
+      className={className}
       shapeRendering="crispEdges"
       role="img"
       aria-label="Kode QRIS"
@@ -95,6 +115,7 @@ function InformationOrder() {
 
   const [secondsLeft, setSecondsLeft] = useState(DEFAULT_SECONDS)
   const [copied, setCopied] = useState(false)
+  const mobileQrRef = useRef<SVGSVGElement>(null)
 
   // Hitung mundur; saat habis, arahkan ke halaman gagal
   useEffect(() => {
@@ -108,6 +129,9 @@ function InformationOrder() {
 
   const minutes = Math.floor(secondsLeft / 60)
   const seconds = secondsLeft % 60
+
+  // Total versi mobile: nominal + kode verifikasi unik (3 digit terakhir)
+  const mobileTotal = total + UNIQUE_CODE
 
   /* ---------- Handler ---------- */
   const handleCopy = async () => {
@@ -125,84 +149,189 @@ function InformationOrder() {
     navigate('/pembayaran/menunggu', { state: { transactionId } })
   }
 
-  return (
-    <div className="flex min-h-screen flex-col bg-white font-body text-[#343133]">
-      <NavbarDashboard userName={USER_NAME} />
+  const handleDownloadQr = () => {
+    // Unduh QR placeholder sebagai file SVG.
+    // TODO: jika QRIS asli berupa URL gambar dari API, ganti dengan unduh dari URL tersebut
+    const svg = mobileQrRef.current
+    if (!svg) return
+    const source = new XMLSerializer().serializeToString(svg)
+    const blob = new Blob([source], { type: 'image/svg+xml;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `QRIS-${transactionId}.svg`
+    link.click()
+    URL.revokeObjectURL(url)
+  }
 
-      <main className="mx-auto w-full max-w-[1248px] flex-1 px-6 pb-16 pt-6">
-        <div className="text-center">
-          <h1 className={`${FONT_MONTSERRAT} text-[26px] font-bold leading-9 text-[#343133]`}>
-            Selesaikan Pembayaran QRIS
-          </h1>
-          <span
-            className="mt-0.5 inline-block rounded-full border border-[#E02424] bg-[#FDF2F2] px-3 py-0.5 font-heading text-xs font-bold text-[#E02424]"
-            role="timer"
+  return (
+    <>
+      {/* ===================================================================
+          TAMPILAN MOBILE (< md): tanpa navbar & footer, sesuai desain
+          =================================================================== */}
+      <div className="md:hidden flex min-h-[100dvh] flex-col bg-white font-body text-[#343133] pb-28">
+        {/* Header: tombol kembali + judul */}
+        <header className="relative flex h-14 items-center justify-center bg-white px-4">
+          <button
+            type="button"
+            onClick={() => navigate(-1)}
+            aria-label="Kembali"
+            className="absolute left-4 top-1/2 -translate-y-1/2 text-[#121212] cursor-pointer"
           >
-            Batas Waktu: {minutes} Menit {String(seconds).padStart(2, '0')} Detik
+            <ArrowLeft size={22} />
+          </button>
+          <h1 className={`${FONT_MONTSERRAT} text-base font-bold text-[#343133]`}>
+            Pembayaran QRIS
+          </h1>
+        </header>
+
+        {/* Banner batas waktu */}
+        <div
+          role="timer"
+          className="flex items-center justify-center gap-2 bg-[#FDF2F2] px-4 py-3 font-heading text-sm text-[#E02424]"
+        >
+          <Clock size={16} aria-hidden="true" />
+          <span>
+            Selesaikan pembayaran dalam:{' '}
+            <span className="font-bold">
+              {String(minutes).padStart(2, '0')}:{String(seconds).padStart(2, '0')} mins
+            </span>
           </span>
         </div>
 
-        {/* Kartu pembayaran: lebar 800px sesuai desain */}
-        <section className="mx-auto mt-6 flex w-full max-w-[800px] flex-col gap-6 rounded-2xl border border-[#D4D4D4] bg-white p-8 sm:flex-row sm:items-start">
-          {/* Kiri: QR */}
-          <div className="flex shrink-0 flex-col items-center sm:w-[180px]">
-            <div className="flex h-[180px] w-[180px] flex-col items-center justify-center rounded-2xl border border-[#D4D4D4] bg-white">
-              <p className="font-heading text-[11px] font-bold text-[#265021]">[Scan QRIS]</p>
-              <div className="mt-1 flex h-[100px] w-[100px] items-center justify-center bg-[#EEF0F3]">
-                <div className="bg-white p-1 shadow-sm">
-                  <QrPlaceholder />
-                </div>
-              </div>
-              <p className="mt-2 font-heading text-[8px] text-[#343133]">GPN - QRIS STANDAR</p>
-            </div>
-            <p className="mt-4 whitespace-nowrap font-heading text-xs text-[#343133]">
-              Scan dengan M-Banking / E-Wallet
-            </p>
-          </div>
+        <div className="px-4 pt-5">
+          {/* Kartu QR */}
+          <section className="flex flex-col items-center rounded-2xl border border-[#D4D4D4] bg-white px-4 pb-6 pt-8">
+            <QrPlaceholder className="h-[180px] w-[180px]" svgRef={mobileQrRef} />
+            <button
+              type="button"
+              onClick={handleDownloadQr}
+              className="mt-8 inline-flex items-center gap-2 rounded-lg border border-[#404F14] bg-white px-4 py-2 font-heading text-xs font-bold text-[#404F14] cursor-pointer active:bg-[#F5FAF3]"
+            >
+              <Download size={14} aria-hidden="true" />
+              Unduh Kode QR
+            </button>
+          </section>
 
-          {/* Kanan: detail */}
-          <div className="min-w-0 flex-1">
-            <p className="font-heading text-xs text-[#343133]">Total Pembayaran</p>
-            <p className={`${FONT_MONTSERRAT} text-[28px] font-bold leading-9 text-[#404F14]`}>
-              {formatRupiah(total)}
-            </p>
-
-            <p className="mt-4 font-heading text-xs text-[#343133]">ID Transaksi</p>
-            <div className="mt-1 flex h-[38px] items-center justify-between rounded-md border border-[#D4D4D4] bg-[#FDFCF7] px-2.5">
-              <span className="font-heading text-[13px] font-bold text-[#121212]">
-                {transactionId}
+          {/* Total nominal transfer */}
+          <section className="mt-4 rounded-xl border border-[#D4D4D4] bg-white px-3 py-3">
+            <div className="flex items-center justify-between gap-3">
+              <span className="font-heading text-xs text-[#6F6B6E]">Total Nominal Transfer</span>
+              <span className={`${FONT_MONTSERRAT} text-lg font-bold text-[#121212]`}>
+                {formatRupiah(mobileTotal)}
               </span>
-              <button
-                type="button"
-                onClick={handleCopy}
-                className="cursor-pointer font-heading text-xs font-bold text-[#265021] hover:text-[#404F14]"
-              >
-                {copied ? 'Tersalin' : 'Copy'}
-              </button>
+            </div>
+            <p className="mt-2 text-right font-heading text-[9px] text-[#6F6B6E]">
+              *Tiga digit terakhir{' '}
+              <span className="font-bold">{String(UNIQUE_CODE).padStart(3, '0')}</span> adalah
+              kode verifikasi unik order Anda.
+            </p>
+          </section>
+
+          {/* Petunjuk scan */}
+          <h2 className="mt-5 font-heading text-sm font-bold text-[#121212]">Petunjuk Scan QRIS:</h2>
+          <ol className="mt-2 space-y-2 font-heading text-xs leading-relaxed text-[#6F6B6E]">
+            {MOBILE_STEPS.map((step, index) => (
+              <li key={step}>
+                {index + 1}. {step}
+              </li>
+            ))}
+          </ol>
+        </div>
+
+        {/* Tombol cek status (fixed di bawah) */}
+        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-[#D4D4D4] bg-white px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+          <button
+            type="button"
+            onClick={handleRefresh}
+            className="h-12 w-full rounded-xl bg-[#CDF178] font-heading text-sm font-bold text-[#404F14] transition-colors active:bg-[#9AAD3E] cursor-pointer"
+          >
+            Cek Status Pembayaran
+          </button>
+        </div>
+      </div>
+
+      {/* ===================================================================
+          TAMPILAN DESKTOP (>= md): tampilan asli
+          =================================================================== */}
+      <div className="hidden md:flex min-h-screen flex-col bg-white font-body text-[#343133]">
+        <NavbarDashboard userName={USER_NAME} />
+
+        <main className="mx-auto w-full max-w-[1248px] flex-1 px-6 pb-16 pt-6">
+          <div className="text-center">
+            <h1 className={`${FONT_MONTSERRAT} text-[26px] font-bold leading-9 text-[#343133]`}>
+              Selesaikan Pembayaran QRIS
+            </h1>
+            <span
+              className="mt-0.5 inline-block rounded-full border border-[#E02424] bg-[#FDF2F2] px-3 py-0.5 font-heading text-xs font-bold text-[#E02424]"
+              role="timer"
+            >
+              Batas Waktu: {minutes} Menit {String(seconds).padStart(2, '0')} Detik
+            </span>
+          </div>
+
+          {/* Kartu pembayaran: lebar 800px sesuai desain */}
+          <section className="mx-auto mt-6 flex w-full max-w-[800px] flex-col gap-6 rounded-2xl border border-[#D4D4D4] bg-white p-8 sm:flex-row sm:items-start">
+            {/* Kiri: QR */}
+            <div className="flex shrink-0 flex-col items-center sm:w-[180px]">
+              <div className="flex h-[180px] w-[180px] flex-col items-center justify-center rounded-2xl border border-[#D4D4D4] bg-white">
+                <p className="font-heading text-[11px] font-bold text-[#265021]">[Scan QRIS]</p>
+                <div className="mt-1 flex h-[100px] w-[100px] items-center justify-center bg-[#EEF0F3]">
+                  <div className="bg-white p-1 shadow-sm">
+                    <QrPlaceholder />
+                  </div>
+                </div>
+                <p className="mt-2 font-heading text-[8px] text-[#343133]">GPN - QRIS STANDAR</p>
+              </div>
+              <p className="mt-4 whitespace-nowrap font-heading text-xs text-[#343133]">
+                Scan dengan M-Banking / E-Wallet
+              </p>
             </div>
 
-            <h2 className="mt-4 font-heading text-xs font-bold text-[#121212]">Cara Bayar:</h2>
-            <ol className="mt-1.5 space-y-1.5 font-heading text-[11px] leading-[14px] text-[#343133]">
-              {PAYMENT_STEPS.map((step, index) => (
-                <li key={step}>
-                  {index + 1}. {step}
-                </li>
-              ))}
-            </ol>
-          </div>
-        </section>
+            {/* Kanan: detail */}
+            <div className="min-w-0 flex-1">
+              <p className="font-heading text-xs text-[#343133]">Total Pembayaran</p>
+              <p className={`${FONT_MONTSERRAT} text-[28px] font-bold leading-9 text-[#404F14]`}>
+                {formatRupiah(total)}
+              </p>
 
-        <button
-          type="button"
-          onClick={handleRefresh}
-          className="mx-auto mt-6 block h-10 w-full max-w-[320px] cursor-pointer rounded-lg bg-[#CDF178] font-heading text-xs text-[#404F14] transition-colors hover:bg-[#9AAD3E]"
-        >
-          Refresh page
-        </button>
-      </main>
+              <p className="mt-4 font-heading text-xs text-[#343133]">ID Transaksi</p>
+              <div className="mt-1 flex h-[38px] items-center justify-between rounded-md border border-[#D4D4D4] bg-[#FDFCF7] px-2.5">
+                <span className="font-heading text-[13px] font-bold text-[#121212]">
+                  {transactionId}
+                </span>
+                <button
+                  type="button"
+                  onClick={handleCopy}
+                  className="cursor-pointer font-heading text-xs font-bold text-[#265021] hover:text-[#404F14]"
+                >
+                  {copied ? 'Tersalin' : 'Copy'}
+                </button>
+              </div>
 
-      <Footer />
-    </div>
+              <h2 className="mt-4 font-heading text-xs font-bold text-[#121212]">Cara Bayar:</h2>
+              <ol className="mt-1.5 space-y-1.5 font-heading text-[11px] leading-[14px] text-[#343133]">
+                {PAYMENT_STEPS.map((step, index) => (
+                  <li key={step}>
+                    {index + 1}. {step}
+                  </li>
+                ))}
+              </ol>
+            </div>
+          </section>
+
+          <button
+            type="button"
+            onClick={handleRefresh}
+            className="mx-auto mt-6 block h-10 w-full max-w-[320px] cursor-pointer rounded-lg bg-[#CDF178] font-heading text-xs text-[#404F14] transition-colors hover:bg-[#9AAD3E]"
+          >
+            Cek Status Pembayaran
+          </button>
+        </main>
+
+        <Footer />
+      </div>
+    </>
   )
 }
 

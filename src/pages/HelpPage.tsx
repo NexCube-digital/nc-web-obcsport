@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { Plus } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
+import { ArrowLeft, Plus, Search } from 'lucide-react'
 import NavbarDashboard from '../components/layout/Navbar'
 import Footer from '../components/layout/Footer'
 
@@ -50,7 +51,11 @@ const CS_WHATSAPP_NUMBER = '628123456789'
 const CS_WHATSAPP_MESSAGE = 'Halo, saya butuh bantuan terkait layanan OBC Sport Center.'
 
 function HelpPage() {
+  const navigate = useNavigate()
   const [searchQuery, setSearchQuery] = useState('')
+
+  // State khusus mobile: FAQ yang sedang terbuka (awal: item pertama, sesuai desain)
+  const [openFaqId, setOpenFaqId] = useState<string | null>(FAQ_ITEMS[0].id)
 
   const filteredFaqs = FAQ_ITEMS.filter((faq) =>
     faq.question.toLowerCase().includes(searchQuery.toLowerCase())
@@ -61,12 +66,112 @@ function HelpPage() {
     window.open(url, '_blank')
   }
 
+  const handleToggleFaq = (id: string) => {
+    setOpenFaqId((prev) => (prev === id ? null : id))
+  }
+
   return (
     <div className="min-h-screen bg-white font-body text-[#343133]">
-      <NavbarDashboard userName={USER_NAME} />
+      {/* Header sapaan mobile disembunyikan, bottom nav tetap tampil */}
+      <NavbarDashboard userName={USER_NAME} hideMobileHeader />
 
+      {/* ===================================================================
+          TAMPILAN MOBILE (< md)
+          Warna & font mengikuti versi PC
+          =================================================================== */}
+      <div className="md:hidden px-4 pt-5 pb-44">
+        {/* Header: tombol kembali + judul */}
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={() => navigate(-1)}
+            aria-label="Kembali"
+            className="text-[#343133] cursor-pointer"
+          >
+            <ArrowLeft size={22} />
+          </button>
+          <h1 className="font-heading font-bold text-lg text-[#343133]">Bantuan &amp; QnA</h1>
+        </div>
+        <p className="mt-2 font-heading text-xs text-[#6F6B6E]">
+          Pertanyaan populer dan panduan pusat olahraga
+        </p>
+
+        {/* Pencarian */}
+        <div className="relative mt-4">
+          <Search
+            size={18}
+            className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[#6F6B6E]"
+            aria-hidden="true"
+          />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Cari solusi permasalahan Anda disini..."
+            className="h-12 w-full rounded-full border border-[#D4D4D4] bg-white pl-11 pr-4 text-sm placeholder:text-[#6F6B6E] focus:outline-none focus:border-[#404F14]"
+          />
+        </div>
+
+        {/* Daftar FAQ (accordion) */}
+        <div className="mt-6 space-y-3">
+          {filteredFaqs.map((faq) => {
+            const isOpen = openFaqId === faq.id
+            return (
+              <div
+                key={faq.id}
+                className={`rounded-xl bg-white ${
+                  isOpen ? 'border-2 border-[#404F14]' : 'border border-[#D4D4D4]'
+                }`}
+              >
+                <button
+                  type="button"
+                  onClick={() => handleToggleFaq(faq.id)}
+                  aria-expanded={isOpen}
+                  className="flex w-full items-center justify-between gap-3 px-4 py-3.5 text-left cursor-pointer"
+                >
+                  <h3 className="min-w-0 flex-1 truncate font-heading font-bold text-sm text-[#343133]">
+                    {faq.question}
+                  </h3>
+                  <Plus
+                    size={14}
+                    className={`shrink-0 text-[#004000] transition-transform ${
+                      isOpen ? 'rotate-45' : ''
+                    }`}
+                  />
+                </button>
+                {isOpen && (
+                  <p className="px-4 pb-4 text-sm leading-relaxed text-[#343133]">{faq.answer}</p>
+                )}
+              </div>
+            )
+          })}
+
+          {filteredFaqs.length === 0 && (
+            <p className="text-sm text-[#6F6B6E] py-6 text-center">
+              Tidak ada pertanyaan yang cocok dengan pencarian Anda.
+            </p>
+          )}
+        </div>
+
+        {/* Tombol WhatsApp (fixed, di atas bottom nav)
+            Catatan: bottom-[68px] disesuaikan dengan tinggi bottom nav di Navbar.
+            Jika tinggi bottom nav berubah, sesuaikan angka ini. */}
+        <div className="fixed inset-x-0 bottom-[calc(68px+env(safe-area-inset-bottom))] z-30 border-t border-[#D4D4D4] bg-white px-4 py-3">
+          <button
+            type="button"
+            onClick={handleContactWhatsApp}
+            className="h-12 w-full rounded-xl bg-[#CDF178] font-heading text-sm font-bold text-[#404F14] transition-colors active:bg-[#9AAD3E] cursor-pointer"
+          >
+            Hubungi Admin Hub via WhatsApp
+          </button>
+        </div>
+      </div>
+
+      {/* ===================================================================
+          TAMPILAN DESKTOP (>= md): tampilan asli
+          =================================================================== */}
       {/* Lebar konten 1068px sesuai desain */}
-      <main className="max-w-[1116px] mx-auto px-6 pt-5 pb-16">
+      <main className="hidden md:block max-w-[1116px] mx-auto px-6 pt-5 pb-16">
         <span className="inline-block rounded-full bg-[#E8EDE3] px-3 py-2 text-xs font-heading font-bold text-[#404F14] tracking-wide">
           DUKUNGAN PELANGGAN &amp; FAQ
         </span>
@@ -139,7 +244,10 @@ function HelpPage() {
         </div>
       </main>
 
-      <Footer />
+      {/* Footer hanya tampil di desktop */}
+      <div className="hidden md:block">
+        <Footer />
+      </div>
     </div>
   )
 }

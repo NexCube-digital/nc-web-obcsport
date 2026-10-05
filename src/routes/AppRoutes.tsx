@@ -1,17 +1,22 @@
+import { lazy } from 'react'
 import { Route } from 'react-router-dom'
-import LandingPage from '../pages/auth/LandingPage'
-import Login from '../pages/auth/Login'
-import Register from '../pages/auth/Register'
 
-import CheckoutPage from '../pages/orders/CheckoutPage'
-import PaymentPage from '../pages/orders/PaymentPage'
-import SettingPage from '../pages/account/SettingPage'
-import HomePage from '../pages/HomePage'
-import HelpPage from '../pages/HelpPage'
-import MembershipPage from '../pages/MembershipPage'
-import NotificationPage from '../pages/account/NotificationPage'
-import HistoryPage from '../pages/HistoryPage'
-import EventPage from '../pages/EventPage'
+const LandingPage = lazy(() => import('../pages/auth/LandingPage'))
+const Login = lazy(() => import('../pages/auth/Login'))
+const Register = lazy(() => import('../pages/auth/Register'))
+const CheckoutPage = lazy(() => import('../pages/orders/CheckoutPage'))
+const PaymentPage = lazy(() => import('../pages/orders/PaymentPage'))
+const SettingPage = lazy(() => import('../pages/account/SettingPage'))
+const HomePage = lazy(() => import('../pages/HomePage'))
+const HelpPage = lazy(() => import('../pages/HelpPage'))
+const MembershipPage = lazy(() => import('../pages/MembershipPage'))
+const NotificationPage = lazy(() => import('../pages/account/NotificationPage'))
+const HistoryPage = lazy(() => import('../pages/HistoryPage'))
+const EventPage = lazy(() => import('../pages/EventPage'))
+const FailedOrder = lazy(() => import('../pages/orders/FailedOrder'))
+const SuccesOrder = lazy(() => import('../pages/orders/SuccessOrder'))
+const PendingOrder = lazy(() => import('../pages/orders/PendingOrder'))
+const InformationOrder = lazy(() => import('../pages/orders/InformationOrder'))
 
 
 const AppRoutes = (
@@ -31,6 +36,12 @@ const AppRoutes = (
 		
 		<Route path="/checkout" element={<CheckoutPage />} />
 		<Route path="/payment" element={<PaymentPage />} />
+
+		{/* cek notification */}
+		<Route path="/failed-order" element={<FailedOrder />} />
+		<Route path="/success-order" element={<SuccesOrder />} />
+		<Route path="/pending-order" element={<PendingOrder />} />
+		<Route path="/information-order" element={<InformationOrder />} />
 	</>
 )
 
