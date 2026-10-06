@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { ArrowLeft, Clock, Download } from 'lucide-react'
+import { Clock, Download } from 'lucide-react'
 import NavbarDashboard from '../../components/layout/Navbar'
+import MobileHeader from '../../components/layout/MobileHeader'
 import Footer from '../../components/layout/Footer'
 
 /* -------------------------------------------------------------------------
@@ -169,22 +170,13 @@ function InformationOrder() {
       {/* ===================================================================
           TAMPILAN MOBILE (< md): tanpa navbar & footer, sesuai desain
           =================================================================== */}
+      <MobileHeader
+        variant="title"
+        title="Pembayaran QRIS"
+        centerTitle
+        showBottomNav={false}
+      />
       <div className="md:hidden flex min-h-[100dvh] flex-col bg-white font-body text-[#343133] pb-28">
-        {/* Header: tombol kembali + judul */}
-        <header className="relative flex h-14 items-center justify-center bg-white px-4">
-          <button
-            type="button"
-            onClick={() => navigate(-1)}
-            aria-label="Kembali"
-            className="absolute left-4 top-1/2 -translate-y-1/2 text-[#121212] cursor-pointer"
-          >
-            <ArrowLeft size={22} />
-          </button>
-          <h1 className={`${FONT_MONTSERRAT} text-base font-bold text-[#343133]`}>
-            Pembayaran QRIS
-          </h1>
-        </header>
-
         {/* Banner batas waktu */}
         <div
           role="timer"
@@ -255,7 +247,7 @@ function InformationOrder() {
           TAMPILAN DESKTOP (>= md): tampilan asli
           =================================================================== */}
       <div className="hidden md:flex min-h-screen flex-col bg-white font-body text-[#343133]">
-        <NavbarDashboard userName={USER_NAME} />
+        <NavbarDashboard userName={USER_NAME} showDesktopNavigation={false} />
 
         <main className="mx-auto w-full max-w-[1248px] flex-1 px-6 pb-16 pt-6">
           <div className="text-center">

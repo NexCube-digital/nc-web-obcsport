@@ -19,60 +19,60 @@ You can also try [the experimental native React Compiler support in plugin-react
 If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
 
 ```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+# Sport OBC
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+Aplikasi web Sport OBC menggunakan React, TypeScript, dan Vite.
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+## Persyaratan
 
+- Node.js 20.19+ atau 22.12+
+- npm
+
+## Instalasi
+
+Clone repository, lalu masuk ke folder proyek:
+
+```bash
+git clone <URL_REPOSITORY>
+cd sport-obc
 ```
 
-You can also install [eslint-plugin-react-x](https://npmx.dev/package/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://npmx.dev/package/eslint-plugin-react-dom) for React-specific lint rules:
+Pasang dependency sesuai lockfile:
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-
+```bash
+npm ci
 ```
+
+Buat file konfigurasi lokal dari contoh. Di PowerShell:
+
+```powershell
+Copy-Item .env.example .env
+```
+
+Di macOS/Linux:
+
+```bash
+cp .env.example .env
+```
+
+Jalankan aplikasi dalam mode development:
+
+```bash
+npm run dev
+```
+
+Buka alamat lokal yang ditampilkan Vite di terminal.
+
+## Perintah lainnya
+
+```bash
+npm run build    # Type-check dan build untuk production
+npm run preview  # Preview hasil build production
+npm run lint     # Jalankan ESLint
+```
+
+## Environment variables
+
+`.env.example` adalah template konfigurasi. Saat ini aplikasi menggunakan environment variable; `VITE_API_BASE_URL` disediakan sebagai tempat konfigurasi URL backend saat integrasi API ditambahkan.
+
+Salin template ke `.env-example` untuk konfigurasi lokal.

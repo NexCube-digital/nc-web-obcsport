@@ -15,6 +15,7 @@ import {
   Utensils,
 } from 'lucide-react'
 import NavbarDashboard from '../../components/layout/Navbar'
+import MobileHeader from '../../components/layout/MobileHeader'
 import Footer from '../../components/layout/Footer'
 import ScheduleConflict from '../../components/ui/ScheduleConflict'
 import { COURT_FACILITIES } from '../../data/facilitiesData'
@@ -410,6 +411,12 @@ function DetailOrder() {
           Catatan: header "Kembali" & tombol bagikan belum dibuat (menyusul).
           Navbar & Footer tidak dipakai di mobile sesuai desain.
           =================================================================== */}
+      <MobileHeader
+        variant="title"
+        title="Kembali"
+        showShare
+        showBottomNav={false}
+      />
       <div className="md:hidden min-h-[100dvh] bg-white font-body text-[#343133] px-4 pt-6 pb-52">
         <img
           src={lapangF1}
@@ -744,7 +751,7 @@ function DetailOrder() {
           TAMPILAN DESKTOP (>= md): tampilan asli
           =================================================================== */}
       <div className="hidden md:block min-h-screen bg-white font-body text-[#343133]">
-        <NavbarDashboard userName={USER_NAME} />
+        <NavbarDashboard userName={USER_NAME} showDesktopNavigation={false} />
 
         {/* Lebar konten 1200px sesuai desain */}
         <main className="max-w-[1248px] mx-auto px-6 pt-6 pb-16">

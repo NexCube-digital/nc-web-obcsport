@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { ArrowLeft, CalendarDays, Check } from 'lucide-react'
+import { CalendarDays, Check } from 'lucide-react'
 import NavbarDashboard from '../../components/layout/Navbar'
+import MobileHeader from '../../components/layout/MobileHeader'
 import Footer from '../../components/layout/Footer'
 
 /* -------------------------------------------------------------------------
@@ -211,6 +212,12 @@ function PaymentPage() {
           TAMPILAN MOBILE (< md): tanpa navbar & footer, sesuai desain
           Warna & font mengikuti versi PC
           =================================================================== */}
+      <MobileHeader
+        variant="title"
+        title="Konfirmasi & Pembayaran"
+        showShare
+        showBottomNav={false}
+      />
       <div className="md:hidden min-h-[100dvh] bg-white font-body text-[#343133] pb-28">
 
         <div className="px-4 pt-4">
@@ -380,7 +387,7 @@ function PaymentPage() {
           TAMPILAN DESKTOP (>= md): tampilan asli
           =================================================================== */}
       <div className="hidden md:block min-h-screen bg-white font-body text-[#343133]">
-        <NavbarDashboard userName={USER_NAME} />
+        <NavbarDashboard userName={USER_NAME} showDesktopNavigation={false} />
 
         {/* Lebar konten 1200px sesuai desain */}
         <main className="max-w-[1248px] mx-auto px-6 pt-6 pb-16">

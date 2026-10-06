@@ -20,6 +20,7 @@ interface Language {
 
 interface NavbarDashboardProps {
   userName?: string // TODO: ganti default ini dengan nama user dari auth context / API
+  showDesktopNavigation?: boolean
 }
 
 /* -------------------------------------------------------------------------
@@ -47,7 +48,10 @@ function getInitials(name: string): string {
     .join('')
 }
 
-function Navbar({ userName = 'Budiman Santoso' }: NavbarDashboardProps) {
+function Navbar({
+  userName = 'Budiman Santoso',
+  showDesktopNavigation = true,
+}: NavbarDashboardProps) {
   const location = useLocation()
 
   // State dropdown bahasa dan menu user
@@ -88,7 +92,11 @@ function Navbar({ userName = 'Budiman Santoso' }: NavbarDashboardProps) {
 
       
       <header className="hidden md:sticky md:top-0 md:z-50 md:block bg-white border-b border-[#D4D4D4] px-4 lg:px-6">
-        <div className="max-w-[1194px] mx-auto h-[84px] xl:h-[100px] grid grid-cols-[auto_1fr_auto] items-center gap-3">
+        <div
+          className={`max-w-[1194px] mx-auto h-[84px] xl:h-[100px] grid items-center gap-3 ${
+            showDesktopNavigation ? 'grid-cols-[auto_1fr_auto]' : 'grid-cols-[auto_1fr]'
+          }`}
+        >
           {/* Kiri: logo */}
           <div className="flex shrink-0 items-center">
             {/* Logo */}
@@ -106,7 +114,8 @@ function Navbar({ userName = 'Budiman Santoso' }: NavbarDashboardProps) {
           </div>
 
           {/* Tengah: menu + keranjang, dipusatkan di ruang antara logo dan sisi kanan */}
-          <div className="flex min-w-0 items-center justify-center">
+          {showDesktopNavigation && (
+            <div className="flex min-w-0 items-center justify-center">
             {/* Menu */}
             <nav className="flex items-center gap-4 lg:gap-6 xl:gap-8">
               {NAV_LINKS.map((link) => {
@@ -153,10 +162,15 @@ function Navbar({ userName = 'Budiman Santoso' }: NavbarDashboardProps) {
                 <path d="M8 12v5M12 12v5M16 12v5" />
               </svg>
             </button>
-          </div>
+            </div>
+          )}
 
           {/* Kanan: notifikasi, user, bahasa */}
-          <div className="flex shrink-0 items-center gap-3 lg:gap-5">
+          <div
+            className={`flex shrink-0 items-center gap-3 lg:gap-5 ${
+              showDesktopNavigation ? '' : 'justify-self-end'
+            }`}
+          >
             {/* Ikon notifikasi */}
             <Link
               to="/notifikasi"
@@ -357,7 +371,9 @@ function Navbar({ userName = 'Budiman Santoso' }: NavbarDashboardProps) {
         </div>
       </header>
 
-      <CartModal isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} />
+      {showDesktopNavigation && (
+        <CartModal isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} />
+      )}
     </>
   )
 }

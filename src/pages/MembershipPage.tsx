@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import NavbarDashboard from '../components/layout/Navbar'
+import MobileHeader from '../components/layout/MobileHeader'
 import Footer from '../components/layout/Footer'
 import footballHero from '../assets/figma/member.jpg'
 
@@ -111,66 +112,6 @@ const SPORT_OPTIONS: SportOption[] = [
   { id: 'basket', name: 'Basket', amount: 'Rp 600.000', unit: '4x Sesi' },
 ]
 
-/* -------------------------------------------------------------------------
-   Ikon (inline SVG) untuk header & bottom nav mobile
-   ------------------------------------------------------------------------- */
-const iconProps = {
-  width: 24,
-  height: 24,
-  viewBox: '0 0 24 24',
-  fill: 'none',
-  stroke: 'currentColor',
-  strokeWidth: 1.8,
-  strokeLinecap: 'round' as const,
-  strokeLinejoin: 'round' as const,
-  'aria-hidden': true,
-}
-
-const IconHome = () => (
-  <svg {...iconProps}>
-    <path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z" />
-  </svg>
-)
-const IconCalendar = () => (
-  <svg {...iconProps}>
-    <rect x="3" y="4.5" width="18" height="16" rx="2" />
-    <path d="M3 9.5h18M8 2.5v4M16 2.5v4" />
-  </svg>
-)
-const IconAward = () => (
-  <svg {...iconProps}>
-    <circle cx="12" cy="9" r="6" />
-    <path d="m8.5 14 -1.5 8 5-3 5 3-1.5-8" />
-    <path d="m9.5 9 1.8 1.8L14.5 7.5" />
-  </svg>
-)
-const IconClock = () => (
-  <svg {...iconProps}>
-    <circle cx="12" cy="12" r="9" />
-    <path d="M12 7v5l3 2" />
-  </svg>
-)
-const IconHelp = () => (
-  <svg {...iconProps}>
-    <circle cx="12" cy="12" r="9" />
-    <path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.7.3-1 .9-1 1.7M12 17h.01" />
-  </svg>
-)
-const IconBack = () => (
-  <svg {...iconProps} width={22} height={22} strokeWidth={2.4}>
-    <path d="m15 5-7 7 7 7" />
-  </svg>
-)
-
-// TODO: sesuaikan href dengan route aplikasi (react-router)
-const BOTTOM_NAV = [
-  { id: 'home', label: 'Home', href: '/', Icon: IconHome },
-  { id: 'event', label: 'Sewa Event', href: '/sewa-event', Icon: IconCalendar },
-  { id: 'membership', label: 'Membership', href: '/membership', Icon: IconAward },
-  { id: 'riwayat', label: 'Riwayat', href: '/riwayat', Icon: IconClock },
-  { id: 'help', label: 'Help/QnA', href: '/help', Icon: IconHelp },
-]
-
 function MembershipPage() {
   const [activeTab, setActiveTab] = useState<TabType>('membership')
   const [selectedClass, setSelectedClass] = useState('intermediate')
@@ -193,20 +134,9 @@ function MembershipPage() {
         <NavbarDashboard userName={USER_NAME} />
       </div>
 
-      {/* ================= Header mobile ================= */}
-      <header className="md:hidden flex items-center gap-4 px-6 pt-6 pb-4">
-        <button
-          type="button"
-          aria-label="Kembali"
-          onClick={() => window.history.back()}
-          className="text-[#404F14] cursor-pointer"
-        >
-          <IconBack />
-        </button>
-        <h1 className="font-heading font-bold text-xl text-[#404F14]">
-          OBC Membership &amp; Academy
-        </h1>
-      </header>
+      <div className="md:hidden">
+        <MobileHeader variant="title" title="OBC Membership & Academy" />
+      </div>
 
       <main className="max-w-[1288px] mx-auto px-6 pt-0 pb-32 md:pt-10 md:pb-16">
         {/* ================= Hero foto ================= */}
@@ -514,33 +444,6 @@ function MembershipPage() {
         <Footer />
       </div>
 
-      {/* ================= Bottom navigation (mobile) ================= */}
-      <nav
-        aria-label="Navigasi utama"
-        className="md:hidden fixed inset-x-0 bottom-0 z-50 border-t border-[#E5E5E5] bg-white"
-      >
-        <ul className="flex items-stretch justify-between px-2 pt-3 pb-5">
-          {BOTTOM_NAV.map(({ id, label, href, Icon }) => {
-            const isActive = id === 'membership'
-            return (
-              <li key={id} className="flex-1">
-                <a
-                  href={href}
-                  aria-current={isActive ? 'page' : undefined}
-                  className={`flex flex-col items-center gap-1 text-[11px] ${
-                    isActive
-                      ? 'font-heading font-bold text-[#404F14]'
-                      : 'text-[#6F6B6E]'
-                  }`}
-                >
-                  <Icon />
-                  <span>{label}</span>
-                </a>
-              </li>
-            )
-          })}
-        </ul>
-      </nav>
     </div>
   )
 }

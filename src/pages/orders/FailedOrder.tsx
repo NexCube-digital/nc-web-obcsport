@@ -155,7 +155,7 @@ function FailedOrder() {
           TAMPILAN DESKTOP (>= md): tampilan asli
           =================================================================== */}
       <div className="hidden md:flex min-h-screen flex-col bg-white font-body text-[#343133]">
-        <NavbarDashboard userName={USER_NAME} />
+        <NavbarDashboard userName={USER_NAME} showDesktopNavigation={false} />
 
         <main className="mx-auto flex w-full max-w-[1068px] flex-1 items-center px-6 py-12">
           <div className="grid w-full items-center gap-12 lg:grid-cols-[1fr_480px]">

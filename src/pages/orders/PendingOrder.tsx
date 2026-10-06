@@ -39,7 +39,7 @@ function PendingOrder() {
 
   return (
     <div className="flex min-h-screen flex-col bg-white font-body text-[#343133]">
-      <NavbarDashboard userName={USER_NAME} />
+      <NavbarDashboard userName={USER_NAME} showDesktopNavigation={false} />
 
       <main className="mx-auto w-full max-w-[1248px] flex-1 px-6 pb-16 pt-6">
         {/* Kartu: lebar 600px sesuai desain */}

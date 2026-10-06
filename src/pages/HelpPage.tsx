@@ -1,7 +1,7 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { ArrowLeft, Plus, Search } from 'lucide-react'
+import { Plus, Search } from 'lucide-react'
 import NavbarDashboard from '../components/layout/Navbar'
+import MobileHeader from '../components/layout/MobileHeader'
 import Footer from '../components/layout/Footer'
 
 /* -------------------------------------------------------------------------
@@ -51,7 +51,6 @@ const CS_WHATSAPP_NUMBER = '628123456789'
 const CS_WHATSAPP_MESSAGE = 'Halo, saya butuh bantuan terkait layanan OBC Sport Center.'
 
 function HelpPage() {
-  const navigate = useNavigate()
   const [searchQuery, setSearchQuery] = useState('')
 
   // State khusus mobile: FAQ yang sedang terbuka (awal: item pertama, sesuai desain)
@@ -72,26 +71,18 @@ function HelpPage() {
 
   return (
     <div className="min-h-screen bg-white font-body text-[#343133]">
-      {/* Header sapaan mobile disembunyikan, bottom nav tetap tampil */}
-      <NavbarDashboard userName={USER_NAME} hideMobileHeader />
+      <div className="hidden md:block">
+        <NavbarDashboard userName={USER_NAME} />
+      </div>
+      <div className="md:hidden">
+        <MobileHeader variant="title" title="Bantuan & QnA" />
+      </div>
 
       {/* ===================================================================
           TAMPILAN MOBILE (< md)
           Warna & font mengikuti versi PC
           =================================================================== */}
       <div className="md:hidden px-4 pt-5 pb-44">
-        {/* Header: tombol kembali + judul */}
-        <div className="flex items-center gap-3">
-          <button
-            type="button"
-            onClick={() => navigate(-1)}
-            aria-label="Kembali"
-            className="text-[#343133] cursor-pointer"
-          >
-            <ArrowLeft size={22} />
-          </button>
-          <h1 className="font-heading font-bold text-lg text-[#343133]">Bantuan &amp; QnA</h1>
-        </div>
         <p className="mt-2 font-heading text-xs text-[#6F6B6E]">
           Pertanyaan populer dan panduan pusat olahraga
         </p>

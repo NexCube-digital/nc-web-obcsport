@@ -162,6 +162,11 @@ function AmenityIcon({ name }: { name: FacilityIconKey }) {
 
 /* -------------------------------------------------------------------------
    Komponen
+   -------------------------------------------------------------------------
+   Perilaku ukuran:
+   - Mobile (< md): modal boleh di-scroll bila konten lebih tinggi dari layar.
+   - PC (>= md): TIDAK ada scroll. Posisi tetap vertikal (header, foto, isi);
+     hanya foto yang menyusut/membesar mengikuti tinggi layar.
    ------------------------------------------------------------------------- */
 function OrderModal({ facility, onClose, onOrder }: OrderModalProps): ReactNode {
   const [selectedSport, setSelectedSport] = useState<string>('')
@@ -196,10 +201,10 @@ function OrderModal({ facility, onClose, onOrder }: OrderModalProps): ReactNode 
         aria-modal="true"
         aria-labelledby="order-modal-title"
         onClick={(e) => e.stopPropagation()}
-        className="relative w-full max-w-[902px] max-h-[calc(100vh-32px)] overflow-y-auto rounded-3xl bg-[#FDFCF7] shadow-[0_8px_32px_rgba(0,0,0,0.2)]"
+        className="relative flex w-full max-w-[902px] max-h-[calc(100dvh-32px)] flex-col overflow-y-auto rounded-3xl bg-[#FDFCF7] shadow-[0_8px_32px_rgba(0,0,0,0.2)] md:max-w-[960px] md:overflow-hidden"
       >
         {/* ================= Header ================= */}
-        <header className="flex items-center gap-3 bg-white px-6 pt-7 pb-5">
+        <header className="flex shrink-0 items-center gap-3 bg-white px-6 pt-7 pb-5 md:pt-5 md:pb-4">
           <div
             className={`${FONT_MONTSERRAT} flex h-[46px] w-[46px] shrink-0 items-center justify-center rounded-full bg-[#004000] text-[28px] font-bold leading-none text-white`}
             aria-hidden="true"
@@ -227,19 +232,27 @@ function OrderModal({ facility, onClose, onOrder }: OrderModalProps): ReactNode 
           </button>
         </header>
 
-        {/* ================= Foto ================= */}
-        <img
-          src={facility.image}
-          alt={facility.name}
-          className="h-[200px] w-full object-cover sm:h-[340px]"
-        />
+        {/* ================= Foto =================
+            Mobile: tinggi tetap. PC: mengisi sisa ruang, menyusut hanya
+            bila layar pendek (minimal 150px). */}
+        <div className="relative h-[200px] shrink-0 sm:h-[340px] md:h-auto md:min-h-[150px] md:flex-1 md:shrink">
+          <img
+            src={facility.image}
+            alt={facility.name}
+            className="absolute inset-0 h-full w-full object-cover"
+          />
+        </div>
 
         {/* ================= Isi ================= */}
-        <div className="px-6 pb-8 pt-7 sm:px-12">
+        <div className="shrink-0 px-6 pb-8 pt-7 sm:px-12 md:pb-5 md:pt-5">
           <h3 className="font-heading text-base text-black">Pilih Cabang Olahraga</h3>
 
           {/* Pilihan cabang olahraga */}
-          <div className="mt-4 flex flex-wrap gap-2.5" role="radiogroup" aria-label="Cabang olahraga">
+          <div
+            className="mt-4 flex flex-wrap gap-2.5 md:mt-3"
+            role="radiogroup"
+            aria-label="Cabang olahraga"
+          >
             {facility.sports.map((sport) => {
               const active = sport.id === selectedSport
               return (
@@ -263,7 +276,7 @@ function OrderModal({ facility, onClose, onOrder }: OrderModalProps): ReactNode 
           </div>
 
           {/* Spesifikasi */}
-          <div className="mt-8 rounded-xl border border-dashed border-[#343133] px-8 py-8">
+          <div className="mt-8 rounded-xl border border-dashed border-[#343133] px-8 py-8 md:mt-5 md:py-5">
             <p className="font-heading text-sm leading-[21px] text-black">
               <strong className="font-semibold">Spesifikasi {facility.name}</strong>:{' '}
               {facility.specification}
@@ -271,7 +284,7 @@ function OrderModal({ facility, onClose, onOrder }: OrderModalProps): ReactNode 
           </div>
 
           {/* Fasilitas */}
-          <h4 className={`${FONT_MONTSERRAT} mt-6 text-xs font-bold text-[#265021]`}>
+          <h4 className={`${FONT_MONTSERRAT} mt-6 text-xs font-bold text-[#265021] md:mt-4`}>
             Fasilitas Lapangan
           </h4>
           <ul className="mt-2 flex flex-wrap gap-2">
@@ -293,7 +306,7 @@ function OrderModal({ facility, onClose, onOrder }: OrderModalProps): ReactNode 
             type="button"
             onClick={() => onOrder(facility.id, selectedSport)}
             disabled={!selectedSport}
-            className="mx-auto mt-8 block h-10 w-full max-w-[370px] cursor-pointer rounded-md bg-[#CDF178] font-heading text-xs text-[#343133] transition-colors hover:bg-[#9AAD3E] disabled:cursor-not-allowed disabled:opacity-60"
+            className="mx-auto mt-8 block h-10 w-full max-w-[370px] cursor-pointer rounded-md bg-[#CDF178] font-heading text-xs text-[#343133] transition-colors hover:bg-[#9AAD3E] disabled:cursor-not-allowed disabled:opacity-60 md:mt-5"
           >
             Pesan Sekarang
           </button>
