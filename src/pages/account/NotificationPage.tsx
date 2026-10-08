@@ -1,42 +1,16 @@
 import { useState } from 'react'
 import NavbarDashboard from '../../components/layout/Navbar'
 import Footer from '../../components/layout/Footer'
+import { INITIAL_NOTIFICATIONS, type PromoNotification } from '../../data/notificationsData'
 
 /* -------------------------------------------------------------------------
    Tipe data
    ------------------------------------------------------------------------- */
-interface PromoNotification {
-  id: string
-  title: string
-  time: string
-  description: string
-  isUnread: boolean
-}
-
 /* -------------------------------------------------------------------------
    Data (ganti dengan data dari API / services/notificationService.js)
    ------------------------------------------------------------------------- */
 // TODO: nama user sementara hardcode, ganti dari auth context / API
 const USER_NAME = 'Budiman Santoso'
-
-const INITIAL_NOTIFICATIONS: PromoNotification[] = [
-  {
-    id: 'promo-gajian',
-    title: 'Promo Gajian Februari',
-    time: 'Baru saja',
-    description:
-      'Dapatkan potongan instan sebesar Rp 25.000 untuk setiap booking lapangan Futsal atau Badminton menggunakan QRIS Bank apapun!',
-    isUnread: true,
-  },
-  {
-    id: 'turnamen-badminton',
-    title: 'Turnamen Badminton Cup 2026',
-    time: '1 hari yang lalu',
-    description:
-      'Segera daftarkan klub kesayangan Anda di kejuaraan tahunan OBC Sport Center. Slot terbatas untuk 32 tim pertama.',
-    isUnread: false,
-  },
-]
 
 function NotificationPage() {
   const [notifications, setNotifications] = useState<PromoNotification[]>(INITIAL_NOTIFICATIONS)

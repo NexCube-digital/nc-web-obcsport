@@ -1,5 +1,8 @@
+import { useEffect, useRef, useState } from 'react'
+import { ChevronDown, Globe } from 'lucide-react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import logo from '../../assets/logo/unit bisnis/LOGO OBC SPORT CENTER.png'
+import NotificationDropdown from './NotificationDropdown'
 
 /* -------------------------------------------------------------------------
    Tipe data
@@ -17,6 +20,7 @@ type MobileHeaderVariant = 'greeting' | 'title' | 'back'
 interface MobileHeaderProps {
   variant?: MobileHeaderVariant
   userName?: string // TODO: ganti default ini dengan nama user dari auth context / API
+  profileImage?: string
   title?: string // dipakai oleh variant 'title'
   backLabel?: string // dipakai oleh variant 'back'
   backTo?: string // jika diisi, tombol kembali menuju path ini; jika tidak, navigate(-1)
@@ -24,6 +28,26 @@ interface MobileHeaderProps {
   showShare?: boolean // tampilkan tombol bagikan pada varian 'title'
   centerTitle?: boolean // posisikan judul di tengah header
   showBottomNav?: boolean // sembunyikan bottom nav di halaman detail bila perlu
+}
+
+interface LanguageOption {
+  code: string
+  label: string
+}
+
+const LANGUAGES: LanguageOption[] = [
+  { code: 'IND', label: 'Indonesia' },
+  { code: 'ENG', label: 'English' },
+]
+
+function getUserInitials(name: string): string {
+  return name
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part.charAt(0).toUpperCase())
+    .join('') || 'U'
 }
 
 /* -------------------------------------------------------------------------
@@ -121,6 +145,7 @@ const BOTTOM_NAV_ITEMS: BottomNavItem[] = [
 function MobileHeader({
   variant = 'greeting',
   userName = 'Budiman Santoso',
+  profileImage,
   title = '',
   backLabel = 'Kembali',
   backTo,
@@ -131,6 +156,22 @@ function MobileHeader({
 }: MobileHeaderProps) {
   const location = useLocation()
   const navigate = useNavigate()
+  const [activeLanguage, setActiveLanguage] = useState(LANGUAGES[0])
+  const [isLanguageMenuOpen, setIsLanguageMenuOpen] = useState(false)
+  const languageMenuRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!isLanguageMenuOpen) return
+
+    const handleOutsideClick = (event: PointerEvent) => {
+      if (languageMenuRef.current && !languageMenuRef.current.contains(event.target as Node)) {
+        setIsLanguageMenuOpen(false)
+      }
+    }
+
+    document.addEventListener('pointerdown', handleOutsideClick)
+    return () => document.removeEventListener('pointerdown', handleOutsideClick)
+  }, [isLanguageMenuOpen])
 
   const handleBack = () => {
     if (backTo) navigate(backTo)
@@ -162,27 +203,90 @@ function MobileHeader({
             VARIAN 1: GREETING (sapaan di kiri, logo brand di kanan)
             =============================================================== */}
         {variant === 'greeting' && (
-          <div className="h-[72px] flex items-center justify-between">
-            <div className="flex flex-col leading-tight min-w-0">
-              <span className="text-xs font-heading font-normal text-[#6B6B6B]">
-                Selamat Datang,
-              </span>
-              <span className="text-base font-heading font-semibold text-[#121212] truncate">
-                {userName}
-              </span>
+          <div className="flex h-[72px] items-center justify-between gap-2">
+            <div className="flex min-w-0 items-center gap-2">
+              <div
+                role="img"
+                aria-label={`Foto profil ${userName}`}
+                className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#404F14] font-heading text-xs font-bold text-white"
+              >
+                {profileImage ? (
+                  <img src={profileImage} alt="" className="h-full w-full object-cover" />
+                ) : (
+                  <span aria-hidden="true">{getUserInitials(userName)}</span>
+                )}
+              </div>
+              <div className="flex min-w-0 flex-col leading-tight">
+                <span className="text-[10px] font-heading font-normal text-[#6B6B6B] min-[360px]:text-xs">
+                  Selamat Datang,
+                </span>
+                <span className="truncate text-sm font-heading font-semibold text-[#121212] min-[360px]:text-base">
+                  {userName}
+                </span>
+              </div>
             </div>
 
-            <Link to="/home" className="flex items-center gap-2 shrink-0 ml-3">
+            <div className="flex shrink-0 items-center gap-1">
+              <NotificationDropdown />
+
+              <div className="relative" ref={languageMenuRef}>
+                <button
+                  type="button"
+                  onClick={() => setIsLanguageMenuOpen((open) => !open)}
+                  aria-label={`Bahasa ${activeLanguage.label}`}
+                  aria-haspopup="listbox"
+                  aria-expanded={isLanguageMenuOpen}
+                  className="flex h-9 items-center gap-1 rounded-full px-1.5 text-[10px] font-heading font-semibold text-[#343133] transition-colors hover:bg-[#F1F4EA] min-[360px]:gap-1.5 min-[360px]:px-2 min-[360px]:text-xs"
+                >
+                  <Globe size={16} strokeWidth={1.8} />
+                  <span>{activeLanguage.code}</span>
+                  <ChevronDown
+                    size={12}
+                    className={`transition-transform ${isLanguageMenuOpen ? 'rotate-180' : ''}`}
+                  />
+                </button>
+                {isLanguageMenuOpen && (
+                  <ul
+                    role="listbox"
+                    aria-label="Pilih bahasa"
+                    className="absolute right-0 top-full z-50 mt-2 w-36 rounded-lg border border-[#E5E5E5] bg-white py-1 shadow-lg"
+                  >
+                    {LANGUAGES.map((language) => (
+                      <li key={language.code}>
+                        <button
+                          type="button"
+                          role="option"
+                          aria-selected={language.code === activeLanguage.code}
+                          onClick={() => {
+                            setActiveLanguage(language)
+                            setIsLanguageMenuOpen(false)
+                          }}
+                          className={`w-full px-3 py-2 text-left text-xs font-heading hover:bg-[#FDFCF7] ${
+                            language.code === activeLanguage.code
+                              ? 'font-bold text-[#004000]'
+                              : 'font-medium text-[#343133]'
+                          }`}
+                        >
+                          {language.code} - {language.label}
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+
+              <Link to="/home" aria-label="OBC Sport Center" className="ml-0.5 flex shrink-0 items-center">
               <img
                 src={logo}
                 alt="OBC Sport Center"
-                className="w-10 h-10 rounded-full object-contain"
+                className="h-8 w-8 rounded-full object-contain min-[360px]:h-9 min-[360px]:w-9"
               />
-              <span className="flex flex-col leading-tight font-['Montserrat',sans-serif] italic text-[#343133]">
+              <span className="hidden flex-col leading-tight font-['Montserrat',sans-serif] italic text-[#343133] min-[430px]:flex">
                 <span className="text-xs font-extrabold uppercase">OBC Sport</span>
                 <span className="text-xs font-normal">Center</span>
               </span>
-            </Link>
+              </Link>
+            </div>
           </div>
         )}
 

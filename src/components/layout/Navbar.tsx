@@ -3,6 +3,7 @@ import { Link, useLocation } from 'react-router-dom'
 import logo from '../../assets/logo/unit bisnis/LOGO OBC SPORT CENTER.png'
 import CartModal from '../ui/CartModal'
 import MobileHeader from './MobileHeader'
+import NotificationDropdown from './NotificationDropdown'
 
 /* -------------------------------------------------------------------------
    Tipe data
@@ -20,6 +21,7 @@ interface Language {
 
 interface NavbarDashboardProps {
   userName?: string // TODO: ganti default ini dengan nama user dari auth context / API
+  profileImage?: string
   showDesktopNavigation?: boolean
 }
 
@@ -50,6 +52,7 @@ function getInitials(name: string): string {
 
 function Navbar({
   userName = 'Budiman Santoso',
+  profileImage,
   showDesktopNavigation = true,
 }: NavbarDashboardProps) {
   const location = useLocation()
@@ -88,7 +91,7 @@ function Navbar({
   return (
     <>
       {/* Header + bottom nav mobile (< md) dipisah ke MobileHeader.tsx */}
-      <MobileHeader userName={userName} />
+      <MobileHeader userName={userName} profileImage={profileImage} />
 
       
       <header className="hidden md:sticky md:top-0 md:z-50 md:block bg-white border-b border-[#D4D4D4] px-4 lg:px-6">
@@ -172,16 +175,7 @@ function Navbar({
             }`}
           >
             {/* Ikon notifikasi */}
-            <Link
-              to="/notifikasi"
-              aria-label="Notifikasi"
-              className="text-[#404F14] hover:text-[#004000] transition-colors"
-            >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                <path d="M12 2a6 6 0 0 0-6 6v4.5L4 16v1h16v-1l-2-3.5V8a6 6 0 0 0-6-6z" />
-                <path d="M10 19a2 2 0 0 0 4 0h-4z" />
-              </svg>
-            </Link>
+            <NotificationDropdown />
 
             {/* Info user + dropdown */}
             <div className="relative flex items-center gap-2 lg:gap-3">
@@ -193,7 +187,11 @@ function Navbar({
                 className="flex items-center gap-3"
               >
                 <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[#9AAD3E] text-sm font-heading font-semibold text-white">
-                  {getInitials(userName)}
+                  {profileImage ? (
+                    <img src={profileImage} alt="" className="h-full w-full rounded-full object-cover" />
+                  ) : (
+                    getInitials(userName)
+                  )}
                 </span>
                 {/* Nama user disembunyikan di bawah lg agar muat */}
                 <span className="hidden lg:inline text-sm font-heading font-semibold text-[#343133] whitespace-nowrap">
@@ -243,7 +241,11 @@ function Navbar({
                     {/* Header: avatar, nama, tombol tutup */}
                     <div className="flex items-center gap-3 px-4 py-4">
                       <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#9AAD3E] text-base font-heading font-semibold text-white">
-                        {getInitials(userName)}
+                        {profileImage ? (
+                          <img src={profileImage} alt="" className="h-full w-full rounded-full object-cover" />
+                        ) : (
+                          getInitials(userName)
+                        )}
                       </span>
                       <span className="flex-1 truncate text-sm font-heading font-semibold text-[#343133]">
                         {userName}
