@@ -157,6 +157,7 @@ const MODAL_DETAIL: Record<string, Omit<OrderModalFacility, 'id' | 'name' | 'ima
 
 function HomePage() {
   const [searchQuery, setSearchQuery] = useState('')
+  const [submittedSearch, setSubmittedSearch] = useState('')
   const [selectedFacility, setSelectedFacility] = useState<FacilityCard | null>(null)
   const [previewImage, setPreviewImage] = useState<{ src: string; alt: string } | null>(null)
   const [isImageZoomed, setIsImageZoomed] = useState(false)
@@ -181,9 +182,15 @@ function HomePage() {
   }, [previewImage])
 
   const handleSearch = () => {
-    // TODO: sambungkan ke halaman/endpoint pencarian sebenarnya
-    navigate(`/cari?q=${encodeURIComponent(searchQuery)}`)
+    setSubmittedSearch(searchQuery.trim())
   }
+
+  const normalizedSearch = submittedSearch.toLocaleLowerCase('id-ID')
+  const filteredFacilities = FACILITIES.filter((facility) =>
+    `${facility.name} ${facility.description}`
+      .toLocaleLowerCase('id-ID')
+      .includes(normalizedSearch),
+  )
 
   const modalFacility: OrderModalFacility | null = selectedFacility
     ? {
@@ -319,12 +326,12 @@ function HomePage() {
             Ketersediaan Lapangan Premium
           </h2>
 
-          {/* Kartu fasilitas: < 300px 1 kolom, 300-639px grid 2 kolom, >= sm wrap 285px jarak 16px */}
-          <div className="mt-3 grid grid-cols-1 min-[300px]:grid-cols-2 gap-2 min-[360px]:gap-3 sm:flex sm:flex-wrap sm:gap-4">
-            {FACILITIES.map((facility) => (
+          {/* Kartu fasilitas: < 300px 1 kolom, 300-767px 2 kolom, >= md 3 kolom */}
+          <div className="mt-3 grid grid-cols-1 min-[300px]:grid-cols-2 gap-2 min-[360px]:gap-3 sm:gap-4 md:grid-cols-3">
+            {filteredFacilities.map((facility) => (
               <div
                 key={facility.id}
-                className="flex flex-col min-w-0 w-full sm:w-[285px] rounded-2xl bg-white overflow-hidden shadow-[0_2px_10px_rgba(0,0,0,0.08)]"
+                className="flex w-full min-w-0 flex-col overflow-hidden rounded-2xl bg-white shadow-[0_2px_10px_rgba(0,0,0,0.08)]"
               >
                 <button
                   type="button"
@@ -361,6 +368,11 @@ function HomePage() {
                 </div>
               </div>
             ))}
+            {filteredFacilities.length === 0 && (
+              <p className="col-span-full py-8 text-center text-sm text-[#6F6B6E]">
+                Tidak ada lapangan yang cocok dengan “{submittedSearch}”.
+              </p>
+            )}
           </div>
         </section>
       </main>

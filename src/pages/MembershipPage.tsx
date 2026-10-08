@@ -1,4 +1,6 @@
+// pages/MembershipPage.tsx
 import { useState } from 'react'
+import { Award } from 'lucide-react'
 import NavbarDashboard from '../components/layout/Navbar'
 import MobileHeader from '../components/layout/MobileHeader'
 import Footer from '../components/layout/Footer'
@@ -159,11 +161,11 @@ function MembershipPage() {
         </div>
 
         {/* ================= Toggle Sports Membership / OBC Academy ================= */}
-        <div className="mt-5 flex gap-3 md:mt-6 md:flex-wrap md:gap-3.5">
+        <div className="mt-5 grid grid-cols-2 gap-3 md:mt-6 md:gap-3.5 lg:grid-cols-[387px_387px]">
           <button
             type="button"
             onClick={() => setActiveTab('membership')}
-            className={`min-w-0 flex-1 md:flex-none md:w-[387px] md:h-[210px] text-left rounded-xl md:rounded-2xl bg-white p-3 md:pl-[54px] md:pr-4 md:pt-7 transition-shadow cursor-pointer ${
+            className={`min-w-0 w-full md:min-h-[210px] lg:h-[210px] text-left rounded-xl md:rounded-2xl bg-white p-3 md:px-6 md:pt-7 lg:pl-[54px] lg:pr-4 transition-shadow cursor-pointer ${
               activeTab === 'membership'
                 ? 'border-2 md:border border-[#121212]'
                 : 'border-2 md:border border-transparent shadow-[0_2px_10px_rgba(0,0,0,0.12)]'
@@ -186,7 +188,7 @@ function MembershipPage() {
           <button
             type="button"
             onClick={() => setActiveTab('academy')}
-            className={`min-w-0 flex-1 md:flex-none md:w-[387px] md:h-[210px] text-left rounded-xl md:rounded-2xl bg-white p-3 md:pl-[54px] md:pr-4 md:pt-7 transition-shadow cursor-pointer ${
+            className={`min-w-0 w-full md:min-h-[210px] lg:h-[210px] text-left rounded-xl md:rounded-2xl bg-white p-3 md:px-6 md:pt-7 lg:pl-[54px] lg:pr-4 transition-shadow cursor-pointer ${
               activeTab === 'academy'
                 ? 'border-2 md:border border-[#121212]'
                 : 'border-2 md:border border-transparent shadow-[0_2px_10px_rgba(0,0,0,0.12)]'
@@ -328,40 +330,18 @@ function MembershipPage() {
 
             {/* Jadwal latihan */}
             <div className="mt-6 md:mt-4 w-full md:max-w-[756px] md:rounded-2xl md:border md:border-[#D4D4D4] md:bg-white md:p-6">
-              {/* Judul jadwal mobile */}
-              <h3 className="md:hidden font-heading font-bold text-base text-[#404F14]">
-                Jadwal Latihan Mingguan
-              </h3>
-
-              {/* Judul jadwal desktop */}
-              <h3 className="hidden md:block font-heading font-bold text-lg text-[#343133]">
+              {/* Judul & deskripsi jadwal (tampil di mobile dan desktop) */}
+              <h3 className="font-heading font-bold text-lg text-[#343133]">
                 Jadwal Latihan OBC Academy
               </h3>
-              <p className="hidden md:block mt-1 text-sm text-[#6F6B6E]">
+              <p className="mt-1 text-sm text-[#6F6B6E]">
                 Program pelatihan reguler dan profesional dengan jadwal tetap mingguan.
               </p>
 
-              {/* Daftar jadwal mobile */}
-              <ul className="md:hidden mt-3 rounded-2xl border border-[#E5E5E5] bg-white px-5 py-3">
-                {MOBILE_SCHEDULE_ROWS.map((row) => (
-                  <li key={row.id} className="flex items-center justify-between gap-3 py-2.5">
-                    <div>
-                      <p className="font-heading font-bold text-sm text-[#121212]">
-                        {row.day}
-                      </p>
-                      <p className="text-xs text-[#6F6B6E]">{row.time}</p>
-                    </div>
-                    <span className="shrink-0 rounded-md bg-[#EEFBEA] px-3 py-1.5 text-[11px] font-heading font-bold text-[#404F14]">
-                      {row.label}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-
-              {/* Struktur + tabel jadwal desktop */}
-              <div className="hidden md:flex mt-8 items-start justify-center gap-5">
-                {/* Struktur & operasional */}
-                <div className="w-[286px] shrink-0 rounded-lg border border-dashed border-[#D4D4D4] bg-[#F8F9FA] px-6 py-5">
+              {/* Mobile: struktur lalu daftar jadwal (kolom). Desktop: struktur + tabel (baris) */}
+              <div className="mt-4 md:mt-8 flex flex-col md:flex-row md:items-start md:justify-center gap-5">
+                {/* Struktur & operasional (tampil di mobile dan desktop) */}
+                <div className="w-full md:w-[286px] md:shrink-0 rounded-lg border border-dashed border-[#D4D4D4] bg-[#F8F9FA] px-6 py-5">
                   <h4 className="font-heading font-bold text-xs text-[#404F14]">
                     Struktur &amp; Operasional Academy
                   </h4>
@@ -378,8 +358,30 @@ function MembershipPage() {
                   </ul>
                 </div>
 
-                {/* Tabel jadwal */}
-                <table className="w-[313px] shrink-0 border-collapse text-xs">
+                {/* Daftar jadwal mobile */}
+                <div className="md:hidden">
+                  <h3 className="font-heading font-bold text-base text-[#404F14]">
+                    Jadwal Latihan OBC Academy
+                  </h3>
+                  <ul className="mt-3 rounded-2xl border border-[#E5E5E5] bg-white px-5 py-3">
+                    {MOBILE_SCHEDULE_ROWS.map((row) => (
+                      <li key={row.id} className="flex items-center justify-between gap-3 py-2.5">
+                        <div>
+                          <p className="font-heading font-bold text-sm text-[#121212]">
+                            {row.day}
+                          </p>
+                          <p className="text-xs text-[#6F6B6E]">{row.time}</p>
+                        </div>
+                        <span className="shrink-0 rounded-md bg-[#EEFBEA] px-3 py-1.5 text-[11px] font-heading font-bold text-[#404F14]">
+                          {row.label}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                {/* Tabel jadwal desktop */}
+                <table className="hidden md:table w-[313px] shrink-0 border-collapse text-xs">
                   <thead>
                     <tr className="bg-[#404F14] text-white">
                       <th className="rounded-tl-lg py-2 pl-4 text-left font-heading font-bold">
@@ -419,7 +421,7 @@ function MembershipPage() {
               {/* Info promo mobile */}
               <div className="md:hidden mt-5 flex items-center gap-3 rounded-2xl bg-[#EEFBEA] px-4 py-4 text-[#404F14]">
                 <span className="shrink-0">
-                  <IconAward />
+                  <Award size={24} aria-hidden="true" />
                 </span>
                 <p className="text-sm leading-relaxed">
                   Gabung hari ini dan dapatkan jersey latihan resmi OBC gratis serta
@@ -443,7 +445,6 @@ function MembershipPage() {
       <div className="hidden md:block">
         <Footer />
       </div>
-
     </div>
   )
 }

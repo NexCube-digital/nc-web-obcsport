@@ -17,6 +17,7 @@ const FailedOrder = lazy(() => import('../pages/orders/FailedOrder'))
 const SuccesOrder = lazy(() => import('../pages/orders/SuccessOrder'))
 const PendingOrder = lazy(() => import('../pages/orders/PendingOrder'))
 const InformationOrder = lazy(() => import('../pages/orders/InformationOrder'))
+const Profil = lazy(() => import('../pages/ProfilPage'))
 
 
 const AppRoutes = (
@@ -42,6 +43,7 @@ const AppRoutes = (
 		<Route path="/success-order" element={<SuccesOrder />} />
 		<Route path="/pending-order" element={<PendingOrder />} />
 		<Route path="/information-order" element={<InformationOrder />} />
+		<Route path="/profil" element={<Profil />} />
 	</>
 )
 

@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom'
 import { ArrowUp, Globe, Headphones, Mail, MapPin } from 'lucide-react'
 import logo from '../../assets/logo/obclogo.webp'
-import lapangF1Image from '../../assets/layanan/Lapang F1.png'
+import lapangF1Image from '../../assets/layanan/Lapang F1.webp'
 import whatsappIcon from '../../assets/icon/whatsapp2.svg'
 
 const NAVIGASI_LINKS = [        
