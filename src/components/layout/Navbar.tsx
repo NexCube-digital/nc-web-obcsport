@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { ShoppingCart } from 'lucide-react'
 import { Link, useLocation } from 'react-router-dom'
 import logo from '../../assets/logo/unit bisnis/LOGO OBC SPORT CENTER.png'
 import CartModal from '../ui/CartModal'
@@ -32,8 +33,6 @@ const NAV_LINKS: NavLink[] = [
   { id: 'beranda', label: 'Beranda', href: '/home' },
   { id: 'sewa-event', label: 'Sewa Event', href: '/event' },
   { id: 'membership', label: 'Membership', href: '/membership' },
-  { id: 'riwayat', label: 'Riwayat', href: '/history' },
-  { id: 'bantuan', label: 'Bantuan', href: '/bantuan' },
 ]
 
 const LANGUAGES: Language[] = [
@@ -139,32 +138,6 @@ function Navbar({
               })}
             </nav>
 
-            {/* Ikon keranjang */}
-            <button
-              type="button"
-              onClick={() => setIsCartOpen(true)}
-              aria-label="Keranjang"
-              aria-haspopup="dialog"
-              aria-expanded={isCartOpen}
-              className="inline-flex shrink-0 ml-4 xl:ml-5 cursor-pointer text-[#404F14] hover:text-[#004000] transition-colors"
-            >
-              <svg
-                width="28"
-                height="28"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                aria-hidden="true"
-              >
-                <path d="M2 9h20l-2 11H4L2 9z" />
-                <path d="M7 9l3-6" />
-                <path d="M17 9l-3-6" />
-                <path d="M8 12v5M12 12v5M16 12v5" />
-              </svg>
-            </button>
             </div>
           )}
 
@@ -177,8 +150,21 @@ function Navbar({
             {/* Ikon notifikasi */}
             <NotificationDropdown />
 
+            {showDesktopNavigation && (
+              <button
+                type="button"
+                onClick={() => setIsCartOpen(true)}
+                aria-label="Keranjang"
+                aria-haspopup="dialog"
+                aria-expanded={isCartOpen}
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[#404F14] transition-colors hover:bg-[#F1F4EA] hover:text-[#004000]"
+              >
+                <ShoppingCart size={19} strokeWidth={1.8} aria-hidden="true" />
+              </button>
+            )}
+
             {/* Info user + dropdown */}
-            <div className="relative flex items-center gap-2 lg:gap-3">
+            <div className="relative order-3 flex items-center gap-2 lg:gap-3">
               <button
                 type="button"
                 onClick={() => setIsUserOpen((prev) => !prev)}
@@ -306,7 +292,7 @@ function Navbar({
             </div>
 
             {/* Pemilih bahasa */}
-            <div ref={langMenuRef} className="relative">
+            <div ref={langMenuRef} className="relative order-2">
               <button
                 type="button"
                 onClick={() => setIsLangOpen((prev) => !prev)}

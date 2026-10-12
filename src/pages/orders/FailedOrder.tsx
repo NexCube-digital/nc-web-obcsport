@@ -1,6 +1,6 @@
 import { useLocation, useNavigate } from 'react-router-dom'
 import NavbarDashboard from '../../components/layout/Navbar'
-import Footer from '../../components/layout/Footer'
+import Footer from '../../components/layout/LandingFooter'
 
 /* -------------------------------------------------------------------------
    Tipe data

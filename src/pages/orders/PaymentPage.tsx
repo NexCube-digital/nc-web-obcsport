@@ -3,7 +3,8 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import { CalendarDays, Check } from 'lucide-react'
 import NavbarDashboard from '../../components/layout/Navbar'
 import MobileHeader from '../../components/layout/MobileHeader'
-import Footer from '../../components/layout/Footer'
+import Footer from '../../components/layout/LandingFooter'
+import PendingOrderModal from '../../components/ui/PendingOrderModal'
 
 /* -------------------------------------------------------------------------
    Tipe data
@@ -49,6 +50,11 @@ interface ExtraItem {
   id: string
   name: string
   price: number
+}
+
+interface PendingPayment {
+  method: string
+  total: number
 }
 
 // Data yang dikirim dari halaman DetailOrder lewat navigate('/checkout', { state })
@@ -156,6 +162,7 @@ function PaymentPage() {
   // State khusus mobile: metode pembayaran & alat tambahan yang dicentang
   const [mobileMethod, setMobileMethod] = useState<MobileMethodId>('qris')
   const [selectedExtras, setSelectedExtras] = useState<string[]>(['raket'])
+  const [pendingPayment, setPendingPayment] = useState<PendingPayment | null>(null)
 
   /* ---------- Turunan data pesanan ---------- */
   const date = state.date ?? DEFAULT_DATE
@@ -179,10 +186,9 @@ function PaymentPage() {
 
   /* ---------- Handler ---------- */
   const handlePay = () => {
-    // TODO: kirim ke API pembayaran (services/paymentService.js) dengan metode terpilih,
-    // lalu arahkan ke halaman instruksi pembayaran / riwayat sesuai route sebenarnya
-    navigate('/riwayat', {
-      state: { method, date, startTime, endTime, total },
+    setPendingPayment({
+      method: method === 'qris' ? 'QRIS' : 'BCA Virtual Account',
+      total,
     })
   }
 
@@ -193,25 +199,19 @@ function PaymentPage() {
   }
 
   const handlePayMobile = () => {
-    // TODO: kirim ke API pembayaran (services/paymentService.js) beserta alat tambahan
-    navigate('/riwayat', {
-      state: {
-        method: mobileMethod,
-        extras: selectedExtras,
-        date,
-        startTime,
-        endTime,
-        total: mobileTotal,
-      },
+    const selectedMethod = MOBILE_METHOD_GROUPS
+      .flatMap((group) => group.methods)
+      .find((item) => item.id === mobileMethod)
+
+    setPendingPayment({
+      method: selectedMethod?.name ?? mobileMethod,
+      total: mobileTotal,
     })
   }
 
   return (
     <>
-      {/* ===================================================================
-          TAMPILAN MOBILE (< md): tanpa navbar & footer, sesuai desain
-          Warna & font mengikuti versi PC
-          =================================================================== */}
+      
       <MobileHeader
         variant="title"
         title="Konfirmasi & Pembayaran"
@@ -538,6 +538,19 @@ function PaymentPage() {
 
         <Footer />
       </div>
+
+      <PendingOrderModal
+        isOpen={pendingPayment !== null}
+        date={date}
+        time={`${startTime} - ${endTime}`}
+        paymentMethod={pendingPayment?.method ?? ''}
+        amount={pendingPayment?.total ?? 0}
+        onClose={() => setPendingPayment(null)}
+        onReturnHome={() => {
+          setPendingPayment(null)
+          navigate('/home')
+        }}
+      />
     </>
   )
 }

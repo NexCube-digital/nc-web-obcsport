@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { X, ZoomIn, ZoomOut } from 'lucide-react'
+import { Hand, X, ZoomIn, ZoomOut } from 'lucide-react'
 import NavbarDashboard from '../components/layout/Navbar'
-import Footer from '../components/layout/Footer'
+import Footer from '../components/layout/LandingFooter'
 import OrderModal, { type OrderModalFacility } from '../components/ui/OrderModal'
 import lapangF1 from '../assets/layanan/Lapang F1.png'
 import lapangF2 from '../assets/layanan/Lapang F2.png'
@@ -214,7 +214,7 @@ function HomePage() {
             <h1
               className={`${FONT_MONTSERRAT} font-bold text-xl min-[360px]:text-2xl sm:text-[28px] leading-tight sm:leading-9 text-white break-words`}
             >
-              Halo, {USER_NAME}! 👋
+              Halo, {USER_NAME}! <Hand className="inline-block h-5 w-5 align-[-2px] sm:h-6 sm:w-6" aria-hidden="true" />
             </h1>
             <p className="mt-1 text-xs min-[360px]:text-sm leading-relaxed text-white max-w-[540px] font-heading">
               Temukan lapangan favoritmu dan mulai berolahraga hari ini. Pilih tanggal
@@ -290,17 +290,18 @@ function HomePage() {
             {PROMOS.map((promo) => (
               <div
                 key={promo.id}
-                className="w-[min(260px,88%)] min-w-[210px] shrink-0 snap-start md:w-auto md:min-w-0 flex items-center gap-2 min-[360px]:gap-3 rounded-2xl border border-[#E5E5E5] bg-white p-2.5 sm:p-3 shadow-[0_2px_8px_rgba(0,0,0,0.04)]"
+                className="relative w-[min(260px,88%)] min-w-[210px] shrink-0 snap-start md:w-auto md:min-w-0 flex items-center gap-2 min-[360px]:gap-3 rounded-2xl border border-[#E5E5E5] bg-white p-2.5 sm:p-3 shadow-[0_2px_8px_rgba(0,0,0,0.04)]"
               >
                 <button
                   type="button"
                   onClick={() => setPreviewImage({ src: promo.image, alt: promo.title })}
                   aria-label={`Perbesar gambar ${promo.title}`}
-                  className="h-[88px] w-14 min-[360px]:h-[110px] min-[360px]:w-[72px] shrink-0 cursor-zoom-in overflow-hidden rounded-lg"
-                >
+                  className="absolute inset-0 z-10 cursor-zoom-in rounded-2xl focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#404F14]"
+                />
+                <div className="h-[88px] w-14 min-[360px]:h-[110px] min-[360px]:w-[72px] shrink-0 overflow-hidden rounded-lg">
                   <img src={promo.image} alt="" className="h-full w-full object-cover" />
-                </button>
-                <div className="min-w-0">
+                </div>
+                <div className="pointer-events-none relative min-w-0">
                   <span className="inline-block rounded bg-[#E6F0E0] px-2 py-1 text-[10px] leading-none font-heading font-bold text-[#404F14]">
                     PROMO SPESIAL
                   </span>
@@ -331,22 +332,23 @@ function HomePage() {
             {filteredFacilities.map((facility) => (
               <div
                 key={facility.id}
-                className="flex w-full min-w-0 flex-col overflow-hidden rounded-2xl bg-white shadow-[0_2px_10px_rgba(0,0,0,0.08)]"
+                className="relative flex w-full min-w-0 flex-col overflow-hidden rounded-2xl bg-white shadow-[0_2px_10px_rgba(0,0,0,0.08)]"
               >
                 <button
                   type="button"
                   onClick={() => setPreviewImage({ src: facility.image, alt: facility.name })}
                   aria-label={`Perbesar gambar ${facility.name}`}
-                  className="block h-16 min-[360px]:h-20 w-full cursor-zoom-in overflow-hidden"
-                >
+                  className="absolute inset-0 z-10 cursor-zoom-in focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#404F14]"
+                />
+                <div className="block h-16 min-[360px]:h-20 w-full overflow-hidden">
                   <img
                     src={facility.image}
                     alt=""
                     className="h-full w-full object-cover transition-transform duration-300 hover:scale-105"
                     loading="lazy"
                   />
-                </button>
-                <div className="flex-1 flex flex-col px-2.5 min-[360px]:px-3 pt-2.5 min-[360px]:pt-3 pb-3 min-[360px]:pb-4 sm:pb-6">
+                </div>
+                <div className="pointer-events-none relative flex flex-1 flex-col px-2.5 min-[360px]:px-3 pt-2.5 min-[360px]:pt-3 pb-3 min-[360px]:pb-4 sm:pb-6">
                   <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
                     <h3 className="font-heading font-semibold text-sm text-[#121212] break-words min-w-0">
                       {facility.name}
@@ -361,7 +363,7 @@ function HomePage() {
                   <button
                     type="button"
                     onClick={() => setSelectedFacility(facility)}
-                    className="mt-auto w-full h-9 sm:h-[30px] rounded-md bg-[#CDF178] text-[11px] min-[360px]:text-xs sm:text-[13px] font-heading font-semibold text-[#404F14] hover:bg-[#9AAD3E] transition-colors cursor-pointer"
+                    className="pointer-events-auto relative z-20 mt-auto w-full h-9 sm:h-[30px] rounded-md bg-[#CDF178] text-[11px] min-[360px]:text-xs sm:text-[13px] font-heading font-semibold text-[#404F14] hover:bg-[#9AAD3E] transition-colors cursor-pointer"
                   >
                     {facility.buttonLabel}
                   </button>

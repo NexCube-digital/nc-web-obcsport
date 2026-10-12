@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Check } from 'lucide-react'
 import NavbarDashboard from '../components/layout/Navbar'
-import Footer from '../components/layout/Footer'
+import Footer from '../components/layout/LandingFooter'
 
 /* -------------------------------------------------------------------------
    Data sementara

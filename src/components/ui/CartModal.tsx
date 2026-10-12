@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { ShoppingBasket } from 'lucide-react'
+import { ShoppingCart, Trash2, X } from 'lucide-react'
 
 /* -------------------------------------------------------------------------
    Tipe data
@@ -76,7 +76,7 @@ function CartModal({ isOpen, onClose, items = [], onRemove, onCheckout }: CartMo
             className="flex h-[46px] w-[46px] shrink-0 items-center justify-center rounded-lg bg-[#CDF178] text-[#404F14]"
             aria-hidden="true"
           >
-            <ShoppingBasket size={22} strokeWidth={1.6} />
+            <ShoppingCart size={22} strokeWidth={1.8} />
           </div>
           <div className="flex-1">
             <div className="flex items-center gap-1.5">
@@ -98,18 +98,20 @@ function CartModal({ isOpen, onClose, items = [], onRemove, onCheckout }: CartMo
             type="button"
             onClick={onClose}
             aria-label="Tutup keranjang"
-            className="mr-1 flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center rounded-full bg-[#CDF178] font-heading text-sm text-[#343133] transition-colors hover:bg-[#9AAD3E]"
+            className="mr-1 flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center rounded-full bg-[#CDF178] text-[#343133] transition-colors hover:bg-[#9AAD3E]"
           >
-            X
+            <X size={16} aria-hidden="true" />
           </button>
         </header>
 
         {/* ================= Isi keranjang ================= */}
-        <div className="flex-1 overflow-y-auto px-9 py-7">
+        <div
+          className={`flex-1 px-9 py-7 ${items.length === 0 ? 'overflow-hidden' : 'overflow-y-auto'}`}
+        >
           {items.length === 0 ? (
             <div className="flex flex-col items-center py-16 text-center">
               <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[#F1F5E9] text-[#404F14]">
-                <ShoppingBasket size={30} strokeWidth={1.6} />
+                <ShoppingCart size={30} strokeWidth={1.8} />
               </div>
               <h3 className="mt-5 font-heading text-base font-bold text-[#343133]">
                 Keranjang masih kosong
@@ -159,9 +161,9 @@ function CartModal({ isOpen, onClose, items = [], onRemove, onCheckout }: CartMo
                     type="button"
                     onClick={() => onRemove?.(item.id)}
                     aria-label={`Hapus ${item.facilityName} dari keranjang`}
-                    className="absolute right-4 top-4 flex h-7 w-7 cursor-pointer items-center justify-center rounded-full border border-[#D4E4CC] bg-[#F1F8EC] font-heading text-xs text-[#343133] transition-colors hover:bg-[#E6F0E0]"
+                    className="absolute right-4 top-4 flex h-7 w-7 cursor-pointer items-center justify-center rounded-full border border-[#D4E4CC] bg-[#F1F8EC] text-[#343133] transition-colors hover:bg-[#E6F0E0]"
                   >
-                    X
+                    <Trash2 size={14} aria-hidden="true" />
                   </button>
                 </li>
               ))}

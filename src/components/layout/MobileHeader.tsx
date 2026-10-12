@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
-import { ChevronDown, Globe } from 'lucide-react'
+import { ChevronDown, Globe, ShoppingCart, UserRound } from 'lucide-react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
-import logo from '../../assets/logo/unit bisnis/LOGO OBC SPORT CENTER.png'
+import CartModal from '../ui/CartModal'
 import NotificationDropdown from './NotificationDropdown'
 
 /* -------------------------------------------------------------------------
@@ -13,7 +13,6 @@ interface BottomNavItem {
   href: string
   icon: React.ReactNode
 }
-
 
 type MobileHeaderVariant = 'greeting' | 'title' | 'back'
 
@@ -46,22 +45,20 @@ function getUserInitials(name: string): string {
     .split(/\s+/)
     .filter(Boolean)
     .slice(0, 2)
-    .map((part) => part.charAt(0).toUpperCase())
-    .join('') || 'U'
+    .map((part) => part[0].toUpperCase())
+    .join('')
 }
 
-/* -------------------------------------------------------------------------
-   Ikon
-   ------------------------------------------------------------------------- */
-const iconProps = {
+/* Atribut dasar untuk semua ikon SVG */
+const iconProps: React.SVGProps<SVGSVGElement> = {
   width: 24,
   height: 24,
   viewBox: '0 0 24 24',
   fill: 'none',
   stroke: 'currentColor',
   strokeWidth: 1.8,
-  strokeLinecap: 'round' as const,
-  strokeLinejoin: 'round' as const,
+  strokeLinecap: 'round',
+  strokeLinejoin: 'round',
   'aria-hidden': true,
 }
 
@@ -118,27 +115,10 @@ const BOTTOM_NAV_ITEMS: BottomNavItem[] = [
     ),
   },
   {
-    id: 'riwayat',
-    label: 'Riwayat',
-    href: '/history',
-    icon: (
-      <svg {...iconProps}>
-        <circle cx="12" cy="12" r="9" />
-        <path d="M12 7v5l3 2" />
-      </svg>
-    ),
-  },
-  {
-    id: 'bantuan',
-    label: 'Help/QnA',
-    href: '/bantuan',
-    icon: (
-      <svg {...iconProps}>
-        <circle cx="12" cy="12" r="9" />
-        <path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.7.4-1 .9-1 1.7" />
-        <path d="M12 17h.01" />
-      </svg>
-    ),
+    id: 'profil',
+    label: 'Profil',
+    href: '/profil-mobile',
+    icon: <UserRound size={24} strokeWidth={1.8} aria-hidden="true" />,
   },
 ]
 
@@ -158,6 +138,7 @@ function MobileHeader({
   const navigate = useNavigate()
   const [activeLanguage, setActiveLanguage] = useState(LANGUAGES[0])
   const [isLanguageMenuOpen, setIsLanguageMenuOpen] = useState(false)
+  const [isCartOpen, setIsCartOpen] = useState(false)
   const languageMenuRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -204,7 +185,11 @@ function MobileHeader({
             =============================================================== */}
         {variant === 'greeting' && (
           <div className="flex h-[72px] items-center justify-between gap-2">
-            <div className="flex min-w-0 items-center gap-2">
+            <Link
+              to="/pengaturan"
+              aria-label={`Buka pengaturan profil ${userName}`}
+              className="flex min-w-0 items-center gap-2 rounded-md text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#004000]"
+            >
               <div
                 role="img"
                 aria-label={`Foto profil ${userName}`}
@@ -224,11 +209,9 @@ function MobileHeader({
                   {userName}
                 </span>
               </div>
-            </div>
+            </Link>
 
-            <div className="flex shrink-0 items-center gap-1">
-              <NotificationDropdown />
-
+            <div className="flex shrink-0 items-center gap-2">
               <div className="relative" ref={languageMenuRef}>
                 <button
                   type="button"
@@ -275,17 +258,18 @@ function MobileHeader({
                 )}
               </div>
 
-              <Link to="/home" aria-label="OBC Sport Center" className="ml-0.5 flex shrink-0 items-center">
-              <img
-                src={logo}
-                alt="OBC Sport Center"
-                className="h-8 w-8 rounded-full object-contain min-[360px]:h-9 min-[360px]:w-9"
-              />
-              <span className="hidden flex-col leading-tight font-['Montserrat',sans-serif] italic text-[#343133] min-[430px]:flex">
-                <span className="text-xs font-extrabold uppercase">OBC Sport</span>
-                <span className="text-xs font-normal">Center</span>
-              </span>
-              </Link>
+              <button
+                type="button"
+                onClick={() => setIsCartOpen(true)}
+                aria-label="Keranjang"
+                aria-haspopup="dialog"
+                aria-expanded={isCartOpen}
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[#404F14] transition-colors hover:bg-[#F1F4EA] hover:text-[#004000]"
+              >
+                <ShoppingCart size={19} strokeWidth={1.8} aria-hidden="true" />
+              </button>
+
+              <NotificationDropdown />
             </div>
           </div>
         )}
@@ -365,7 +349,7 @@ function MobileHeader({
                   <Link
                     to={item.href}
                     aria-current={isActive ? 'page' : undefined}
-                    className={`flex flex-col items-center justify-center gap-1 py-2.5 text-[11px] font-heading transition-colors ${
+                    className={`flex flex-col items-center justify-center gap-1 py-2.5 text-[10px] font-heading transition-colors min-[400px]:text-[11px] ${
                       isActive
                         ? 'font-bold text-[#004000]'
                         : 'font-normal text-[#6B6B6B] hover:text-[#004000]'
@@ -380,6 +364,8 @@ function MobileHeader({
           </ul>
         </nav>
       )}
+
+      <CartModal isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} />
     </>
   )
 }

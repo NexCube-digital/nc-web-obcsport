@@ -2,7 +2,7 @@ import { useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ArrowRight, Check } from 'lucide-react'
 import NavbarDashboard from '../../components/layout/Navbar'
-import Footer from '../../components/layout/Footer'
+import Footer from '../../components/layout/LandingFooter'
 
 /* -------------------------------------------------------------------------
    Tipe data

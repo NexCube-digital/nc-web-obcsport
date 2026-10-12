@@ -31,7 +31,7 @@ function NavbarLanding() {
 
   return (
     <header className="sticky top-0 z-50 border-b border-[#D4D4D4] bg-white">
-      {/* Selalu satu baris: logo | tombol | bahasa. Ukuran mengecil bertahap di layar kecil */}
+      {/* Selalu satu baris: logo | bahasa | tombol. Ukuran mengecil bertahap di layar kecil */}
       <div className="max-w-[1200px] mx-auto px-2 min-[360px]:px-4 sm:px-6 h-16 min-[360px]:h-20 sm:h-[100px] flex items-center justify-between gap-1.5 min-[360px]:gap-3">
         {/* Logo */}
         <Link
@@ -48,24 +48,9 @@ function NavbarLanding() {
           </span>
         </Link>
 
-        {/* Tombol tengah */}
         <div className="flex items-center gap-1.5 min-[360px]:gap-2 sm:gap-4 shrink-0">
-          <Link
-            to="/login"
-            className="rounded-lg border border-[#404F14] bg-white px-2.5 min-[360px]:px-4 sm:px-6 h-8 min-[360px]:h-9 sm:h-10 inline-flex items-center text-[11px] min-[360px]:text-sm font-heading font-semibold text-[#404F14] hover:bg-[#FDFCF7] transition-colors"
-          >
-            Masuk
-          </Link>
-          <Link
-            to="/register"
-            className="rounded-lg bg-[#CDF178] px-2.5 min-[360px]:px-4 sm:px-6 h-8 min-[360px]:h-9 sm:h-10 inline-flex items-center text-[11px] min-[360px]:text-sm font-heading font-semibold text-[#343133] hover:bg-[#9AAD3E] transition-colors"
-          >
-            Daftar
-          </Link>
-        </div>
-
-        {/* Pemilih bahasa */}
-        <div className="relative shrink-0">
+          {/* Pemilih bahasa */}
+          <div className="relative shrink-0">
           <button
             type="button"
             onClick={() => setIsLangOpen((prev) => !prev)}
@@ -131,6 +116,23 @@ function NavbarLanding() {
               ))}
             </ul>
           )}
+          </div>
+
+          {/* Tombol Masuk dan Daftar */}
+          <div className="flex items-center gap-1.5 min-[360px]:gap-2 sm:gap-4 shrink-0">
+            <Link
+              to="/login"
+              className="rounded-lg border border-[#404F14] bg-white px-2.5 min-[360px]:px-4 sm:px-6 h-8 min-[360px]:h-9 sm:h-10 inline-flex items-center text-[11px] min-[360px]:text-sm font-heading font-semibold text-[#404F14] hover:bg-[#FDFCF7] transition-colors"
+            >
+              Masuk
+            </Link>
+            <Link
+              to="/register"
+              className="rounded-lg bg-[#CDF178] px-2.5 min-[360px]:px-4 sm:px-6 h-8 min-[360px]:h-9 sm:h-10 inline-flex items-center text-[11px] min-[360px]:text-sm font-heading font-semibold text-[#343133] hover:bg-[#9AAD3E] transition-colors"
+            >
+              Daftar
+            </Link>
+          </div>
         </div>
       </div>
     </header>
