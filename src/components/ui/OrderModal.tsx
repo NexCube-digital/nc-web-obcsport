@@ -1,4 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react'
+import { X } from 'lucide-react'
 
 /* -------------------------------------------------------------------------
    Tipe data
@@ -163,10 +164,11 @@ function AmenityIcon({ name }: { name: FacilityIconKey }) {
 /* -------------------------------------------------------------------------
    Komponen
    -------------------------------------------------------------------------
-   Perilaku ukuran:
-   - Mobile (< md): modal boleh di-scroll bila konten lebih tinggi dari layar.
-   - PC (>= md): TIDAK ada scroll. Posisi tetap vertikal (header, foto, isi);
-     hanya foto yang menyusut/membesar mengikuti tinggi layar.
+   Perilaku ukuran (SEMUA ukuran layar, TIDAK ada scroll):
+   - Modal overflow-hidden dan tinggi dibatasi layar (dvh).
+   - Header & isi punya tinggi tetap (shrink-0); hanya FOTO yang menyusut
+     bila layar pendek, dan membesar sampai tinggi idealnya bila layar lega.
+   - Di layar PC (>= lg, mis. 1280x800) modal dibuat lebih lebar.
    ------------------------------------------------------------------------- */
 function OrderModal({ facility, onClose, onOrder }: OrderModalProps): ReactNode {
   const [selectedSport, setSelectedSport] = useState<string>('')
@@ -193,20 +195,21 @@ function OrderModal({ facility, onClose, onOrder }: OrderModalProps): ReactNode 
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-[#343133]/40 p-4"
+      className="fixed inset-0 z-50 flex h-dvh items-center justify-center overflow-hidden bg-[#343133]/40 p-3 sm:p-4"
       onClick={onClose}
     >
+      {/* Modal diperbesar: md 960px, lg 1100px. overflow-hidden => tidak bisa di-scroll di semua ukuran */}
       <div
         role="dialog"
         aria-modal="true"
         aria-labelledby="order-modal-title"
         onClick={(e) => e.stopPropagation()}
-        className="relative flex w-full max-w-[902px] max-h-[calc(100dvh-32px)] flex-col overflow-y-auto rounded-3xl bg-[#FDFCF7] shadow-[0_8px_32px_rgba(0,0,0,0.2)] md:max-w-[960px] md:overflow-hidden"
+        className="relative flex max-h-[calc(100dvh-24px)] w-full max-w-[902px] flex-col overflow-hidden rounded-3xl bg-[#FDFCF7] shadow-[0_8px_32px_rgba(0,0,0,0.2)] sm:max-h-[calc(100dvh-32px)] md:max-w-[960px] lg:max-w-[1100px]"
       >
         {/* ================= Header ================= */}
-        <header className="flex shrink-0 items-center gap-3 bg-white px-6 pt-7 pb-5 md:pt-5 md:pb-4">
+        <header className="flex shrink-0 items-center gap-2.5 bg-white px-4 py-3 sm:gap-3 sm:px-6 sm:pt-5 sm:pb-4 md:pt-4 md:pb-3 lg:px-8">
           <div
-            className={`${FONT_MONTSERRAT} flex h-[46px] w-[46px] shrink-0 items-center justify-center rounded-full bg-[#004000] text-[28px] font-bold leading-none text-white`}
+            className={`${FONT_MONTSERRAT} flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-obc-green text-xl font-bold leading-none text-white`}
             aria-hidden="true"
           >
             i
@@ -214,11 +217,11 @@ function OrderModal({ facility, onClose, onOrder }: OrderModalProps): ReactNode 
           <div className="flex-1">
             <h2
               id="order-modal-title"
-              className={`${FONT_MONTSERRAT} text-[28px] font-semibold leading-8 text-black`}
+              className={`${FONT_MONTSERRAT} text-lg font-semibold leading-5 text-black sm:text-xl`}
             >
               {facility.name}
             </h2>
-            <p className="font-heading text-lg leading-6 text-black">
+            <p className="font-heading text-xs leading-4 text-black sm:text-sm">
               Pilih kategori olahraga yang Anda mau
             </p>
           </div>
@@ -226,16 +229,18 @@ function OrderModal({ facility, onClose, onOrder }: OrderModalProps): ReactNode 
             type="button"
             onClick={onClose}
             aria-label="Tutup"
-            className="mr-6 flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center rounded-full bg-[#CDF178] font-heading text-sm text-[#343133] transition-colors hover:bg-[#9AAD3E]"
+            className="flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-full border border-[#D4D4D4] bg-white text-obc-charcoal transition-colors hover:border-[#9AAD3E] hover:bg-[#F1F4EA] hover:text-obc-green focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-obc-olive"
           >
-            X
+            <X size={19} strokeWidth={2.25} aria-hidden="true" />
           </button>
         </header>
 
         {/* ================= Foto =================
-            Mobile: tinggi tetap. PC: mengisi sisa ruang, menyusut hanya
-            bila layar pendek (minimal 150px). */}
-        <div className="relative h-[200px] shrink-0 sm:h-[340px] md:h-auto md:min-h-[150px] md:flex-1 md:shrink">
+            Diperbesar: tinggi ideal mengikuti layar (clamp), dan boleh
+            menyusut (shrink) sampai min-h agar modal tidak pernah overflow.
+            Catatan: pada layar yang sangat pendek (< ~480px tinggi), min-h
+            bisa membuat isi terpotong; turunkan min-h bila perlu. */}
+        <div className="relative h-[clamp(180px,34dvh,420px)] min-h-[96px] shrink overflow-hidden md:h-[clamp(220px,52dvh,560px)] md:min-h-[150px]">
           <img
             src={facility.image}
             alt={facility.name}
@@ -244,12 +249,12 @@ function OrderModal({ facility, onClose, onOrder }: OrderModalProps): ReactNode 
         </div>
 
         {/* ================= Isi ================= */}
-        <div className="shrink-0 px-6 pb-8 pt-7 sm:px-12 md:pb-5 md:pt-5">
+        <div className="shrink-0 px-5 pb-5 pt-4 sm:px-12 sm:pb-6 sm:pt-5 md:pb-5 md:pt-5 lg:px-14">
           <h3 className="font-heading text-base text-black">Pilih Cabang Olahraga</h3>
 
           {/* Pilihan cabang olahraga */}
           <div
-            className="mt-4 flex flex-wrap gap-2.5 md:mt-3"
+            className="mt-3 flex flex-wrap gap-2.5"
             role="radiogroup"
             aria-label="Cabang olahraga"
           >
@@ -276,7 +281,7 @@ function OrderModal({ facility, onClose, onOrder }: OrderModalProps): ReactNode 
           </div>
 
           {/* Spesifikasi */}
-          <div className="mt-8 rounded-xl border border-dashed border-[#343133] px-8 py-8 md:mt-5 md:py-5">
+          <div className="mt-4 rounded-xl border border-dashed border-[#343133] px-5 py-3 sm:px-8 sm:py-4 md:mt-4">
             <p className="font-heading text-sm leading-[21px] text-black">
               <strong className="font-semibold">Spesifikasi {facility.name}</strong>:{' '}
               {facility.specification}
@@ -284,7 +289,7 @@ function OrderModal({ facility, onClose, onOrder }: OrderModalProps): ReactNode 
           </div>
 
           {/* Fasilitas */}
-          <h4 className={`${FONT_MONTSERRAT} mt-6 text-xs font-bold text-[#265021] md:mt-4`}>
+          <h4 className={`${FONT_MONTSERRAT} mt-4 text-xs font-bold text-[#265021]`}>
             Fasilitas Lapangan
           </h4>
           <ul className="mt-2 flex flex-wrap gap-2">
@@ -306,7 +311,7 @@ function OrderModal({ facility, onClose, onOrder }: OrderModalProps): ReactNode 
             type="button"
             onClick={() => onOrder(facility.id, selectedSport)}
             disabled={!selectedSport}
-            className="mx-auto mt-8 block h-10 w-full max-w-[370px] cursor-pointer rounded-md bg-[#CDF178] font-heading text-xs text-[#343133] transition-colors hover:bg-[#9AAD3E] disabled:cursor-not-allowed disabled:opacity-60 md:mt-5"
+            className="mx-auto mt-5 block h-10 w-full max-w-[370px] cursor-pointer rounded-md bg-[#CDF178] font-heading text-xs text-[#343133] transition-colors hover:bg-[#9AAD3E] disabled:cursor-not-allowed disabled:opacity-60"
           >
             Pesan Sekarang
           </button>

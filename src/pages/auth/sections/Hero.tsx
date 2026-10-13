@@ -43,7 +43,7 @@ function Hero() {
 				}
 			`}</style>
 
-			<section className="relative h-[520px] overflow-hidden bg-[#E9E7E0] md:hidden">
+			<section className="relative min-h-[calc(100svh-4rem)] min-[360px]:min-h-[calc(100svh-5rem)] sm:min-h-[calc(100svh-6.25rem)] overflow-hidden bg-[#E9E7E0] md:hidden">
 				<img
 					key={activeSlide}
 					src={HERO_IMAGES[activeSlide]}
@@ -59,7 +59,7 @@ function Hero() {
 					}}
 				/>
 
-				<div className="absolute inset-x-0 bottom-0 px-6 pb-8 text-center text-white">
+				<div className="absolute inset-x-0 bottom-0 px-6 pb-32 text-center text-white">
 					<h1 className="line-clamp-3 font-heading text-2xl font-bold leading-tight">
 						Fasilitas Olahraga Premium Dalam Genggaman Anda
 					</h1>
@@ -91,8 +91,8 @@ function Hero() {
 				</div>
 			</section>
 
-			<section className="hidden border-y border-[#D4D4D4] bg-[#FDFCF7] md:block">
-				<div className="mx-auto grid max-w-[1248px] items-center gap-8 px-4 py-10 sm:px-6 sm:py-14 lg:grid-cols-2 lg:gap-12 lg:py-20">
+			<section className="hidden border-y border-[#D4D4D4] bg-[#FDFCF7] md:flex md:min-h-[calc(100svh-6.25rem)] md:items-center">
+				<div className="mx-auto grid max-w-[1248px] items-center gap-8 px-4 py-10 sm:px-6 sm:py-14 md:py-16 lg:grid-cols-2 lg:gap-16 lg:py-24">
 					<div className="text-center lg:text-left">
 						<span className="inline-block rounded-full bg-[#E8EDE3] px-3 py-1.5 font-heading text-[10px] font-bold tracking-wide text-[#404F14] sm:px-4 sm:py-2 sm:text-xs">
 							PROMOSI DAN SEWA LAPANGAN TERBAIK
@@ -118,7 +118,7 @@ function Hero() {
 						</div>
 					</div>
 
-					<div className="relative mx-auto aspect-[534/418] w-full max-w-[534px] overflow-hidden rounded-2xl bg-[#E9E7E0] shadow-[0_18px_40px_rgba(52,49,51,0.08)] sm:rounded-3xl lg:ml-auto lg:mr-0">
+					<div className="relative mx-auto aspect-[534/418] w-full max-w-[580px] overflow-hidden rounded-2xl bg-[#E9E7E0] shadow-[0_18px_40px_rgba(52,49,51,0.08)] sm:rounded-3xl lg:ml-auto lg:mr-0">
 						<img
 							key={activeSlide}
 							src={HERO_IMAGES[activeSlide]}

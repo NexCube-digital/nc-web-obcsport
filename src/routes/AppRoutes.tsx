@@ -4,6 +4,7 @@ import { Route } from 'react-router-dom'
 const LandingPage = lazy(() => import('../pages/auth/LandingPage'))
 const Login = lazy(() => import('../pages/auth/Login'))
 const Register = lazy(() => import('../pages/auth/Register'))
+const ForgetPassword = lazy(() => import('../pages/auth/ForgetPassword'))
 const CheckoutPage = lazy(() => import('../pages/orders/CheckoutPage'))
 const PaymentPage = lazy(() => import('../pages/orders/PaymentPage'))
 const SettingPage = lazy(() => import('../pages/account/SettingPage'))
@@ -24,6 +25,7 @@ const AppRoutes = (
 	<>
 		<Route path="/register" element={<Register />} />
 		<Route path="/login" element={<Login />} />
+		<Route path="/forgot-password" element={<ForgetPassword />} />
 		<Route path="/" element={<LandingPage />} />
 		<Route path="/pengaturan" element={<SettingPage />} />
 		<Route path="/profil-mobile" element={<ProfileMobile />} />

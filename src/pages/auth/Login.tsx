@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { Eye, EyeOff } from 'lucide-react'
 import loginIllustration from '../../assets/figma/login.jpg'
 import logo from '../../assets/logo/unit bisnis/LOGO OBC SPORT CENTER.png'
 
@@ -15,47 +16,21 @@ function GoogleIcon() {
   )
 }
 
-/* Ikon mata (toggle kata sandi) - versi mobile */
-function EyeIcon({ visible }: { visible: boolean }) {
-  return (
-    <svg
-      width="22"
-      height="22"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      {visible ? (
-        <>
-          <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z" />
-          <circle cx="12" cy="12" r="3" />
-        </>
-      ) : (
-        <>
-          <path d="M9.9 4.24A9.1 9.1 0 0 1 12 4c6.5 0 10 8 10 8a17.5 17.5 0 0 1-2.16 3.19" />
-          <path d="M6.61 6.61A17.1 17.1 0 0 0 2 12s3.5 8 10 8a9.7 9.7 0 0 0 5.39-1.61" />
-          <path d="M14.12 14.12a3 3 0 1 1-4.24-4.24" />
-          <path d="m2 2 20 20" />
-        </>
-      )}
-    </svg>
-  )
+function PasswordVisibilityIcon({ visible }: { visible: boolean }) {
+  const Icon = visible ? EyeOff : Eye
+  return <Icon size={22} aria-hidden="true" />
 }
 
 function LoginPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [rememberMe, setRememberMe] = useState(false)
   const navigate = useNavigate()
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
-    // TODO: sambungkan ke services/authService.js (POST /login)
-    console.log({ email, password })
+    navigate('/home')
   }
 
   const handleGoogleLogin = () => {
@@ -92,7 +67,9 @@ function LoginPage() {
           </label>
           <input
             id="m-email"
-            type="email"
+            type="text"
+            inputMode="email"
+            autoComplete="username"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="nama@email.com"
@@ -117,15 +94,24 @@ function LoginPage() {
               aria-label={showPassword ? 'Sembunyikan kata sandi' : 'Tampilkan kata sandi'}
               className="absolute right-4 top-1/2 -translate-y-1/2 text-[#343133] cursor-pointer"
             >
-              <EyeIcon visible={showPassword} />
+              <PasswordVisibilityIcon visible={showPassword} />
             </button>
           </div>
 
-          {/* TODO: pastikan route /forgot-password sudah ada */}
-          <div className="mt-[clamp(6px,1.8vh,20px)] text-right">
+          <div className="mt-[clamp(6px,1.8vh,20px)] flex items-center justify-between gap-3">
+            <label htmlFor="m-remember" className="inline-flex items-center gap-2 text-xs text-[#343133]">
+              <input
+                id="m-remember"
+                type="checkbox"
+                checked={rememberMe}
+                onChange={(e) => setRememberMe(e.target.checked)}
+                className="h-4 w-4 accent-[#404F14]"
+              />
+              Ingat saya
+            </label>
             <Link
               to="/forgot-password"
-              className="text-xs font-bold text-[#404F14] underline underline-offset-2"
+              className="shrink-0 text-xs font-bold text-[#404F14] underline underline-offset-2"
             >
               Lupa Kata Sandi?
             </Link>
@@ -165,7 +151,7 @@ function LoginPage() {
         </p>
       </div>
 
-        {/* ===================== DESKTOP (>= md) — satu layar, tanpa scroll ===================== */}
+      {/*  DESKTOP (>= md) — satu layar, tanpa scroll  */}
       <div className="hidden md:flex h-[100dvh] flex-col overflow-hidden bg-white font-body text-[#343133]">
         <main className="flex min-h-0 flex-1 items-center">
           <section className="mx-auto grid w-full max-w-[1400px] items-center gap-10 px-8 py-[clamp(8px,2vh,32px)] lg:grid-cols-[1fr_clamp(460px,34vw,560px)] lg:gap-[clamp(40px,6vw,96px)]">
@@ -232,16 +218,33 @@ function LoginPage() {
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       placeholder="Masukan kata sandi Anda"
-                      className="w-full rounded-lg border border-[#D4D4D4] bg-[#FDFCF7] px-4 py-[clamp(9px,1.9vh,18px)] pr-28 text-[clamp(13px,1.9vh,17px)] placeholder:text-[#343133] focus:outline-none focus:border-[#404F14]"
+                      className="w-full rounded-lg border border-[#D4D4D4] bg-[#FDFCF7] px-4 py-[clamp(9px,1.9vh,18px)] pr-12 text-[clamp(13px,1.9vh,17px)] placeholder:text-[#343133] focus:outline-none focus:border-[#404F14]"
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword((prev) => !prev)}
-                      className="absolute right-4 top-1/2 -translate-y-1/2 text-[clamp(12px,1.6vh,14px)] font-heading font-bold text-[#404F14] cursor-pointer"
+                      aria-label={showPassword ? 'Sembunyikan kata sandi' : 'Tampilkan kata sandi'}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer p-2 text-[#404F14]"
                     >
-                      {showPassword ? 'Sembunyikan' : 'Tampilkan'}
+                      <PasswordVisibilityIcon visible={showPassword} />
                     </button>
                   </div>
+                </div>
+
+                <div className="flex items-center justify-between gap-3">
+                  <label htmlFor="remember" className="inline-flex items-center gap-2 text-[clamp(12px,1.7vh,15px)] text-[#343133]">
+                    <input
+                      id="remember"
+                      type="checkbox"
+                      checked={rememberMe}
+                      onChange={(e) => setRememberMe(e.target.checked)}
+                      className="h-4 w-4 accent-[#404F14]"
+                    />
+                    Ingat saya
+                  </label>
+                  <Link to="/forgot-password" className="shrink-0 text-[clamp(12px,1.7vh,15px)] font-bold text-[#404F14] underline underline-offset-2">
+                    Lupa Kata Sandi?
+                  </Link>
                 </div>
 
                 <button

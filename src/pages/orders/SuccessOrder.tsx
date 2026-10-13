@@ -1,6 +1,8 @@
+import { useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import NavbarDashboard from '../../components/layout/Navbar'
 import Footer from '../../components/layout/LandingFooter'
+import TestimonialModal from '../../components/ui/TestimonialModal'
 import lapangF1 from '../../assets/layanan/Lapang F1.png'
 
 /* -------------------------------------------------------------------------
@@ -49,8 +51,26 @@ function SuccesOrder() {
   const navigate = useNavigate()
   const location = useLocation()
   const data = { ...DEFAULTS, ...((location.state as SuccessState | null) ?? {}) }
+  const reviewStorageKey = `obc:review:${data.bookingCode}`
+  const [reviewStatus, setReviewStatus] = useState(
+    () => localStorage.getItem(reviewStorageKey) ?? 'unreviewed',
+  )
+  const [isTestimonialOpen, setIsTestimonialOpen] = useState(
+    () => localStorage.getItem(reviewStorageKey) !== 'reviewed',
+  )
 
   const total = data.subtotal + data.serviceFee - data.promo
+
+  const handleDeferReview = () => {
+    localStorage.setItem(reviewStorageKey, 'pending')
+    setReviewStatus('pending')
+    setIsTestimonialOpen(false)
+  }
+
+  const handleReviewSubmitted = () => {
+    localStorage.setItem(reviewStorageKey, 'reviewed')
+    setReviewStatus('reviewed')
+  }
 
   const handleDownloadTicket = () => {
     // TODO: unduh e-ticket PDF dari API (services/ticketService.js)
@@ -97,6 +117,19 @@ function SuccesOrder() {
             Tunjukkan QR Code ini di Kasir
           </p>
         </div>
+
+        {reviewStatus === 'pending' && (
+          <div className="mt-4 flex items-center justify-between gap-3 rounded-xl border border-[#D4D4D4] bg-[#FDFCF7] p-4">
+            <p className="text-sm font-heading font-semibold text-[#343133]">Ulasan Anda masih tertunda</p>
+            <button
+              type="button"
+              onClick={() => setIsTestimonialOpen(true)}
+              className="shrink-0 font-heading text-sm font-bold text-[#404F14] underline underline-offset-2"
+            >
+              Tulis ulasan
+            </button>
+          </div>
+        )}
 
         {/* Rincian pembayaran */}
         <section className="mt-4 rounded-2xl border border-[#D4D4D4] bg-white p-5 shadow-[0_4px_16px_rgba(0,0,0,0.08)]">
@@ -228,6 +261,19 @@ function SuccesOrder() {
                 </div>
               </div>
 
+              {reviewStatus === 'pending' && (
+                <div className="mt-4 flex items-center justify-between gap-3 rounded-xl border border-[#D4D4D4] bg-[#FDFCF7] p-4">
+                  <p className="text-sm font-heading font-semibold text-[#343133]">Ulasan Anda masih tertunda</p>
+                  <button
+                    type="button"
+                    onClick={() => setIsTestimonialOpen(true)}
+                    className="shrink-0 font-heading text-sm font-bold text-[#404F14] underline underline-offset-2"
+                  >
+                    Tulis ulasan
+                  </button>
+                </div>
+              )}
+
               <div className="mt-6 flex flex-wrap items-center gap-4">
                 <button
                   type="button"
@@ -315,6 +361,15 @@ function SuccesOrder() {
 
         <Footer />
       </div>
+
+      <TestimonialModal
+        isOpen={isTestimonialOpen}
+        onClose={() => setIsTestimonialOpen(false)}
+        onDefer={handleDeferReview}
+        facilityName={data.facility}
+        dateLabel={data.schedule}
+        onSubmit={handleReviewSubmitted}
+      />
     </>
   )
 }

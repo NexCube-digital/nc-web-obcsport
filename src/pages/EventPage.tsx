@@ -1,6 +1,6 @@
-import { MessageCircle } from 'lucide-react'
 import NavbarDashboard from '../components/layout/Navbar'
 import Footer from '../components/layout/LandingFooter'
+import whatsappIcon from '../assets/icon/whatsapp2.svg'
 
 /* -------------------------------------------------------------------------
    Tipe data
@@ -122,7 +122,7 @@ function OrderPage() {
             <div className="mt-6 p-4">
               <div className="flex items-center gap-2">
                 <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#25D366] text-white">
-                  <MessageCircle size={14} />
+                  <img src={whatsappIcon} alt="" aria-hidden="true" className="h-4 w-4 brightness-0 invert" />
                 </span>
                 <span className="font-heading font-semibold text-sm text-[#343133]">
                   Bpk. Hermawan (PIC Event)

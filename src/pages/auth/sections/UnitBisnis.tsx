@@ -74,7 +74,7 @@ function UnitCard({ unit, isFavorite, onToggleFavorite, className = '' }: UnitCa
 
 	return (
 		<article
-			className={`group relative flex cursor-pointer flex-col rounded-[20px] bg-white p-3 pb-4 shadow-[0_4px_16px_rgba(0,0,0,0.18)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_12px_28px_rgba(0,64,0,0.18)] md:p-4 md:pb-5 ${className}`}
+			className={`group relative flex cursor-pointer flex-col rounded-[20px] bg-white p-3 pb-4 shadow-[0_4px_16px_rgba(0,0,0,0.18)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_12px_28px_rgba(0,64,0,0.18)] md:p-4 md:pb-5 lg:p-3 lg:pb-4 ${className}`}
 		>
 			{/* Stretched link ke halaman unit */}
 			{unit.isExternal ? (
@@ -103,7 +103,7 @@ function UnitCard({ unit, isFavorite, onToggleFavorite, className = '' }: UnitCa
 			</button>
 
 			{/* Logo di tengah */}
-			<div className="pointer-events-none relative z-10 mx-auto mt-4 grid h-[96px] w-[96px] place-items-center md:mt-3 md:h-[clamp(96px,17svh,144px)] md:w-[clamp(96px,17svh,144px)]">
+			<div className="pointer-events-none relative z-10 mx-auto mt-4 grid h-[96px] w-[96px] place-items-center md:mt-3 md:h-[clamp(96px,17svh,144px)] md:w-[clamp(96px,17svh,144px)] lg:mt-2 lg:h-[clamp(88px,13svh,144px)] lg:w-[clamp(88px,13svh,144px)]">
 				<img
 					className="block max-h-full max-w-full object-contain transition-transform duration-300 group-hover:scale-105"
 					src={unit.image}
@@ -114,9 +114,9 @@ function UnitCard({ unit, isFavorite, onToggleFavorite, className = '' }: UnitCa
 			</div>
 
 			{/* Nama + tombol, rata kiri seperti desain */}
-			<div className="relative z-10 mt-3 w-full px-1 md:mt-4 md:px-2">
+			<div className="relative z-10 mt-3 w-full px-1 md:mt-4 md:px-2 lg:mt-2">
 				<h3 className={`${FONT} text-[15px] font-bold leading-tight text-black md:text-[17px]`}>{unit.name}</h3>
-				<div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1.5">
+				<div className="mt-2 flex flex-wrap items-center justify-between gap-x-3 gap-y-1.5">
 					{BookingLink}
 					{DetailLink}
 				</div>
@@ -134,7 +134,7 @@ export default function UnitBisnis() {
 
 	return (
 		<section
-			className="mx-auto flex w-[calc(100%-32px)] max-w-[1280px] flex-col justify-center py-10 md:w-[calc(100%-48px)] md:py-14"
+			className="mx-auto flex min-h-[100svh] w-[calc(100%-32px)] max-w-[1280px] flex-col justify-center py-10 md:w-[calc(100%-48px)] md:py-14 lg:py-6"
 			id="layanan"
 		>
 			{/* Label kecil kapital abu-abu */}
@@ -147,7 +147,7 @@ export default function UnitBisnis() {
 			<div className="mx-auto mt-4 w-full max-w-[812px] border-t-2 border-[#00000080]" aria-hidden="true" />
 
 			{/* Baris 1: 4 unit */}
-			<div className="mt-8 grid grid-cols-2 gap-4 md:gap-6 lg:grid-cols-4">
+			<div className="mt-8 grid grid-cols-2 gap-4 md:gap-6 lg:grid-cols-4 lg:gap-4">
 				{units.slice(0, 4).map((unit) => (
 					<UnitCard
 						key={unit.name}
@@ -159,7 +159,7 @@ export default function UnitBisnis() {
 			</div>
 
 			{/* Baris 2: 3 unit, di tengah */}
-			<div className="mx-auto mt-4 grid w-full grid-cols-2 gap-4 md:mt-6 md:gap-6 lg:max-w-[calc(3*280px+2*1.5rem)] lg:grid-cols-3">
+			<div className="mx-auto mt-4 grid w-full grid-cols-2 gap-4 md:mt-6 md:gap-6 lg:mt-4 lg:max-w-[calc(3*280px+2*1.5rem)] lg:grid-cols-3 lg:gap-4">
 				{units.slice(4).map((unit) => (
 					<UnitCard
 						key={unit.name}

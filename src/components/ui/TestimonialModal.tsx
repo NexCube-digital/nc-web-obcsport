@@ -13,6 +13,7 @@ export interface TestimonialPayload {
 interface TestimonialModalProps {
   isOpen: boolean
   onClose: () => void
+  onDefer: () => void
   /** Contoh: "Lapangan F1" */
   facilityName: string
   /** Contoh: "Senin, 12 Januari 2026" */
@@ -27,6 +28,7 @@ const DEFAULT_RATING = 5
 function TestimonialModal({
   isOpen,
   onClose,
+  onDefer,
   facilityName,
   dateLabel,
   onSubmit,
@@ -44,13 +46,9 @@ function TestimonialModal({
     setPhotos([])
   }, [isOpen])
 
-  // Tutup dengan Esc + kunci scroll halaman saat modal terbuka
+  // Kunci scroll halaman selama modal aktif; modal hanya ditutup setelah ulasan dikirim atau ditunda.
   useEffect(() => {
     if (!isOpen) return
-
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') onClose()
-    }
 
     const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth
     const previousOverflow = document.body.style.overflow
@@ -62,14 +60,12 @@ function TestimonialModal({
       document.body.style.paddingRight = `${currentPaddingRight + scrollbarWidth}px`
     }
     document.body.style.overflow = 'hidden'
-    document.addEventListener('keydown', handleKeyDown)
 
     return () => {
       document.body.style.overflow = previousOverflow
       document.body.style.paddingRight = previousPaddingRight
-      document.removeEventListener('keydown', handleKeyDown)
     }
-  }, [isOpen, onClose])
+  }, [isOpen])
 
   if (!isOpen) return null
 
@@ -86,7 +82,6 @@ function TestimonialModal({
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-[#343133]/40 p-4"
-      onClick={onClose}
     >
       {/* Ukuran PC pas: 556 x 525, tanpa scroll */}
       <section
@@ -188,14 +183,23 @@ function TestimonialModal({
           </button>
 
           {/* Kirim */}
-          <button
-            type="button"
-            onClick={handleSubmit}
-            disabled={rating === 0}
-            className="mx-auto mt-[50px] block h-10 w-full max-w-[379px] cursor-pointer rounded-md bg-[#CDF178] font-heading text-xs font-bold text-[#404F14] transition-colors hover:bg-[#9AAD3E] disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            Konfirmasi Ulasan
-          </button>
+          <div className="mx-auto mt-[50px] flex w-full max-w-[379px] items-center gap-3">
+            <button
+              type="button"
+              onClick={onDefer}
+              className="h-10 shrink-0 cursor-pointer rounded-md border border-[#D4D4D4] bg-white px-4 font-heading text-xs font-bold text-[#343133] transition-colors hover:bg-[#F5FAF3]"
+            >
+              Nanti
+            </button>
+            <button
+              type="button"
+              onClick={handleSubmit}
+              disabled={rating === 0}
+              className="h-10 flex-1 cursor-pointer rounded-md bg-[#CDF178] font-heading text-xs font-bold text-[#404F14] transition-colors hover:bg-[#9AAD3E] disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              Konfirmasi Ulasan
+            </button>
+          </div>
         </div>
       </section>
     </div>

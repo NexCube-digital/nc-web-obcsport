@@ -11,8 +11,8 @@ function Booking() {
 	const navigate = useNavigate()
 
 	return (
-		<section className="border-y border-[#D4D4D4] bg-white">
-			<div className="mx-auto grid max-w-[1248px] items-center gap-8 px-4 py-10 sm:px-6 lg:grid-cols-2 lg:gap-10">
+		<section className="border-y border-[#D4D4D4] bg-white lg:flex lg:min-h-[calc(100svh-6.25rem)] lg:items-center">
+			<div className="mx-auto grid max-w-[1248px] items-center gap-8 px-4 py-10 sm:px-6 lg:grid-cols-2 lg:gap-16 lg:py-24">
 				<div className="flex h-full flex-col lg:min-h-[480px]">
 					<span className="inline-block self-start rounded-full bg-[#E8EDE3] px-4 py-2 font-heading text-xs font-medium text-[#404F14]">
 						OBC Sport
@@ -35,7 +35,7 @@ function Booking() {
 					</button>
 				</div>
 
-				<div className="mx-auto flex w-full max-w-[468px] gap-3 sm:gap-4 lg:mr-0 lg:justify-end">
+				<div className="mx-auto flex w-full max-w-[520px] gap-3 sm:gap-4 lg:mr-0 lg:justify-end">
 					<div className="flex min-w-0 flex-[259] flex-col gap-3 pt-8 sm:gap-5 sm:pt-14">
 						<img
 							src={lapangF1}
