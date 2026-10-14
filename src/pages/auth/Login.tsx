@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Eye, EyeOff } from 'lucide-react'
+import { Eye, EyeOff, House } from 'lucide-react'
 import loginIllustration from '../../assets/figma/login.jpg'
 import logo from '../../assets/logo/unit bisnis/LOGO OBC SPORT CENTER.png'
 
@@ -41,7 +41,15 @@ function LoginPage() {
   return (
     <>
       {/* ===================== MOBILE (< md) — satu layar, tanpa scroll ===================== */}
-      <div className="md:hidden flex h-[100dvh] flex-col justify-center overflow-hidden bg-[#FDFCF7] px-6 py-[clamp(8px,2.5vh,40px)] font-heading text-[#343133]">
+      <div className="relative flex h-[100dvh] flex-col justify-center overflow-hidden bg-[#FDFCF7] px-6 py-[clamp(8px,2.5vh,40px)] font-heading text-[#343133] md:hidden">
+        <Link
+          to="/"
+          aria-label="Kembali ke Home"
+          className="absolute left-5 top-4 inline-flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-sm font-semibold text-[#404F14] transition-colors hover:bg-[#E8EDE3]"
+        >
+          <House size={17} aria-hidden="true" />
+          Home
+        </Link>
         <Link to="/" className="mx-auto flex shrink-0 items-center gap-3">
           <img
             src={logo}
@@ -152,7 +160,15 @@ function LoginPage() {
       </div>
 
       {/*  DESKTOP (>= md) — satu layar, tanpa scroll  */}
-      <div className="hidden md:flex h-[100dvh] flex-col overflow-hidden bg-white font-body text-[#343133]">
+      <div className="relative hidden h-[100dvh] flex-col overflow-hidden bg-white font-body text-[#343133] md:flex">
+        <Link
+          to="/"
+          aria-label="Kembali ke Home"
+          className="absolute left-8 top-6 z-10 inline-flex items-center gap-2 rounded-lg px-2.5 py-2 text-sm font-semibold text-[#404F14] transition-colors hover:bg-[#F5FAF3]"
+        >
+          <House size={18} aria-hidden="true" />
+          Home
+        </Link>
         <main className="flex min-h-0 flex-1 items-center">
           <section className="mx-auto grid w-full max-w-[1400px] items-center gap-10 px-8 py-[clamp(8px,2vh,32px)] lg:grid-cols-[1fr_clamp(460px,34vw,560px)] lg:gap-[clamp(40px,6vw,96px)]">
             {/* Kolom kiri */}

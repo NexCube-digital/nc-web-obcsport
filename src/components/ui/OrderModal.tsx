@@ -7,7 +7,6 @@ import { X } from 'lucide-react'
 export type SportIconKey =
   | 'futsal'
   | 'badminton'
-  | 'voli'
   | 'pickleball'
   | 'basket'
   | 'sepakbola'
@@ -52,6 +51,11 @@ const FONT_MONTSERRAT = "font-['Montserrat',sans-serif]"
 // #004000 Primary Green | #404F14 Secondary Green | #CDF178 Element
 // #9AAD3E hover | #343133 Text Dark | #FDFCF7 background modal
 
+/* Voli sudah dihapus. Filter ini berjaga-jaga bila data lama masih memuatnya.
+   TODO: hapus juga entri voli dari sumber data fasilitas. */
+const isVoli = (sport: SportOption): boolean =>
+  sport.id === 'voli' || (sport.icon as string) === 'voli'
+
 /* -------------------------------------------------------------------------
    Ikon (inline SVG, ikut warna teks via currentColor)
    ------------------------------------------------------------------------- */
@@ -72,13 +76,6 @@ function SportIcon({ name, size = 24 }: { name: SportIconKey; size?: number }) {
         <svg {...common}>
           <path d="M9 3l1.5 5M15 3l-1.5 5M12 3v5M7.5 8h9L14 15h-4L7.5 8z" />
           <path d="M10 15v2h4v-2M10.5 17l.5 4h2l.5-4" />
-        </svg>
-      )
-    case 'voli':
-      return (
-        <svg {...common} strokeWidth={2}>
-          <circle cx="12" cy="12" r="9" />
-          <path d="M12 3c2 3 2.5 6 1 9M3.5 9c3-.5 6 .3 8.5 3M6 19c1-3 3.5-5.5 6-7M21 13c-3 0-6 1-8 3.5M16.5 4.5C15 7 15 9.5 16 12" />
         </svg>
       )
     case 'pickleball':
@@ -164,18 +161,21 @@ function AmenityIcon({ name }: { name: FacilityIconKey }) {
 /* -------------------------------------------------------------------------
    Komponen
    -------------------------------------------------------------------------
-   Perilaku ukuran (SEMUA ukuran layar, TIDAK ada scroll):
-   - Modal overflow-hidden dan tinggi dibatasi layar (dvh).
-   - Header & isi punya tinggi tetap (shrink-0); hanya FOTO yang menyusut
-     bila layar pendek, dan membesar sampai tinggi idealnya bila layar lega.
-   - Di layar PC (>= lg, mis. 1280x800) modal dibuat lebih lebar.
+   Perilaku ukuran:
+   - Modal tingginya dibatasi layar (dvh). Hanya FOTO yang menyusut bila
+     layar pendek (mis. 375x667), dan membesar bila layar lega (mis. 360x800).
+   - Mobile (< sm): tombol cabang olahraga dibuat 2 kolom selebar layar
+     (gaya tombol tetap sama), jarak dan ukuran teks sedikit dirapatkan.
+   - >= sm: ukuran tombol dan jarak sama persis seperti desain awal.
+   - Cadangan: bila isi tetap tidak muat (layar sangat pendek / teks
+     spesifikasi panjang), modal bisa di-scroll dan header tetap menempel.
    ------------------------------------------------------------------------- */
 function OrderModal({ facility, onClose, onOrder }: OrderModalProps): ReactNode {
   const [selectedSport, setSelectedSport] = useState<string>('')
 
   // Reset pilihan setiap kali fasilitas berganti
   useEffect(() => {
-    if (facility) setSelectedSport(facility.sports[0]?.id ?? '')
+    if (facility) setSelectedSport(facility.sports.find((s) => !isVoli(s))?.id ?? '')
   }, [facility])
 
   // Tutup dengan Esc + kunci scroll halaman saat modal terbuka
@@ -193,31 +193,33 @@ function OrderModal({ facility, onClose, onOrder }: OrderModalProps): ReactNode 
 
   if (!facility) return null
 
+  const sports = facility.sports.filter((s) => !isVoli(s))
+
   return (
     <div
       className="fixed inset-0 z-50 flex h-dvh items-center justify-center overflow-hidden bg-[#343133]/40 p-3 sm:p-4"
       onClick={onClose}
     >
-      {/* Modal diperbesar: md 960px, lg 1100px. overflow-hidden => tidak bisa di-scroll di semua ukuran */}
+      {/* Modal: md 960px, lg 1100px. Scroll hanya sebagai cadangan */}
       <div
         role="dialog"
         aria-modal="true"
         aria-labelledby="order-modal-title"
         onClick={(e) => e.stopPropagation()}
-        className="relative flex max-h-[calc(100dvh-24px)] w-full max-w-[902px] flex-col overflow-hidden rounded-3xl bg-[#FDFCF7] shadow-[0_8px_32px_rgba(0,0,0,0.2)] sm:max-h-[calc(100dvh-32px)] md:max-w-[960px] lg:max-w-[1100px]"
+        className="relative flex max-h-[calc(100dvh-24px)] w-full max-w-[902px] flex-col overflow-y-auto overflow-x-hidden rounded-3xl bg-[#FDFCF7] shadow-[0_8px_32px_rgba(0,0,0,0.2)] sm:max-h-[calc(100dvh-32px)] md:max-w-[960px] lg:max-w-[1100px]"
       >
         {/* ================= Header ================= */}
-        <header className="flex shrink-0 items-center gap-2.5 bg-white px-4 py-3 sm:gap-3 sm:px-6 sm:pt-5 sm:pb-4 md:pt-4 md:pb-3 lg:px-8">
+        <header className="sticky top-0 z-10 flex shrink-0 items-center gap-2.5 bg-white px-4 py-3 sm:gap-3 sm:px-6 sm:pt-5 sm:pb-4 md:pt-4 md:pb-3 lg:px-8">
           <div
             className={`${FONT_MONTSERRAT} flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-obc-green text-xl font-bold leading-none text-white`}
             aria-hidden="true"
           >
             i
           </div>
-          <div className="flex-1">
+          <div className="min-w-0 flex-1">
             <h2
               id="order-modal-title"
-              className={`${FONT_MONTSERRAT} text-lg font-semibold leading-5 text-black sm:text-xl`}
+              className={`${FONT_MONTSERRAT} truncate text-lg font-semibold leading-5 text-black sm:text-xl`}
             >
               {facility.name}
             </h2>
@@ -236,10 +238,8 @@ function OrderModal({ facility, onClose, onOrder }: OrderModalProps): ReactNode 
         </header>
 
         {/* ================= Foto =================
-            Diperbesar: tinggi ideal mengikuti layar (clamp), dan boleh
-            menyusut (shrink) sampai min-h agar modal tidak pernah overflow.
-            Catatan: pada layar yang sangat pendek (< ~480px tinggi), min-h
-            bisa membuat isi terpotong; turunkan min-h bila perlu. */}
+            Tinggi ideal mengikuti layar (clamp) dan menyusut lebih dulu
+            sebelum bagian lain, sampai batas min-h. */}
         <div className="relative h-[clamp(180px,34dvh,420px)] min-h-[96px] shrink overflow-hidden md:h-[clamp(220px,52dvh,560px)] md:min-h-[150px]">
           <img
             src={facility.image}
@@ -249,16 +249,16 @@ function OrderModal({ facility, onClose, onOrder }: OrderModalProps): ReactNode 
         </div>
 
         {/* ================= Isi ================= */}
-        <div className="shrink-0 px-5 pb-5 pt-4 sm:px-12 sm:pb-6 sm:pt-5 md:pb-5 md:pt-5 lg:px-14">
+        <div className="shrink-0 px-5 pb-4 pt-3 sm:px-12 sm:pb-6 sm:pt-5 md:pb-5 md:pt-5 lg:px-14">
           <h3 className="font-heading text-base text-black">Pilih Cabang Olahraga</h3>
 
-          {/* Pilihan cabang olahraga */}
+          {/* Pilihan cabang olahraga: 2 kolom di mobile, ukuran asli di >= sm */}
           <div
-            className="mt-3 flex flex-wrap gap-2.5"
+            className="mt-2.5 grid grid-cols-2 gap-2 sm:mt-3 sm:flex sm:flex-wrap sm:gap-2.5"
             role="radiogroup"
             aria-label="Cabang olahraga"
           >
-            {facility.sports.map((sport) => {
+            {sports.map((sport) => {
               const active = sport.id === selectedSport
               return (
                 <button
@@ -267,7 +267,7 @@ function OrderModal({ facility, onClose, onOrder }: OrderModalProps): ReactNode 
                   role="radio"
                   aria-checked={active}
                   onClick={() => setSelectedSport(sport.id)}
-                  className={`flex h-[42px] w-[156px] cursor-pointer items-center justify-center gap-4 rounded-xl bg-white font-heading text-sm text-[#343133] transition-shadow ${
+                  className={`flex h-10 w-full min-w-0 cursor-pointer items-center justify-center gap-3 rounded-xl bg-white font-heading text-sm text-[#343133] transition-shadow sm:h-[42px] sm:w-[156px] sm:gap-4 ${
                     active
                       ? 'border border-[#004000]'
                       : 'border border-transparent shadow-[0_2px_8px_rgba(0,0,0,0.12)] hover:shadow-[0_3px_10px_rgba(0,0,0,0.18)]'
@@ -281,18 +281,18 @@ function OrderModal({ facility, onClose, onOrder }: OrderModalProps): ReactNode 
           </div>
 
           {/* Spesifikasi */}
-          <div className="mt-4 rounded-xl border border-dashed border-[#343133] px-5 py-3 sm:px-8 sm:py-4 md:mt-4">
-            <p className="font-heading text-sm leading-[21px] text-black">
+          <div className="mt-3 rounded-xl border border-dashed border-[#343133] px-3 py-2.5 sm:mt-4 sm:px-8 sm:py-4">
+            <p className="font-heading text-xs leading-[18px] text-black sm:text-sm sm:leading-[21px]">
               <strong className="font-semibold">Spesifikasi {facility.name}</strong>:{' '}
               {facility.specification}
             </p>
           </div>
 
           {/* Fasilitas */}
-          <h4 className={`${FONT_MONTSERRAT} mt-4 text-xs font-bold text-[#265021]`}>
+          <h4 className={`${FONT_MONTSERRAT} mt-3 text-xs font-bold text-[#265021] sm:mt-4`}>
             Fasilitas Lapangan
           </h4>
-          <ul className="mt-2 flex flex-wrap gap-2">
+          <ul className="mt-2 flex flex-wrap gap-1.5 sm:gap-2">
             {facility.amenities.map((item) => (
               <li
                 key={item.id}
@@ -311,7 +311,7 @@ function OrderModal({ facility, onClose, onOrder }: OrderModalProps): ReactNode 
             type="button"
             onClick={() => onOrder(facility.id, selectedSport)}
             disabled={!selectedSport}
-            className="mx-auto mt-5 block h-10 w-full max-w-[370px] cursor-pointer rounded-md bg-[#CDF178] font-heading text-xs text-[#343133] transition-colors hover:bg-[#9AAD3E] disabled:cursor-not-allowed disabled:opacity-60"
+            className="mx-auto mt-4 block h-10 w-full max-w-[370px] cursor-pointer rounded-md bg-[#CDF178] font-heading text-xs text-[#343133] transition-colors hover:bg-[#9AAD3E] disabled:cursor-not-allowed disabled:opacity-60 sm:mt-5"
           >
             Pesan Sekarang
           </button>

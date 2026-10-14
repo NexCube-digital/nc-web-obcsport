@@ -29,7 +29,7 @@ const FACILITIES: FacilityCard[] = [
 	{
 		id: 'lapangan-f1',
 		name: 'Lapangan F1',
-		description: 'Futsal 1, Badminton, Voli, Pickleball',
+		description: 'Futsal 1, Badminton, Pickleball',
 		badge: 'TERSEDIA',
 		buttonLabel: 'Booking Sekarang',
 		image: lapangF1,
@@ -84,11 +84,12 @@ function Court({ submittedSearch, onPreviewImage, onSelectFacility }: CourtProps
 				Ketersediaan Lapangan Premium
 			</h2>
 
+			
 			<div className="mt-3 grid grid-cols-1 gap-2 min-[300px]:grid-cols-2 min-[360px]:gap-3 sm:gap-4 lg:grid-cols-3">
 				{filteredFacilities.map((facility) => (
 					<div
 						key={facility.id}
-						className="relative flex w-full min-w-0 flex-col overflow-hidden rounded-2xl bg-white shadow-[0_2px_10px_rgba(0,0,0,0.08)]"
+						className="relative flex w-full min-w-0 flex-col overflow-hidden rounded-2xl bg-white shadow-[0_2px_10px_rgba(0,0,0,0.08)] min-[300px]:[&:last-child:nth-child(odd)]:col-span-2 lg:[&:last-child:nth-child(odd)]:col-span-1 sm:min-h-60 lg:min-h-52"
 					>
 						<button
 							type="button"
@@ -96,7 +97,7 @@ function Court({ submittedSearch, onPreviewImage, onSelectFacility }: CourtProps
 							aria-label={`Perbesar gambar ${facility.name}`}
 							className="absolute inset-0 z-10 cursor-zoom-in focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#404F14]"
 						/>
-						<div className="block h-16 w-full overflow-hidden min-[360px]:h-20">
+						<div className="aspect-video w-full shrink-0 overflow-hidden lg:aspect-auto lg:h-36">
 							<img
 								src={facility.image}
 								alt=""
@@ -104,16 +105,17 @@ function Court({ submittedSearch, onPreviewImage, onSelectFacility }: CourtProps
 								loading="lazy"
 							/>
 						</div>
-						<div className="pointer-events-none relative flex flex-1 flex-col px-2.5 pt-2.5 pb-3 min-[360px]:px-3 min-[360px]:pt-3 min-[360px]:pb-4 sm:pb-6">
-							<div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
-								<h3 className="min-w-0 break-words text-sm font-semibold text-[#121212] font-heading">
+						<div className="pointer-events-none relative flex flex-1 flex-col px-2.5 pt-2.5 pb-2.5 min-[360px]:px-3 min-[360px]:pt-3 min-[360px]:pb-3 sm:pb-4">
+							{/* Mobile: nama di atas, badge di bawahnya (selalu rapi). >= sm: sebaris */}
+							<div className="flex flex-col items-start gap-1.5 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-x-2 sm:gap-y-1">
+								<h3 className="min-w-0 break-words text-[13px] font-semibold leading-tight text-[#121212] font-heading min-[360px]:text-sm">
 									{facility.name}
 								</h3>
 								<span className="shrink-0 rounded bg-[#E6F0E0] px-2 py-1 text-[10px] font-bold leading-none text-[#404F14] font-heading">
 									{facility.badge}
 								</span>
 							</div>
-							<p className="mt-2 mb-3 break-words text-xs text-[#6F6B6E] font-heading">
+							<p className="mt-1.5 mb-2.5 break-words text-[11px] leading-4 text-[#6F6B6E] font-heading min-[360px]:text-xs sm:mt-2 sm:mb-3">
 								{facility.description}
 							</p>
 							<button

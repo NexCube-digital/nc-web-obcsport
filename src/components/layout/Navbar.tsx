@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { ShoppingCart } from 'lucide-react'
+import { ChevronDown, History, LogOut, Settings, ShoppingCart } from 'lucide-react'
 import { Link, useLocation } from 'react-router-dom'
 import logo from '../../assets/logo/unit bisnis/LOGO OBC SPORT CENTER.png'
 import CartModal from '../ui/CartModal'
@@ -40,6 +40,12 @@ const LANGUAGES: Language[] = [
   { code: 'ENG', label: 'English' },
 ]
 
+/* Menu dropdown profil */
+const USER_MENU_ITEMS = [
+  { id: 'pengaturan', label: 'Pengaturan', href: '/pengaturan', icon: Settings },
+  { id: 'riwayat', label: 'Riwayat Transaksi', href: '/history', icon: History },
+] as const
+
 function getInitials(name: string): string {
   return name
     .trim()
@@ -47,6 +53,30 @@ function getInitials(name: string): string {
     .slice(0, 2)
     .map((word) => word.charAt(0).toUpperCase())
     .join('')
+}
+
+/* Avatar dipakai di tombol profil dan di header dropdown */
+function Avatar({
+  name,
+  image,
+  className = 'h-9 w-9 text-sm',
+}: {
+  name: string
+  image?: string
+  className?: string
+}) {
+  return (
+    <span
+      aria-hidden="true"
+      className={`flex shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#9AAD3E] font-heading font-semibold text-white ${className}`}
+    >
+      {image ? (
+        <img src={image} alt="" className="h-full w-full object-cover" />
+      ) : (
+        getInitials(name)
+      )}
+    </span>
+  )
 }
 
 function Navbar({
@@ -62,7 +92,10 @@ function Navbar({
   const [isUserOpen, setIsUserOpen] = useState(false)
   const [isCartOpen, setIsCartOpen] = useState(false)
   const langMenuRef = useRef<HTMLDivElement>(null)
+  const userMenuRef = useRef<HTMLDivElement>(null)
+  const userTriggerRef = useRef<HTMLButtonElement>(null)
 
+  /* Tutup dropdown bahasa saat klik di luar */
   useEffect(() => {
     if (!isLangOpen) return
 
@@ -75,6 +108,35 @@ function Navbar({
     document.addEventListener('pointerdown', handleOutsideClick)
     return () => document.removeEventListener('pointerdown', handleOutsideClick)
   }, [isLangOpen])
+
+  /* Tutup dropdown profil saat klik di luar atau tekan Escape */
+  useEffect(() => {
+    if (!isUserOpen) return
+
+    const handleOutsideClick = (event: PointerEvent) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
+        setIsUserOpen(false)
+      }
+    }
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setIsUserOpen(false)
+        userTriggerRef.current?.focus()
+      }
+    }
+
+    document.addEventListener('pointerdown', handleOutsideClick)
+    document.addEventListener('keydown', handleEscape)
+    return () => {
+      document.removeEventListener('pointerdown', handleOutsideClick)
+      document.removeEventListener('keydown', handleEscape)
+    }
+  }, [isUserOpen])
+
+  /* Tutup dropdown profil setiap pindah halaman */
+  useEffect(() => {
+    setIsUserOpen(false)
+  }, [location.pathname])
 
   const handleSelectLang = (lang: Language) => {
     // Catatan: sambungkan ke i18n / context bahasa jika sudah tersedia
@@ -92,7 +154,6 @@ function Navbar({
       {/* Header + bottom nav mobile (< md) dipisah ke MobileHeader.tsx */}
       <MobileHeader userName={userName} profileImage={profileImage} />
 
-      
       <header className="hidden md:sticky md:top-0 md:z-50 md:block bg-white border-b border-[#D4D4D4] px-4 lg:px-6">
         <div
           className={`max-w-[1194px] mx-auto h-[84px] xl:h-[100px] grid items-center gap-3 ${
@@ -112,32 +173,30 @@ function Navbar({
                 OBC Sport Center
               </span>
             </Link>
-
           </div>
 
           {/* Tengah: menu + keranjang, dipusatkan di ruang antara logo dan sisi kanan */}
           {showDesktopNavigation && (
             <div className="flex min-w-0 items-center justify-center">
-            {/* Menu */}
-            <nav className="flex items-center gap-4 lg:gap-6 xl:gap-8">
-              {NAV_LINKS.map((link) => {
-                const isActive = location.pathname === link.href
-                return (
-                  <Link
-                    key={link.id}
-                    to={link.href}
-                    className={`text-[13px] lg:text-sm font-heading whitespace-nowrap transition-colors ${
-                      isActive
-                        ? 'font-bold text-[#004000] underline underline-offset-4'
-                        : 'font-normal text-[#343133] hover:text-[#004000]'
-                    }`}
-                  >
-                    {link.label}
-                  </Link>
-                )
-              })}
-            </nav>
-
+              {/* Menu */}
+              <nav className="flex items-center gap-4 lg:gap-6 xl:gap-8">
+                {NAV_LINKS.map((link) => {
+                  const isActive = location.pathname === link.href
+                  return (
+                    <Link
+                      key={link.id}
+                      to={link.href}
+                      className={`text-[13px] lg:text-sm font-heading whitespace-nowrap transition-colors ${
+                        isActive
+                          ? 'font-bold text-[#004000] underline underline-offset-4'
+                          : 'font-normal text-[#343133] hover:text-[#004000]'
+                      }`}
+                    >
+                      {link.label}
+                    </Link>
+                  )
+                })}
+              </nav>
             </div>
           )}
 
@@ -164,130 +223,82 @@ function Navbar({
             )}
 
             {/* Info user + dropdown */}
-            <div className="relative order-3 flex items-center gap-2 lg:gap-3">
+            <div ref={userMenuRef} className="relative order-3">
+              {/* Satu tombol: avatar + nama + chevron, supaya jelas bisa diklik */}
               <button
+                ref={userTriggerRef}
                 type="button"
-                onClick={() => setIsUserOpen((prev) => !prev)}
+                onClick={() => setIsUserOpen((open) => !open)}
                 aria-label={`Menu pengguna, ${userName}`}
+                aria-haspopup="menu"
                 aria-expanded={isUserOpen}
-                className="flex items-center gap-3"
+                className={`flex items-center gap-2.5 rounded-full border py-1 pl-1 pr-3 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#004000] ${
+                  isUserOpen
+                    ? 'border-[#9AAD3E] bg-[#F1F4EA]'
+                    : 'border-[#E5E5E5] bg-white hover:border-[#9AAD3E] hover:bg-[#F1F4EA]'
+                }`}
               >
-                <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[#9AAD3E] text-sm font-heading font-semibold text-white">
-                  {profileImage ? (
-                    <img src={profileImage} alt="" className="h-full w-full rounded-full object-cover" />
-                  ) : (
-                    getInitials(userName)
-                  )}
-                </span>
+                <Avatar name={userName} image={profileImage} />
                 {/* Nama user disembunyikan di bawah lg agar muat */}
-                <span className="hidden lg:inline text-sm font-heading font-semibold text-[#343133] whitespace-nowrap">
+                <span className="hidden max-w-[160px] truncate text-sm font-heading font-semibold text-[#343133] lg:inline">
                   {userName}
                 </span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setIsUserOpen((prev) => !prev)}
-                aria-label="Menu pengguna"
-                aria-expanded={isUserOpen}
-                className="text-[#404F14] hover:text-[#004000] transition-colors"
-              >
-                <svg
-                  width="22"
-                  height="22"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
+                <ChevronDown
+                  size={16}
+                  strokeWidth={2.2}
                   aria-hidden="true"
-                >
-                  <circle cx="12" cy="12" r="10" />
-                  <path d="m8 10 4 4 4-4" />
-                </svg>
+                  className={`shrink-0 text-[#404F14] transition-transform duration-200 ${
+                    isUserOpen ? 'rotate-180' : ''
+                  }`}
+                />
               </button>
 
               {isUserOpen && (
-                <>
-                  {/* Lapisan transparan: klik di luar kartu menutup dropdown */}
-                  <button
-                    type="button"
-                    aria-label="Tutup menu pengguna"
-                    tabIndex={-1}
-                    onClick={() => setIsUserOpen(false)}
-                    className="fixed inset-0 z-40 cursor-default"
-                  />
-
-                  {/* Kartu dropdown: menimpa area trigger, sesuai desain */}
-                  <div
-                    role="menu"
-                    className="absolute -right-4 -top-[18px] z-50 w-[272px] overflow-hidden rounded-2xl border border-[#E5E5E5] bg-white shadow-[0_4px_16px_rgba(0,0,0,0.15)]"
-                  >
-                    {/* Header: avatar, nama, tombol tutup */}
-                    <div className="flex items-center gap-3 px-4 py-4">
-                      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#9AAD3E] text-base font-heading font-semibold text-white">
-                        {profileImage ? (
-                          <img src={profileImage} alt="" className="h-full w-full rounded-full object-cover" />
-                        ) : (
-                          getInitials(userName)
-                        )}
-                      </span>
-                      <span className="flex-1 truncate text-sm font-heading font-semibold text-[#343133]">
+                <div
+                  role="menu"
+                  aria-label="Menu pengguna"
+                  className="absolute right-0 top-full z-50 mt-2 w-64 overflow-hidden rounded-xl border border-[#E5E5E5] bg-white shadow-[0_8px_24px_rgba(0,0,0,0.12)]"
+                >
+                  {/* Identitas akun */}
+                  <div className="flex items-center gap-3 border-b border-[#EDEDED] bg-[#FDFCF7] px-4 py-3.5">
+                    <Avatar name={userName} image={profileImage} className="h-10 w-10 text-base" />
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-heading font-semibold text-[#343133]">
                         {userName}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => setIsUserOpen(false)}
-                        aria-label="Tutup menu pengguna"
-                        aria-expanded={isUserOpen}
-                        className="shrink-0 text-[#404F14] hover:text-[#004000] transition-colors"
-                      >
-                        <svg
-                          width="22"
-                          height="22"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          aria-hidden="true"
-                        >
-                          <circle cx="12" cy="12" r="10" />
-                          <path d="m8 10 4 4 4-4" />
-                        </svg>
-                      </button>
+                      </p>
+                      <p className="text-xs font-heading text-[#6B6B6B]">Akun saya</p>
                     </div>
-
-                    {/* Garis pemisah */}
-                    <div className="border-t border-[#D4D4D4]" />
-
-                    {/* Menu */}
-                    <ul className="px-5 py-4 space-y-4">
-                      <li>
-                        <Link
-                          to="/pengaturan"
-                          role="menuitem"
-                          onClick={() => setIsUserOpen(false)}
-                          className="block text-sm font-heading font-normal text-[#121212] hover:text-[#004000]"
-                        >
-                          Pengaturan
-                        </Link>
-                      </li>
-                      <li>
-                        <button
-                          type="button"
-                          role="menuitem"
-                          onClick={handleLogout}
-                          className="block w-full text-left text-sm font-heading font-bold text-[#C41E1E] hover:opacity-80 cursor-pointer"
-                        >
-                          Keluar
-                        </button>
-                      </li>
-                    </ul>
                   </div>
-                </>
+
+                  {/* Pengaturan & Riwayat */}
+                  <div className="py-1.5">
+                    {USER_MENU_ITEMS.map(({ id, label, href, icon: Icon }) => (
+                      <Link
+                        key={id}
+                        to={href}
+                        role="menuitem"
+                        onClick={() => setIsUserOpen(false)}
+                        className="flex items-center gap-3 px-4 py-2.5 text-sm font-heading font-medium text-[#121212] transition-colors hover:bg-[#F1F4EA] hover:text-[#004000] focus-visible:bg-[#F1F4EA] focus-visible:outline-none"
+                      >
+                        <Icon size={18} strokeWidth={1.8} aria-hidden="true" className="shrink-0" />
+                        {label}
+                      </Link>
+                    ))}
+                  </div>
+
+                  {/* Keluar dipisah agar tidak tertekan tidak sengaja */}
+                  <div className="border-t border-[#EDEDED] py-1.5">
+                    <button
+                      type="button"
+                      role="menuitem"
+                      onClick={handleLogout}
+                      className="flex w-full cursor-pointer items-center gap-3 px-4 py-2.5 text-left text-sm font-heading font-bold text-[#C41E1E] transition-colors hover:bg-[#FEF3F2] focus-visible:bg-[#FEF3F2] focus-visible:outline-none"
+                    >
+                      <LogOut size={18} strokeWidth={1.8} aria-hidden="true" className="shrink-0" />
+                      Keluar
+                    </button>
+                  </div>
+                </div>
               )}
             </div>
 

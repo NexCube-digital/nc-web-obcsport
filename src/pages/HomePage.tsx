@@ -69,10 +69,10 @@ const AMENITIES = [
 // TODO: ganti dengan data detail dari API
 const MODAL_DETAIL: Record<string, Omit<OrderModalFacility, 'id' | 'name' | 'image'>> = {
   'lapangan-f1': {
+    // Voli dihapus: status harga masih pending konfirmasi OBC (lihat PRD)
     sports: [
       { id: 'futsal-1', label: 'Futsal 1', icon: 'futsal' },
       { id: 'badminton', label: 'Badminton', icon: 'badminton' },
-      { id: 'voli', label: 'Voli', icon: 'voli' },
       { id: 'pickleball', label: 'Pickleball', icon: 'pickleball' },
     ],
     specification:
@@ -130,6 +130,14 @@ function HomePage() {
       setIsImageZoomed(false)
     }
   }, [previewImage])
+
+  useEffect(() => {
+    const debounceTimer = window.setTimeout(() => {
+      setSubmittedSearch(searchQuery.trim())
+    }, 300)
+
+    return () => window.clearTimeout(debounceTimer)
+  }, [searchQuery])
 
   const handleSearch = () => {
     setSubmittedSearch(searchQuery.trim())

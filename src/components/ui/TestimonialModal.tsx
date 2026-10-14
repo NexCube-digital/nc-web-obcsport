@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type ChangeEvent } from 'react'
-import { Star } from 'lucide-react'
+import { Camera, Star } from 'lucide-react'
 
 /* -------------------------------------------------------------------------
    Tipe data
@@ -171,13 +171,14 @@ function TestimonialModal({
             className="mt-4 flex h-9 w-full cursor-pointer items-center justify-center rounded-lg border border-dashed border-[#BDBDBD] bg-[#FDFCF7] font-heading text-xs text-black transition-colors hover:bg-white"
           >
             {photos.length > 0 ? (
-              <span>
-                <span aria-hidden="true">📷</span> {photos.length} foto dipilih (klik untuk
-                mengganti)
+              <span className="flex min-w-0 items-center justify-center gap-2 px-2">
+                <Camera size={16} aria-hidden="true" className="shrink-0" />
+                <span>{photos.length} foto dipilih (klik untuk mengganti)</span>
               </span>
             ) : (
-              <span>
-                <span aria-hidden="true">📷</span> + Tambah Foto Lapangan (Opsional)
+              <span className="flex min-w-0 items-center justify-center gap-2 px-2">
+                <Camera size={16} aria-hidden="true" className="shrink-0" />
+                <span>+ Tambah Foto Lapangan (Opsional)</span>
               </span>
             )}
           </button>

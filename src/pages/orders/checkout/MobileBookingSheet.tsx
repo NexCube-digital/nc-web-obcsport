@@ -61,32 +61,48 @@ function MobileBookingSheet({
           <div
             role="dialog"
             aria-label="Pilih tanggal dan waktu bertanding"
-            className="fixed inset-x-0 bottom-0 z-40 max-h-[88dvh] overflow-y-auto rounded-t-3xl bg-white px-4 pt-6 pb-52"
+            className="fixed inset-x-0 bottom-[120px] z-40 max-h-[calc(100dvh-120px)] overflow-hidden rounded-t-3xl bg-white px-4 pt-5 pb-4"
           >
             <h2 className="text-center font-heading text-base font-bold text-[#343133]">
-              Pilih Tanggal Dan Waktu Bertanding
+              {selectedDate ? 'Pilih Waktu Main' : 'Pilih Tanggal Main'}
             </h2>
-            <BookingCalendar
-              variant="mobile"
-              viewYear={viewYear}
-              viewMonth={viewMonth}
-              selectedDate={selectedDate}
-              bookedDates={bookedDates}
-              onChangeMonth={onChangeMonth}
-              onSelectDate={onSelectDate}
-            />
-            <TimeSlotPicker
-              variant="mobile"
-              isDateBooked={isDateBooked}
-              bookedSlotsToday={bookedSlotsToday}
-              selectedTimes={selectedTimes}
-              sessionCount={sessionCount}
-              selectedDateLabel={selectedDateLabel}
-              startTime={startTime}
-              endTime={endTime}
-              maxSessionHours={maxSessionHours}
-              onToggleTime={onToggleTime}
-            />
+
+            {selectedDate ? (
+              <>
+                <div className="mt-2 flex items-center justify-between">
+                  <p className="text-xs text-[#6F6B6E]">{selectedDateLabel}</p>
+                  <button
+                    type="button"
+                    onClick={onSearchOther}
+                    className="cursor-pointer text-xs font-heading font-bold text-[#265021] underline underline-offset-2"
+                  >
+                    Ubah tanggal
+                  </button>
+                </div>
+                <TimeSlotPicker
+                  variant="mobile"
+                  isDateBooked={isDateBooked}
+                  bookedSlotsToday={bookedSlotsToday}
+                  selectedTimes={selectedTimes}
+                  sessionCount={sessionCount}
+                  selectedDateLabel={selectedDateLabel}
+                  startTime={startTime}
+                  endTime={endTime}
+                  maxSessionHours={maxSessionHours}
+                  onToggleTime={onToggleTime}
+                />
+              </>
+            ) : (
+              <BookingCalendar
+                variant="mobile"
+                viewYear={viewYear}
+                viewMonth={viewMonth}
+                selectedDate={selectedDate}
+                bookedDates={bookedDates}
+                onChangeMonth={onChangeMonth}
+                onSelectDate={onSelectDate}
+              />
+            )}
           </div>
         </>
       )}

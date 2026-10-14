@@ -85,6 +85,21 @@ function DetailOrder() {
   // State khusus mobile: bottom sheet pilih tanggal & jam
   const [isSheetOpen, setIsSheetOpen] = useState(false)
 
+    const openMobileSheetForSelection = () => {
+      setSelectedDate(null)
+      setSelectedTimes([])
+      setIsConfirmed(false)
+      setIsSheetOpen(true)
+    }
+
+  const handleToggleMobileSheet = () => {
+    if (isSheetOpen) {
+      setIsSheetOpen(false)
+      return
+    }
+    openMobileSheetForSelection()
+  }
+
   /* ---------- Turunan data kalender ---------- */
   const isDateBooked = selectedDate !== null && BOOKED_DATES.includes(selectedDate)
   const bookedSlotsToday = selectedDate ? BOOKED_SLOTS[selectedDate] ?? [] : []
@@ -178,7 +193,7 @@ function DetailOrder() {
   // Mobile tidak punya tombol "Konfirmasi Jadwal", jadi validasi dilakukan saat "Pesan Sekarang"
   const handleOrderNowMobile = () => {
     if (!selectedDate || sessionCount === 0) {
-      setIsSheetOpen(true) // arahkan user memilih tanggal & jam dulu
+      openMobileSheetForSelection() // arahkan user memilih tanggal & jam dulu
       return
     }
     const error = getScheduleError()
@@ -196,7 +211,7 @@ function DetailOrder() {
 
   const handleAddToCart = () => {
     if (!selectedDate || sessionCount === 0) {
-      setIsSheetOpen(true)
+      openMobileSheetForSelection()
       return
     }
 
@@ -237,7 +252,7 @@ function DetailOrder() {
       </div>
       <MobileBookingSheet
         isOpen={isSheetOpen}
-        onToggle={() => setIsSheetOpen((open) => !open)}
+        onToggle={handleToggleMobileSheet}
         onClose={() => setIsSheetOpen(false)}
         onChangeMonth={handleChangeMonth}
         onSelectDate={handleSelectDate}

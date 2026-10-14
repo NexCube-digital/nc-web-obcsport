@@ -122,13 +122,13 @@ function NavbarLanding() {
           <div className="flex items-center gap-1.5 min-[360px]:gap-2 sm:gap-4 shrink-0">
             <Link
               to="/login"
-              className="rounded-lg border border-[#404F14] bg-white px-2.5 min-[360px]:px-4 sm:px-6 h-8 min-[360px]:h-9 sm:h-10 inline-flex items-center text-[11px] min-[360px]:text-sm font-heading font-semibold text-[#404F14] hover:bg-[#FDFCF7] transition-colors"
+              className="inline-flex h-8 items-center rounded-lg border border-[#CDF178] bg-[#CDF178] px-2.5 font-heading text-[11px] font-semibold text-[#343133] transition-colors hover:border-[#9AAD3E] hover:bg-[#9AAD3E] min-[360px]:h-9 min-[360px]:px-4 min-[360px]:text-sm sm:h-10 sm:border-[#404F14] sm:bg-white sm:px-6 sm:text-[#404F14] sm:hover:border-[#404F14] sm:hover:bg-[#FDFCF7]"
             >
               Masuk
             </Link>
             <Link
               to="/register"
-              className="rounded-lg bg-[#CDF178] px-2.5 min-[360px]:px-4 sm:px-6 h-8 min-[360px]:h-9 sm:h-10 inline-flex items-center text-[11px] min-[360px]:text-sm font-heading font-semibold text-[#343133] hover:bg-[#9AAD3E] transition-colors"
+              className="inline-flex h-8 items-center rounded-lg border border-[#404F14] bg-transparent px-2.5 font-heading text-[11px] font-semibold text-[#404F14] transition-colors hover:bg-[#FDFCF7] min-[360px]:h-9 min-[360px]:px-4 min-[360px]:text-sm sm:h-10 sm:border-transparent sm:bg-[#CDF178] sm:px-6 sm:text-[#343133] sm:hover:bg-[#9AAD3E]"
             >
               Daftar
             </Link>

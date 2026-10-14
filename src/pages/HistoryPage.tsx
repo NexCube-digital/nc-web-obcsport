@@ -180,7 +180,7 @@ function HistoryPage() {
       - <main> memakai flex-1 sehingga mengisi sisa ruang
       - footer otomatis menempel di dasar halaman walau konten sedikit
     */
-    <div className="flex min-h-screen flex-col bg-white font-body text-[#343133] md:h-screen">
+    <div className="flex min-h-screen flex-col bg-white font-body text-[#343133]">
       {/* Navbar desktop (di mobile diganti header + bottom nav) */}
       <div className="hidden shrink-0 md:block">
         <NavbarDashboard userName={USER_NAME} />
@@ -458,10 +458,11 @@ function HistoryPage() {
         </section>
       </main>
 
-      {/* Footer selalu menempel di dasar halaman (mt-auto) */}
-      <div className="mt-auto hidden shrink-0 md:block">
+      {/* Footer selalu menempel di dasar halaman */}
+      <div className="mt-auto w-full">
         <Footer />
       </div>
+        
     </div>
   )
 }

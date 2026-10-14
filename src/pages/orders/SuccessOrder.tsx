@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { CircleCheck } from 'lucide-react'
+import { ChevronDown, CircleCheck } from 'lucide-react'
 import NavbarDashboard from '../../components/layout/Navbar'
 import MobileHeader from '../../components/layout/MobileHeader'
 import Footer from '../../components/layout/Footer'
@@ -60,6 +60,7 @@ function SuccesOrder() {
   const [isTestimonialOpen, setIsTestimonialOpen] = useState(
     () => localStorage.getItem(reviewStorageKey) !== 'reviewed',
   )
+  const [isPaymentDetailsOpen, setIsPaymentDetailsOpen] = useState(false)
 
   const total = data.subtotal + data.serviceFee - data.promo
 
@@ -85,14 +86,18 @@ function SuccesOrder() {
           isi & teks mengikuti versi PC.
           =================================================================== */}
       <MobileHeader variant="title" title="Pesanan Berhasil" showBottomNav={false} />
-      <div className="md:hidden flex min-h-[100dvh] flex-col bg-white px-5 pb-8 pt-6 font-body text-[#343133]">
+      <div
+        className={`md:hidden flex h-[calc(100dvh-4rem)] flex-col bg-white px-4 pb-5 pt-3 font-body text-[#343133] overscroll-contain ${
+          isPaymentDetailsOpen ? 'overflow-y-auto' : 'overflow-hidden'
+        }`}
+      >
         <div
           role="img"
           aria-label="Pembayaran berhasil"
-          className="grid h-[140px] w-full place-items-center text-[#265021]"
+          className="grid h-20 w-full place-items-center text-[#265021]"
         >
           <CircleCheck
-            size={88}
+            size={58}
             strokeWidth={1.8}
             aria-hidden="true"
             className="success-icon-pop"
@@ -100,14 +105,14 @@ function SuccesOrder() {
         </div>
 
         {/* Judul & deskripsi, rata tengah */}
-        <div className="mt-6 text-center">
-          <span className="inline-block rounded-full bg-[#E6F0E0] px-3 py-2 font-heading text-[11px] font-bold leading-none text-[#265021]">
+        <div className="mt-3 text-center">
+          <span className="inline-block rounded-full bg-[#E6F0E0] px-3 py-1.5 font-heading text-[10px] font-bold leading-none text-[#265021]">
             PEMBAYARAN DISETUJUI &amp; BERHASIL
           </span>
-          <h1 className={`${FONT_MONTSERRAT} mt-4 text-2xl font-bold leading-8 text-[#343133]`}>
+          <h1 className={`${FONT_MONTSERRAT} mt-2 text-lg font-bold leading-6 text-[#343133]`}>
             Selamat! Lapangan Anda Berhasil Dipesan
           </h1>
-          <p className="mt-3 font-heading text-[13px] leading-5 text-[#343133]">
+          <p className="mt-1.5 font-heading text-[11px] leading-4 text-[#343133]">
             E-ticket Anda telah aktif secara otomatis. Kode booking telah dikirimkan ke
             WhatsApp Anda. Silakan tunjukkan QR Code atau Kode Booking di bawah ini kepada
             petugas lapangan saat kedatangan.
@@ -115,7 +120,7 @@ function SuccesOrder() {
         </div>
 
         {/* Kode booking */}
-        <div className="mt-5 rounded-xl border border-[#E5E5E5] bg-white p-4 text-center">
+        <div className="mt-3 rounded-xl border border-[#E5E5E5] bg-white p-2.5 text-center">
           <p className="font-heading text-[11px] uppercase leading-4 text-[#343133]">
             Kode Booking Utama
           </p>
@@ -141,12 +146,28 @@ function SuccesOrder() {
         )}
 
         {/* Rincian pembayaran */}
-        <section className="mt-4 rounded-2xl border border-[#D4D4D4] bg-white p-5 shadow-[0_4px_16px_rgba(0,0,0,0.08)]">
-          <h2 className={`${FONT_MONTSERRAT} text-lg font-semibold leading-7 text-[#343133]`}>
-            Rincian Pembayaran
-          </h2>
+        <section className="mt-3 rounded-2xl border border-[#D4D4D4] bg-white p-3 shadow-[0_4px_16px_rgba(0,0,0,0.08)]">
+          <div className="flex items-center justify-between gap-3">
+            <h2 className={`${FONT_MONTSERRAT} text-sm font-semibold leading-5 text-[#343133]`}>
+              Rincian Pembayaran
+            </h2>
+            <button
+              type="button"
+              onClick={() => setIsPaymentDetailsOpen((open) => !open)}
+              aria-expanded={isPaymentDetailsOpen}
+              className="flex shrink-0 cursor-pointer items-center gap-1 font-heading text-[11px] font-bold text-[#404F14]"
+            >
+              {isPaymentDetailsOpen ? 'Ringkas' : 'Lihat selengkapnya'}
+              <ChevronDown
+                size={15}
+                aria-hidden="true"
+                className={`transition-transform ${isPaymentDetailsOpen ? 'rotate-180' : ''}`}
+              />
+            </button>
+          </div>
 
-          <dl className="mt-3 space-y-2.5 font-heading text-[13px]">
+          {isPaymentDetailsOpen && <>
+          <dl className="mt-3 space-y-2 font-heading text-xs">
             <div className="flex items-center justify-between gap-3">
               <dt className="text-[#343133]">Nomor Transaksi</dt>
               <dd className="text-right font-bold text-[#121212]">{data.transactionNumber}</dd>
@@ -161,9 +182,9 @@ function SuccesOrder() {
             </div>
           </dl>
 
-          <hr className="my-2.5 border-[#D4D4D4]" />
+          <hr className="my-2 border-[#D4D4D4]" />
 
-          <dl className="space-y-2.5 font-heading text-[13px]">
+          <dl className="space-y-2 font-heading text-xs">
             <div className="flex items-center justify-between gap-3">
               <dt className="shrink-0 text-[#343133]">Fasilitas / Lapangan</dt>
               <dd className="text-right font-bold text-[#121212]">{data.facility}</dd>
@@ -180,7 +201,7 @@ function SuccesOrder() {
 
           <hr className="my-2.5 border-[#D4D4D4]" />
 
-          <dl className="space-y-2.5 font-heading text-[13px]">
+          <dl className="space-y-2 font-heading text-xs">
             <div className="flex items-center justify-between gap-3">
               <dt className="text-[#343133]">Subtotal Sewa</dt>
               <dd className="text-[#343133]">{formatRupiah(data.subtotal)}</dd>
@@ -194,8 +215,9 @@ function SuccesOrder() {
               <dd className="shrink-0 font-bold text-[#265021]">- {formatRupiah(data.promo)}</dd>
             </div>
           </dl>
+          </>}
 
-          <hr className="my-3 border-[#D4D4D4]" />
+          <hr className="my-2.5 border-[#D4D4D4]" />
 
           <div className="flex items-center justify-between">
             <span className="font-heading text-sm font-bold text-[#121212]">Total Terbayar</span>
@@ -206,18 +228,18 @@ function SuccesOrder() {
         </section>
 
         {/* Tombol, menempel di bawah layar */}
-        <div className="mt-auto space-y-3 pt-8">
+        <div className="mt-auto space-y-2 pt-4">
           <button
             type="button"
             onClick={handleDownloadTicket}
-            className="h-12 w-full cursor-pointer rounded-xl bg-[#CDF178] font-heading text-sm font-bold text-[#404F14] transition-colors active:bg-[#9AAD3E]"
+            className="h-10 w-full cursor-pointer rounded-xl bg-[#CDF178] font-heading text-xs font-bold text-[#404F14] transition-colors active:bg-[#9AAD3E]"
           >
             Unduh E-Ticket (PDF)
           </button>
           <button
             type="button"
             onClick={() => navigate('/home')}
-            className="h-11 w-full cursor-pointer rounded-xl border border-[#404F14] bg-white font-heading text-sm font-bold text-[#404F14] transition-colors active:bg-[#F5FAF3]"
+            className="h-10 w-full cursor-pointer rounded-xl border border-[#404F14] bg-white font-heading text-xs font-bold text-[#404F14] transition-colors active:bg-[#F5FAF3]"
           >
             Kembali ke Beranda
           </button>

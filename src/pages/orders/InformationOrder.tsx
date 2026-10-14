@@ -176,11 +176,11 @@ function InformationOrder() {
         centerTitle
         showBottomNav={false}
       />
-      <div className="md:hidden flex min-h-[100dvh] flex-col bg-white font-body text-[#343133] pb-28">
+      <div className="md:hidden flex h-[calc(100dvh-4rem)] flex-col overflow-hidden bg-white font-body text-[#343133] pb-24 overscroll-none">
         {/* Banner batas waktu */}
         <div
           role="timer"
-          className="flex items-center justify-center gap-2 bg-[#FDF2F2] px-4 py-3 font-heading text-sm text-[#E02424]"
+          className="flex items-center justify-center gap-2 bg-[#FDF2F2] px-3 py-2 font-heading text-xs text-[#E02424]"
         >
           <Clock size={16} aria-hidden="true" />
           <span>
@@ -191,14 +191,14 @@ function InformationOrder() {
           </span>
         </div>
 
-        <div className="px-4 pt-5">
+        <div className="min-h-0 px-3 pt-3">
           {/* Kartu QR */}
-          <section className="flex flex-col items-center rounded-2xl border border-[#D4D4D4] bg-white px-4 pb-6 pt-8">
-            <QrPlaceholder className="h-[180px] w-[180px]" svgRef={mobileQrRef} />
+          <section className="flex flex-col items-center rounded-2xl border border-[#D4D4D4] bg-white px-3 pb-3 pt-4">
+            <QrPlaceholder className="h-[140px] w-[140px]" svgRef={mobileQrRef} />
             <button
               type="button"
               onClick={handleDownloadQr}
-              className="mt-8 inline-flex items-center gap-2 rounded-lg border border-[#404F14] bg-white px-4 py-2 font-heading text-xs font-bold text-[#404F14] cursor-pointer active:bg-[#F5FAF3]"
+              className="mt-4 inline-flex items-center gap-2 rounded-lg border border-[#404F14] bg-white px-3 py-1.5 font-heading text-[11px] font-bold text-[#404F14] cursor-pointer active:bg-[#F5FAF3]"
             >
               <Download size={14} aria-hidden="true" />
               Unduh Kode QR
@@ -206,14 +206,14 @@ function InformationOrder() {
           </section>
 
           {/* Total nominal transfer */}
-          <section className="mt-4 rounded-xl border border-[#D4D4D4] bg-white px-3 py-3">
+          <section className="mt-3 rounded-xl border border-[#D4D4D4] bg-white px-3 py-2.5">
             <div className="flex items-center justify-between gap-3">
               <span className="font-heading text-xs text-[#6F6B6E]">Total Nominal Transfer</span>
               <span className={`${FONT_MONTSERRAT} text-lg font-bold text-[#121212]`}>
                 {formatRupiah(mobileTotal)}
               </span>
             </div>
-            <p className="mt-2 text-right font-heading text-[9px] text-[#6F6B6E]">
+            <p className="mt-1 text-right font-heading text-[9px] leading-3 text-[#6F6B6E]">
               *Tiga digit terakhir{' '}
               <span className="font-bold">{String(UNIQUE_CODE).padStart(3, '0')}</span> adalah
               kode verifikasi unik order Anda.
@@ -221,8 +221,8 @@ function InformationOrder() {
           </section>
 
           {/* Petunjuk scan */}
-          <h2 className="mt-5 font-heading text-sm font-bold text-[#121212]">Petunjuk Scan QRIS:</h2>
-          <ol className="mt-2 space-y-2 font-heading text-xs leading-relaxed text-[#6F6B6E]">
+          <h2 className="mt-3 font-heading text-xs font-bold text-[#121212]">Petunjuk Scan QRIS:</h2>
+          <ol className="mt-1 space-y-1 font-heading text-[11px] leading-4 text-[#6F6B6E]">
             {MOBILE_STEPS.map((step, index) => (
               <li key={step}>
                 {index + 1}. {step}
@@ -232,11 +232,11 @@ function InformationOrder() {
         </div>
 
         {/* Tombol cek status (fixed di bawah) */}
-        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-[#D4D4D4] bg-white px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-[#D4D4D4] bg-white px-3 pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
           <button
             type="button"
             onClick={handleRefresh}
-            className="h-12 w-full rounded-xl bg-[#CDF178] font-heading text-sm font-bold text-[#404F14] transition-colors active:bg-[#9AAD3E] cursor-pointer"
+            className="h-10 w-full rounded-xl bg-[#CDF178] font-heading text-xs font-bold text-[#404F14] transition-colors active:bg-[#9AAD3E] cursor-pointer"
           >
             Cek Status Pembayaran
           </button>

@@ -1,5 +1,6 @@
+import { useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { CircleX } from 'lucide-react'
+import { ChevronDown, CircleX } from 'lucide-react'
 import NavbarDashboard from '../../components/layout/Navbar'
 import MobileHeader from '../../components/layout/MobileHeader'
 import Footer from '../../components/layout/Footer'
@@ -48,6 +49,7 @@ function FailedOrder() {
   const facility = state.facility ?? DEFAULT_FACILITY
   const schedule = state.schedule ?? DEFAULT_SCHEDULE
   const total = state.total ?? DEFAULT_TOTAL
+  const [isOrderDetailsOpen, setIsOrderDetailsOpen] = useState(false)
 
   return (
     <>
@@ -56,14 +58,18 @@ function FailedOrder() {
           isi & teks mengikuti versi PC.
           =================================================================== */}
       <MobileHeader variant="title" title="Pesanan Gagal" showBottomNav={false} />
-      <div className="md:hidden flex min-h-[100dvh] flex-col bg-white px-5 pb-8 pt-6 font-body text-[#343133]">
+      <div
+        className={`md:hidden flex h-[calc(100dvh-4rem)] flex-col bg-white px-4 pb-5 pt-3 font-body text-[#343133] overscroll-contain ${
+          isOrderDetailsOpen ? 'overflow-y-auto' : 'overflow-hidden'
+        }`}
+      >
         <div
           role="img"
           aria-label="Pembayaran gagal"
-          className="grid h-[140px] w-full place-items-center text-[#E02424]"
+          className="grid h-20 w-full place-items-center text-[#E02424]"
         >
           <CircleX
-            size={88}
+            size={58}
             strokeWidth={1.8}
             aria-hidden="true"
             className="failed-icon-shake"
@@ -71,14 +77,14 @@ function FailedOrder() {
         </div>
 
         {/* Judul & deskripsi, rata tengah */}
-        <div className="mt-6 text-center">
-          <span className="inline-block rounded-full bg-[#FDE8E8] px-3 py-2 font-heading text-[11px] font-bold leading-none text-[#E02424]">
+        <div className="mt-3 text-center">
+          <span className="inline-block rounded-full bg-[#FDE8E8] px-3 py-1.5 font-heading text-[10px] font-bold leading-none text-[#E02424]">
             TRANSAKSI DITOLAK / GAGAL BAYAR
           </span>
-          <h1 className={`${FONT_MONTSERRAT} mt-4 text-2xl font-bold leading-8 text-[#343133]`}>
+          <h1 className={`${FONT_MONTSERRAT} mt-2 text-lg font-bold leading-6 text-[#343133]`}>
             Pemesanan Gagal: Waktu Pembayaran Habis
           </h1>
-          <p className="mt-3 font-heading text-[13px] leading-5 text-[#343133]">
+          <p className="mt-1.5 font-heading text-[11px] leading-4 text-[#343133]">
             Batas waktu pembayaran 15 menit menggunakan sistem otomatis QRIS atau Transfer
             Bank Anda telah berakhir. Jangan khawatir, saldo Anda tidak terpotong. Silakan
             ajukan ulang pemesanan jadwal lapangan Anda.
@@ -86,12 +92,28 @@ function FailedOrder() {
         </div>
 
         {/* Kartu informasi pesanan gagal */}
-        <section className="mt-5 rounded-2xl border border-[#D4D4D4] bg-white p-5 shadow-[0_4px_16px_rgba(0,0,0,0.08)]">
-          <h2 className={`${FONT_MONTSERRAT} text-lg font-semibold leading-7 text-[#343133]`}>
-            Informasi Pesanan Gagal
-          </h2>
+        <section className="mt-3 rounded-2xl border border-[#D4D4D4] bg-white p-3 shadow-[0_4px_16px_rgba(0,0,0,0.08)]">
+          <div className="flex items-center justify-between gap-3">
+            <h2 className={`${FONT_MONTSERRAT} text-sm font-semibold leading-5 text-[#343133]`}>
+              Informasi Pesanan Gagal
+            </h2>
+            <button
+              type="button"
+              onClick={() => setIsOrderDetailsOpen((open) => !open)}
+              aria-expanded={isOrderDetailsOpen}
+              className="flex shrink-0 cursor-pointer items-center gap-1 font-heading text-[11px] font-bold text-[#404F14]"
+            >
+              {isOrderDetailsOpen ? 'Ringkas' : 'Lihat selengkapnya'}
+              <ChevronDown
+                size={15}
+                aria-hidden="true"
+                className={`transition-transform ${isOrderDetailsOpen ? 'rotate-180' : ''}`}
+              />
+            </button>
+          </div>
 
-          <dl className="mt-3 space-y-2.5 font-heading text-[13px]">
+          {isOrderDetailsOpen && <>
+          <dl className="mt-3 space-y-2 font-heading text-xs">
             <div className="flex items-center justify-between gap-3">
               <dt className="text-[#343133]">Kode Booking</dt>
               <dd className="font-bold text-[#E02424] line-through">{bookingCode}</dd>
@@ -106,7 +128,7 @@ function FailedOrder() {
 
           <hr className="my-3 border-[#D4D4D4]" />
 
-          <dl className="space-y-2.5 font-heading text-[13px]">
+          <dl className="space-y-2 font-heading text-xs">
             <div className="flex items-center justify-between gap-3">
               <dt className="shrink-0 text-[#343133]">Fasilitas / Lapangan</dt>
               <dd className="text-right font-bold text-[#121212]">{facility}</dd>
@@ -116,8 +138,9 @@ function FailedOrder() {
               <dd className="text-right font-bold text-[#121212]">{schedule}</dd>
             </div>
           </dl>
+          </>}
 
-          <hr className="my-3 border-[#D4D4D4]" />
+          <hr className="my-2 border-[#D4D4D4]" />
 
           <div className="flex items-center justify-between">
             <span className="font-heading text-sm font-bold text-[#121212]">
@@ -130,10 +153,10 @@ function FailedOrder() {
         </section>
 
         {/* Langkah penyelesaian masalah */}
-        <h2 className="mt-5 font-heading text-[13px] font-bold text-[#121212]">
+        <h2 className="mt-3 font-heading text-[11px] font-bold text-[#121212]">
           Langkah Penyelesaian Masalah:
         </h2>
-        <ol className="mt-2 space-y-2 font-heading text-xs leading-[18px] text-[#343133]">
+        <ol className="mt-1.5 space-y-1 font-heading text-[10px] leading-3.5 text-[#343133]">
           {TROUBLESHOOT_STEPS.map((step, index) => (
             <li key={step}>
               {index + 1}. {step}
@@ -142,11 +165,11 @@ function FailedOrder() {
         </ol>
 
         {/* Tombol, menempel di bawah layar */}
-        <div className="mt-auto space-y-3 pt-8">
+        <div className="mt-auto space-y-2 pt-4">
           <button
             type="button"
             onClick={() => navigate('/checkout')}
-            className="h-12 w-full cursor-pointer rounded-xl bg-[#CDF178] font-heading text-sm font-bold text-[#404F14] transition-colors active:bg-[#9AAD3E]"
+            className="h-10 w-full cursor-pointer rounded-xl bg-[#CDF178] font-heading text-xs font-bold text-[#404F14] transition-colors active:bg-[#9AAD3E]"
           >
             Coba Bayar Kembali
           </button>
@@ -154,7 +177,7 @@ function FailedOrder() {
             href={ADMIN_WA_URL}
             target="_blank"
             rel="noreferrer"
-            className="flex h-11 w-full items-center justify-center rounded-xl border border-[#404F14] bg-white font-heading text-sm font-bold text-[#404F14] transition-colors active:bg-[#F5FAF3]"
+            className="flex h-10 w-full items-center justify-center rounded-xl border border-[#404F14] bg-white font-heading text-xs font-bold text-[#404F14] transition-colors active:bg-[#F5FAF3]"
           >
             Hubungi Admin OBC
           </a>

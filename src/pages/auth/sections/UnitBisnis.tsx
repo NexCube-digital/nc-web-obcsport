@@ -1,9 +1,9 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Heart, ArrowRight } from 'lucide-react'
-import sportCenterLogo from '../../../assets/logo/unit bisnis/LOGO OBC SPORT CENTER.png'
+import ObcLogo from '../../../assets/logo/obclogo.webp'
 import guestHouseLogo from '../../../assets/logo/unit bisnis/LOGO OBC SPORT CENTER (1).png'
-import villaLogo from '../../../assets/logo/unit bisnis/LOGO OBC SPORT CENTER (3).png'
+import villaLogo from '../../../assets/logo/villa.png'
 import laundryLogo from '../../../assets/logo/unit bisnis/LOGO OBC SPORT CENTER (4).png'
 import foodCourtLogo from '../../../assets/logo/unit bisnis/LOGO OBC SPORT CENTER (5).png'
 import coffeeLogo from '../../../assets/logo/unit bisnis/LOGO OBC SPORT CENTER (6).png'
@@ -25,7 +25,7 @@ type Unit = {
 }
 
 const units: Unit[] = [
-	{ name: 'OBC Sport Center', image: sportCenterLogo, link: 'https://sport.obcgroup.id/', isExternal: true },
+	{ name: 'Onny Barber Center', image: ObcLogo, link: 'https://sport.obcgroup.id/', isExternal: true },
 	{ name: 'OBC Guest House', image: guestHouseLogo, link: '/unit-bisnis/guest-house', isExternal: false },
 	{ name: 'OBC Villa', image: villaLogo, link: '/unit-bisnis/villa', isExternal: false },
 	{ name: 'OBC Laundry', image: laundryLogo, link: '/unit-bisnis/laundry', isExternal: false },

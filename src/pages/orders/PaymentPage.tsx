@@ -405,7 +405,7 @@ function PaymentPage() {
             onClick={handlePayMobile}
             className="h-12 w-full rounded-xl bg-[#CDF178] font-heading text-sm font-bold text-[#404F14] transition-colors active:bg-[#9AAD3E] cursor-pointer"
           >
-            Bayar Sekarang • {formatRupiah(mobileTotal)}
+            Bayar Sekarang
           </button>
         </div>
       </div>
