@@ -1,5 +1,4 @@
 import { useEffect } from 'react'
-import { X } from 'lucide-react'
 
 interface PendingOrderModalProps {
   isOpen: boolean
@@ -9,6 +8,7 @@ interface PendingOrderModalProps {
   amount: number
   onClose: () => void
   onReturnHome: () => void
+  onOpenOrderStatus: (path: '/information-order' | '/failed-order' | '/success-order') => void
 }
 
 const ADMIN_WA_URL = 'https://wa.me/6281234567890'
@@ -29,6 +29,7 @@ function PendingOrderModal({
   amount,
   onClose,
   onReturnHome,
+  onOpenOrderStatus,
 }: PendingOrderModalProps) {
   useEffect(() => {
     if (!isOpen) return
@@ -71,15 +72,6 @@ function PendingOrderModal({
         onClick={(event) => event.stopPropagation()}
         className="relative my-auto w-full max-w-[600px] rounded-2xl border border-[#D4D4D4] bg-white p-5 sm:p-8"
       >
-        <button
-          type="button"
-          onClick={onClose}
-          aria-label="Tutup status pembayaran"
-          className="absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-full text-[#6F6B6E] transition-colors hover:bg-[#F1F4EA] hover:text-[#004000]"
-        >
-          <X size={18} aria-hidden="true" />
-        </button>
-
         <div className="flex justify-center pt-2">
           <svg
             width="56"
@@ -166,6 +158,30 @@ function PendingOrderModal({
           >
             Hubungi Bantuan WA
           </a>
+        </div>
+
+        <div className="mt-3 flex flex-wrap justify-center gap-2 border-t border-[#E5E5E5] pt-3">
+          <button
+            type="button"
+            onClick={() => onOpenOrderStatus('/information-order')}
+            className="min-h-8 rounded-md border border-[#D4D4D4] px-2.5 font-heading text-[10px] font-semibold text-[#6F6B6E] transition-colors hover:bg-[#F5F4EA]"
+          >
+            Info Order
+          </button>
+          <button
+            type="button"
+            onClick={() => onOpenOrderStatus('/failed-order')}
+            className="min-h-8 rounded-md border border-[#D4D4D4] px-2.5 font-heading text-[10px] font-semibold text-[#6F6B6E] transition-colors hover:bg-[#F5F4EA]"
+          >
+            Failed
+          </button>
+          <button
+            type="button"
+            onClick={() => onOpenOrderStatus('/success-order')}
+            className="min-h-8 rounded-md border border-[#D4D4D4] px-2.5 font-heading text-[10px] font-semibold text-[#6F6B6E] transition-colors hover:bg-[#F5F4EA]"
+          >
+            Success
+          </button>
         </div>
       </section>
     </div>

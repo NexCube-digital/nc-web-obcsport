@@ -91,8 +91,8 @@ function Hero() {
 				</div>
 			</section>
 
-			<section className="hidden border-y border-[#D4D4D4] bg-[#FDFCF7] md:flex md:min-h-[calc(100svh-6.25rem)] md:items-center">
-				<div className="mx-auto grid max-w-[1248px] items-center gap-8 px-4 py-10 sm:px-6 sm:py-14 md:py-16 lg:grid-cols-2 lg:gap-16 lg:py-24">
+			<section className="hidden border-y border-[#D4D4D4] bg-[#FDFCF7] md:flex md:min-h-[min(100svh,760px)] md:items-center">
+				<div className="mx-auto grid max-w-[1248px] items-center gap-8 px-4 py-10 sm:px-6 sm:py-14 md:py-16 lg:grid-cols-2 lg:gap-16 lg:py-16">
 					<div className="text-center lg:text-left">
 						<span className="inline-block rounded-full bg-[#E8EDE3] px-3 py-1.5 font-heading text-[10px] font-bold tracking-wide text-[#404F14] sm:px-4 sm:py-2 sm:text-xs">
 							PROMOSI DAN SEWA LAPANGAN TERBAIK

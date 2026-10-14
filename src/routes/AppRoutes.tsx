@@ -18,7 +18,7 @@ const EventPage = lazy(() => import('../pages/EventPage'))
 const FailedOrder = lazy(() => import('../pages/orders/FailedOrder'))
 const SuccesOrder = lazy(() => import('../pages/orders/SuccessOrder'))
 const InformationOrder = lazy(() => import('../pages/orders/InformationOrder'))
-const Profil = lazy(() => import('../pages/SettingPage'))
+const Profil = lazy(() => import('../pages/ProfilPage'))
 
 
 const AppRoutes = (

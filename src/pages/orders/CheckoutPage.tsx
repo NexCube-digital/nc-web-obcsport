@@ -1,17 +1,19 @@
-import { useState } from 'react'
+import { lazy, Suspense, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import NavbarDashboard from '../../components/layout/Navbar'
 import MobileHeader from '../../components/layout/MobileHeader'
-import Footer from '../../components/layout/LandingFooter'
-import ScheduleConflict from './checkout/ScheduleConflict'
-import ModalCheckout from '../../components/ui/ModalCheckout'
-import CartModal, { type CartItem } from '../../components/ui/CartModal'
+import Footer from '../../components/layout/Footer'
+import type { CartItem } from '../../components/ui/CartModal'
 import { COURT_FACILITIES } from '../../data/facilitiesData'
 import FacilityDetails from './checkout/FacilityDetails'
 import ReviewSection from './checkout/ReviewSection'
 import BookingCalendar from './checkout/BookingCalendar'
 import TimeSlotPicker from './checkout/TimeSlotPicker'
 import MobileBookingSheet from './checkout/MobileBookingSheet'
+
+const ScheduleConflict = lazy(() => import('./checkout/ScheduleConflict'))
+const ModalCheckout = lazy(() => import('../../components/ui/ModalCheckout'))
+const CartModal = lazy(() => import('../../components/ui/CartModal'))
 
 /* -------------------------------------------------------------------------
    Tipe data
@@ -156,10 +158,8 @@ function DetailOrder() {
     setIsCheckoutModalOpen(true)
   }
 
-  const goToCheckout = () => {
-    // TODO: sesuaikan route checkout. Halaman checkout saat ini menulis jam akhir
-    // secara tetap ("-09:00"), jadi perlu dibaca dari endTime di state ini.
-    navigate('/checkout', {
+  const goToPayment = () => {
+    navigate('/payment', {
       state: {
         facility,
         date: selectedDateLabel,
@@ -172,7 +172,7 @@ function DetailOrder() {
 
   const handleOrderNow = () => {
     if (!isConfirmed || !selectedDate) return
-    goToCheckout()
+    goToPayment()
   }
 
   // Mobile tidak punya tombol "Konfirmasi Jadwal", jadi validasi dilakukan saat "Pesan Sekarang"
@@ -186,7 +186,7 @@ function DetailOrder() {
       setConflictMessage(error)
       return
     }
-    goToCheckout()
+    goToPayment()
   }
 
   const handleSearchOtherMobile = () => {
@@ -227,7 +227,7 @@ function DetailOrder() {
     <>
       <MobileHeader
         variant="title"
-        title="Kembali"
+        title="Checkout"
         showShare
         showBottomNav={false}
       />
@@ -312,40 +312,48 @@ function DetailOrder() {
         <Footer />
       </div>
 
-      <ModalCheckout
-        isOpen={isCheckoutModalOpen}
-        facility={COURT_CATEGORY}
-        duration={sessionCount}
-        dateTime={sessionCount > 0 ? `${selectedDayAndDate} (${startTime} - ${endTime})` : '-'}
-        total={totalPrice}
-        onClose={() => setIsCheckoutModalOpen(false)}
-        onOrder={handleOrderNow}
-        onAddToCart={handleAddToCart}
-      />
+      <Suspense fallback={null}>
+        {isCheckoutModalOpen && (
+          <ModalCheckout
+            isOpen={isCheckoutModalOpen}
+            facility={COURT_CATEGORY}
+            duration={sessionCount}
+            dateTime={sessionCount > 0 ? `${selectedDayAndDate} (${startTime} - ${endTime})` : '-'}
+            total={totalPrice}
+            onClose={() => setIsCheckoutModalOpen(false)}
+            onOrder={handleOrderNow}
+            onAddToCart={handleAddToCart}
+          />
+        )}
 
-      <CartModal
-        isOpen={isCartOpen}
-        onClose={() => setIsCartOpen(false)}
-        items={cartItems}
-        onRemove={(id) => setCartItems((items) => items.filter((item) => item.id !== id))}
-        onCheckout={(items) => {
-          setIsCartOpen(false)
-          navigate('/payment', {
-            state: {
-              date: selectedDateLabel,
-              time: startTime,
-              endTime,
-              total: items.reduce((sum, item) => sum + item.price, 0),
-            },
-          })
-        }}
-      />
+        {isCartOpen && (
+          <CartModal
+            isOpen={isCartOpen}
+            onClose={() => setIsCartOpen(false)}
+            items={cartItems}
+            onRemove={(id) => setCartItems((items) => items.filter((item) => item.id !== id))}
+            onCheckout={(items) => {
+              setIsCartOpen(false)
+              navigate('/payment', {
+                state: {
+                  date: selectedDateLabel,
+                  time: startTime,
+                  endTime,
+                  total: items.reduce((sum, item) => sum + item.price, 0),
+                },
+              })
+            }}
+          />
+        )}
 
-      <ScheduleConflict
-        message={conflictMessage}
-        onDismiss={() => setConflictMessage(null)}
-        onReturnHome={() => navigate('/home')}
-      />
+        {conflictMessage && (
+          <ScheduleConflict
+            message={conflictMessage}
+            onDismiss={() => setConflictMessage(null)}
+            onReturnHome={() => navigate('/home')}
+          />
+        )}
+      </Suspense>
     </>
   )
 }

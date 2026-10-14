@@ -1,6 +1,6 @@
-function Footer() {
+function LandingFooter() {
   return (
-    <footer className="bg-[#1E4620] py-8">
+    <footer id="landing-footer" className="bg-[#1E4620] py-8">
       <div className="max-w-7xl mx-auto px-6 lg:px-10 text-center">
         <p className="font-heading font-bold text-white text-base">
           OBC Sport Center Booking &amp; Academy Platform
@@ -13,4 +13,4 @@ function Footer() {
   )
 }
 
-export default Footer
+export default LandingFooter

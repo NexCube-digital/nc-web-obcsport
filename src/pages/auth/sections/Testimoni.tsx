@@ -39,7 +39,7 @@ function Testimoni() {
 	const handleNext = () => setActiveTesti((prev) => (prev + 1) % TESTIMONIALS.length)
 
 	return (
-		<section className="mx-auto max-w-[1248px] px-4 pt-10 sm:px-6 sm:pt-12 md:flex md:min-h-[calc(100svh-6.25rem)] md:items-center md:justify-center md:pt-0">
+		<section className="mx-auto max-w-[1248px] px-4 pt-10 sm:px-6 sm:pt-12 md:flex md:items-center md:justify-center md:py-6">
 			<div className="mx-auto grid max-w-[1160px] overflow-hidden rounded-xl bg-white shadow-[0_4px_16px_rgba(0,0,0,0.15)] md:min-h-[clamp(430px,calc(100svh-10rem),560px)] md:grid-cols-[minmax(240px,35%)_1fr] lg:min-h-[clamp(400px,calc(100svh-10rem),600px)] lg:grid-cols-[460px_1fr]">
 				<div className="flex items-center bg-gradient-to-br from-[#004000] to-[#404F14] px-6 py-8 sm:px-10 md:px-8 md:py-12 lg:px-12">
 					<h2 className="font-heading text-xl font-semibold leading-snug text-white sm:text-2xl">

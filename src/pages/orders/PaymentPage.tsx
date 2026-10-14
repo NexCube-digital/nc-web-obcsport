@@ -3,7 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import { CalendarDays, Check } from 'lucide-react'
 import NavbarDashboard from '../../components/layout/Navbar'
 import MobileHeader from '../../components/layout/MobileHeader'
-import Footer from '../../components/layout/LandingFooter'
+import Footer from '../../components/layout/Footer'
 import PendingOrderModal from '../../components/ui/PendingOrderModal'
 
 /* -------------------------------------------------------------------------
@@ -189,6 +189,33 @@ function PaymentPage() {
     setPendingPayment({
       method: method === 'qris' ? 'QRIS' : 'BCA Virtual Account',
       total,
+    })
+  }
+
+  const handleOpenOrderStatus = (
+    path: '/information-order' | '/failed-order' | '/success-order',
+  ) => {
+    const transactionId = 'OBC-20260112-985A'
+    const paymentMethod = pendingPayment?.method ?? 'QRIS'
+    const schedule = `${date} (${startTime} - ${endTime})`
+
+    setPendingPayment(null)
+    navigate(path, {
+      state: {
+        total: pendingPayment?.total ?? total,
+        transactionId,
+        transactionNumber: transactionId,
+        bookingCode: transactionId,
+        facility: FACILITY_NAME,
+        schedule,
+        paidAt: new Date().toLocaleString('id-ID'),
+        method: paymentMethod,
+        duration: `${hours} Jam`,
+        subtotal,
+        serviceFee: SERVICE_FEE,
+        promoLabel: PROMO_CODE,
+        promo,
+      },
     })
   }
 
@@ -550,6 +577,7 @@ function PaymentPage() {
           setPendingPayment(null)
           navigate('/home')
         }}
+        onOpenOrderStatus={handleOpenOrderStatus}
       />
     </>
   )

@@ -2,8 +2,7 @@
 import { useState } from 'react'
 import { ArrowRight, ArrowUpRight, Check } from 'lucide-react'
 import NavbarDashboard from '../components/layout/Navbar'
-import MobileHeader from '../components/layout/MobileHeader'
-import Footer from '../components/layout/LandingFooter'
+import Footer from '../components/layout/Footer'
 import member from '../assets/bfe838718c7f801119930d28d3d286f12b853b5e.jpg'
 
 /* -------------------------------------------------------------------------
@@ -194,14 +193,7 @@ function MembershipPage() {
 
   return (
     <div className="min-h-screen bg-white font-body text-[#343133]">
-      {/* Navbar desktop (di mobile diganti header + bottom nav) */}
-      <div className="hidden md:contents">
-        <NavbarDashboard userName={USER_NAME} />
-      </div>
-
-      <div className="md:hidden">
-        <MobileHeader variant="title" title="OBC Sports Membership" />
-      </div>
+      <NavbarDashboard userName={USER_NAME} />
 
       <main className="mx-auto max-w-[1288px] px-6 pb-32 pt-4 md:pb-16 md:pt-10">
         {/* ================= Section showcase membership ================= */}
@@ -292,9 +284,7 @@ function MembershipPage() {
         </div>
       </main>
 
-      <div className="hidden md:block">
-        <Footer />
-      </div>
+      <Footer />
     </div>
   )
 }

@@ -2,7 +2,8 @@ import { useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ArrowRight, Check } from 'lucide-react'
 import NavbarDashboard from '../../components/layout/Navbar'
-import Footer from '../../components/layout/LandingFooter'
+import Footer from '../../components/layout/Footer'
+import PhotoCropModal from './PhotoCropModal'
 
 /* -------------------------------------------------------------------------
    Tipe data
@@ -63,6 +64,8 @@ function SettingsPage() {
   const [username, setUsername] = useState(INITIAL_USERNAME)
   const [bio, setBio] = useState(INITIAL_BIO)
   const [photoPreview, setPhotoPreview] = useState<string | null>(null)
+  const [photoBlob, setPhotoBlob] = useState<Blob | null>(null) // hasil foto setelah diatur user
+  const [cropSource, setCropSource] = useState<File | null>(null) // file yang sedang diatur di modal
   const [photoError, setPhotoError] = useState('')
 
   // State sandi
@@ -75,6 +78,8 @@ function SettingsPage() {
 
   const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
+    // Reset input supaya file yang sama bisa dipilih ulang
+    e.target.value = ''
     if (!file) return
 
     // Validasi format dan ukuran sesuai teks bantuan di bawah foto
@@ -87,9 +92,19 @@ function SettingsPage() {
       return
     }
 
+    // Foto valid: buka modal agar user menentukan ukuran & posisi foto
     setPhotoError('')
-    setPhotoPreview(URL.createObjectURL(file))
-    // TODO: unggah file ke services/profileService.js (POST /profile/photo)
+    setCropSource(file)
+  }
+
+  const handleCropApply = (blob: Blob) => {
+    // Bersihkan URL pratinjau lama agar tidak bocor memori
+    if (photoPreview) URL.revokeObjectURL(photoPreview)
+
+    setPhotoBlob(blob)
+    setPhotoPreview(URL.createObjectURL(blob))
+    setCropSource(null)
+    // TODO: unggah photoBlob ke services/profileService.js (POST /profile/photo, FormData field "photo")
   }
 
   const handleUpdatePassword = () => {
@@ -113,7 +128,7 @@ function SettingsPage() {
 
   const handleSaveChanges = () => {
     // TODO: sambungkan ke services/profileService.js (PUT /profile)
-    console.log({ fullName, username, bio })
+    console.log({ fullName, username, bio, photoBlob })
   }
 
   const handleHelpLink = (link: HelpLink) => {
@@ -334,6 +349,15 @@ function SettingsPage() {
       </main>
 
       <Footer />
+
+      {/* Modal atur ukuran & posisi foto, muncul setelah user memilih file */}
+      {cropSource && (
+        <PhotoCropModal
+          file={cropSource}
+          onCancel={() => setCropSource(null)}
+          onApply={handleCropApply}
+        />
+      )}
     </div>
   )
 }

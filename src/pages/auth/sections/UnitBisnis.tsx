@@ -37,9 +37,10 @@ const units: Unit[] = [
 /* PERUBAHAN: font Montserrat dipaksa lewat kelas (sesuai desain). Pastikan Montserrat sudah di-load di index.html */
 const FONT = "font-['Montserrat',sans-serif]"
 
-/* PERUBAHAN: gaya tombol dibuat inline, tidak lagi bergantung .btn-booking-now */
-const bookingClass = `${FONT} inline-flex h-7 shrink-0 items-center justify-center whitespace-nowrap rounded-full bg-white px-3 text-[11px] font-bold text-black shadow-[0_2px_4px_rgba(0,0,0,0.25)] transition-colors hover:bg-[#004000] hover:text-white`
-const detailClass = `${FONT} inline-flex h-7 shrink-0 items-center gap-1.5 whitespace-nowrap text-[13px] font-medium text-black transition-colors hover:text-[#004000]`
+/* PERUBAHAN: gaya tombol inline. Mobile: tombol Booking Now selebar kartu, Detail Unit di bawahnya (rata tengah).
+   Mulai md: kembali berjajar dalam satu baris (ukuran otomatis). */
+const bookingClass = `${FONT} inline-flex h-8 w-full shrink-0 items-center justify-center whitespace-nowrap rounded-full bg-white px-3 text-[11px] font-bold text-black shadow-[0_2px_4px_rgba(0,0,0,0.25)] ring-1 ring-black/5 transition-colors hover:bg-[#004000] hover:text-white md:h-7 md:w-auto`
+const detailClass = `${FONT} inline-flex h-7 w-full shrink-0 items-center justify-center gap-1.5 whitespace-nowrap text-[12px] font-medium text-black transition-colors hover:text-[#004000] md:w-auto md:justify-start md:text-[13px]`
 
 type UnitCardProps = {
 	unit: Unit
@@ -113,10 +114,12 @@ function UnitCard({ unit, isFavorite, onToggleFavorite, className = '' }: UnitCa
 				/>
 			</div>
 
-			{/* Nama + tombol, rata kiri seperti desain */}
-			<div className="relative z-10 mt-3 w-full px-1 md:mt-4 md:px-2 lg:mt-2">
-				<h3 className={`${FONT} text-[15px] font-bold leading-tight text-black md:text-[17px]`}>{unit.name}</h3>
-				<div className="mt-2 flex flex-wrap items-center justify-between gap-x-3 gap-y-1.5">
+			{/* Nama + tombol. Mobile: nama rata tengah, tombol bertumpuk. md+: rata kiri, tombol berjajar */}
+			<div className="relative z-10 mt-3 w-full px-0.5 md:mt-4 md:px-2 lg:mt-2">
+				<h3 className={`${FONT} text-center text-[14px] font-bold leading-tight text-black md:text-left md:text-[17px]`}>
+					{unit.name}
+				</h3>
+				<div className="mt-3 flex flex-col items-stretch gap-1.5 md:mt-2 md:flex-row md:flex-wrap md:items-center md:justify-between md:gap-x-3 md:gap-y-1.5">
 					{BookingLink}
 					{DetailLink}
 				</div>
@@ -134,7 +137,7 @@ export default function UnitBisnis() {
 
 	return (
 		<section
-			className="mx-auto flex min-h-[100svh] w-[calc(100%-32px)] max-w-[1280px] flex-col justify-center py-10 md:w-[calc(100%-48px)] md:py-14 lg:py-6"
+			className="mx-auto flex w-[calc(100%-32px)] max-w-[1280px] flex-col py-10 md:w-[calc(100%-48px)] md:py-14 lg:py-8"
 			id="layanan"
 		>
 			{/* Label kecil kapital abu-abu */}
@@ -147,7 +150,7 @@ export default function UnitBisnis() {
 			<div className="mx-auto mt-4 w-full max-w-[812px] border-t-2 border-[#00000080]" aria-hidden="true" />
 
 			{/* Baris 1: 4 unit */}
-			<div className="mt-8 grid grid-cols-2 gap-4 md:gap-6 lg:grid-cols-4 lg:gap-4">
+			<div className="mt-8 grid grid-cols-2 gap-3 md:gap-6 lg:grid-cols-4 lg:gap-4">
 				{units.slice(0, 4).map((unit) => (
 					<UnitCard
 						key={unit.name}
@@ -159,14 +162,14 @@ export default function UnitBisnis() {
 			</div>
 
 			{/* Baris 2: 3 unit, di tengah */}
-			<div className="mx-auto mt-4 grid w-full grid-cols-2 gap-4 md:mt-6 md:gap-6 lg:mt-4 lg:max-w-[calc(3*280px+2*1.5rem)] lg:grid-cols-3 lg:gap-4">
+			<div className="mx-auto mt-3 grid w-full grid-cols-2 gap-3 md:mt-6 md:gap-6 lg:mt-4 lg:max-w-[calc(3*280px+2*1.5rem)] lg:grid-cols-3 lg:gap-4">
 				{units.slice(4).map((unit) => (
 					<UnitCard
 						key={unit.name}
 						unit={unit}
 						isFavorite={favorites.includes(unit.name)}
 						onToggleFavorite={toggleFavorite}
-						className="last:col-span-2 last:mx-auto last:w-[calc(50%-8px)] lg:last:col-span-1 lg:last:w-full"
+						className="last:col-span-2 last:mx-auto last:w-[calc(50%-6px)] lg:last:col-span-1 lg:last:w-full"
 					/>
 				))}
 			</div>

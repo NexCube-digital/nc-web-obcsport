@@ -3,7 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import { Clock, Download } from 'lucide-react'
 import NavbarDashboard from '../../components/layout/Navbar'
 import MobileHeader from '../../components/layout/MobileHeader'
-import Footer from '../../components/layout/LandingFooter'
+import Footer from '../../components/layout/Footer'
 
 /* -------------------------------------------------------------------------
    Tipe data

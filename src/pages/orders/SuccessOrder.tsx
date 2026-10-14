@@ -1,7 +1,9 @@
 import { useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
+import { CircleCheck } from 'lucide-react'
 import NavbarDashboard from '../../components/layout/Navbar'
-import Footer from '../../components/layout/LandingFooter'
+import MobileHeader from '../../components/layout/MobileHeader'
+import Footer from '../../components/layout/Footer'
 import TestimonialModal from '../../components/ui/TestimonialModal'
 import lapangF1 from '../../assets/layanan/Lapang F1.png'
 
@@ -80,15 +82,22 @@ function SuccesOrder() {
     <>
       {/* ===================================================================
           TAMPILAN MOBILE (< md): layout mengikuti desain mobile,
-          isi & teks mengikuti versi PC. Tanpa navbar & footer.
+          isi & teks mengikuti versi PC.
           =================================================================== */}
-      <div className="md:hidden flex min-h-[100dvh] flex-col bg-white px-5 pb-8 pt-12 font-body text-[#343133]">
-        {/* Slot ilustrasi di atas: memakai foto lapangan seperti di versi PC */}
-        <img
-          src={lapangF1}
-          alt={data.facility}
-          className="h-[140px] w-full rounded-lg object-cover"
-        />
+      <MobileHeader variant="title" title="Pesanan Berhasil" showBottomNav={false} />
+      <div className="md:hidden flex min-h-[100dvh] flex-col bg-white px-5 pb-8 pt-6 font-body text-[#343133]">
+        <div
+          role="img"
+          aria-label="Pembayaran berhasil"
+          className="grid h-[140px] w-full place-items-center text-[#265021]"
+        >
+          <CircleCheck
+            size={88}
+            strokeWidth={1.8}
+            aria-hidden="true"
+            className="success-icon-pop"
+          />
+        </div>
 
         {/* Judul & deskripsi, rata tengah */}
         <div className="mt-6 text-center">

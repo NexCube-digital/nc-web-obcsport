@@ -1,6 +1,8 @@
 import { useLocation, useNavigate } from 'react-router-dom'
+import { CircleX } from 'lucide-react'
 import NavbarDashboard from '../../components/layout/Navbar'
-import Footer from '../../components/layout/LandingFooter'
+import MobileHeader from '../../components/layout/MobileHeader'
+import Footer from '../../components/layout/Footer'
 
 /* -------------------------------------------------------------------------
    Tipe data
@@ -51,14 +53,22 @@ function FailedOrder() {
     <>
       {/* ===================================================================
           TAMPILAN MOBILE (< md): layout mengikuti desain mobile,
-          isi & teks mengikuti versi PC. Tanpa navbar & footer.
+          isi & teks mengikuti versi PC.
           =================================================================== */}
-      <div className="md:hidden flex min-h-[100dvh] flex-col bg-white px-5 pb-8 pt-12 font-body text-[#343133]">
-        {/* TODO: ganti slot ini dengan ilustrasi gagal bila asetnya sudah ada */}
+      <MobileHeader variant="title" title="Pesanan Gagal" showBottomNav={false} />
+      <div className="md:hidden flex min-h-[100dvh] flex-col bg-white px-5 pb-8 pt-6 font-body text-[#343133]">
         <div
-          className="h-[140px] w-full rounded-lg border-2 border-dashed border-[#404F14] bg-[#E8EBE4]"
-          aria-hidden="true"
-        />
+          role="img"
+          aria-label="Pembayaran gagal"
+          className="grid h-[140px] w-full place-items-center text-[#E02424]"
+        >
+          <CircleX
+            size={88}
+            strokeWidth={1.8}
+            aria-hidden="true"
+            className="failed-icon-shake"
+          />
+        </div>
 
         {/* Judul & deskripsi, rata tengah */}
         <div className="mt-6 text-center">
