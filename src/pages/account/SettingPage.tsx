@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { ArrowRight, Check } from 'lucide-react'
 import NavbarDashboard from '../../components/layout/Navbar'
 import Footer from '../../components/layout/Footer'
-import PhotoCropModal from './PhotoCropModal'
+import PhotoCropModal from './Photocropmodal'
 
 /* -------------------------------------------------------------------------
    Tipe data

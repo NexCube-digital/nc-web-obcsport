@@ -1,9 +1,9 @@
 import { lazy, Suspense, useEffect, useRef, useState, type ReactNode } from 'react'
 import Navbar from '../../components/layout/LandingNavbar'
-import Footer from '../../components/layout/LandingFooter'
 import BtnStart from '../../components/ui/BtnStart'
 import Hero from './sections/Hero'
 
+const Footer = lazy(() => import('../../components/layout/LandingFooter'))
 const Promo = lazy(() => import('./sections/Promo'))
 const Highlight = lazy(() => import('./sections/Highlight'))
 const Booking = lazy(() => import('./sections/Booking'))
@@ -13,14 +13,17 @@ const UnitBisnis = lazy(() => import('./sections/UnitBisnis'))
 interface DeferredSectionProps {
   children: ReactNode
   placeholderClassName: string
+  isEnabled: boolean
   id?: string
 }
 
-function DeferredSection({ children, placeholderClassName, id }: DeferredSectionProps) {
+function DeferredSection({ children, placeholderClassName, isEnabled, id }: DeferredSectionProps) {
   const sectionRef = useRef<HTMLDivElement>(null)
   const [isNearViewport, setIsNearViewport] = useState(false)
 
   useEffect(() => {
+    if (!isEnabled) return
+
     const section = sectionRef.current
     if (!section) return
 
@@ -35,7 +38,7 @@ function DeferredSection({ children, placeholderClassName, id }: DeferredSection
 
     observer.observe(section)
     return () => observer.disconnect()
-  }, [])
+  }, [isEnabled])
 
   return (
     <div ref={sectionRef} id={id}>
@@ -77,31 +80,50 @@ function LandingPage() {
 
         <Hero />
 
-        <DeferredSection placeholderClassName="min-h-[280px] sm:min-h-[320px]">
+        <DeferredSection
+          isEnabled={hasScrolled}
+          placeholderClassName="min-h-[280px] sm:min-h-[320px]"
+        >
           <Promo />
         </DeferredSection>
 
-        <DeferredSection placeholderClassName="min-h-[150px] sm:min-h-[180px]">
+        <DeferredSection
+          isEnabled={hasScrolled}
+          placeholderClassName="min-h-[150px] sm:min-h-[180px]"
+        >
           <Highlight />
         </DeferredSection>
 
-        <DeferredSection placeholderClassName="min-h-[540px] lg:min-h-[640px]">
+        <DeferredSection
+          isEnabled={hasScrolled}
+          placeholderClassName="min-h-[540px] lg:min-h-[640px]"
+        >
           <Booking />
         </DeferredSection>
 
-        <DeferredSection placeholderClassName="min-h-[420px] md:min-h-[480px] lg:min-h-[500px]">
+        <DeferredSection
+          isEnabled={hasScrolled}
+          placeholderClassName="min-h-[420px] md:min-h-[480px] lg:min-h-[500px]"
+        >
           <Testimoni />
         </DeferredSection>
 
         <DeferredSection
           id="layanan"
+          isEnabled={hasScrolled}
           placeholderClassName="min-h-[620px] md:min-h-[700px]"
         >
           <UnitBisnis />
         </DeferredSection>
 
         {/* Footer + spacer setinggi tombol sticky (mobile) supaya footer tidak tertutup */}
-        <Footer />
+        <DeferredSection
+          id="landing-footer"
+          isEnabled={hasScrolled}
+          placeholderClassName="min-h-[100svh] lg:min-h-[590px]"
+        >
+          <Footer />
+        </DeferredSection>
 
         <BtnStart isVisible={hasScrolled && !isFooterVisible} />
       </div>
