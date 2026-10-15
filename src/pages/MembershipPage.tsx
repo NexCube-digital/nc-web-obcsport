@@ -2,7 +2,7 @@
 import { useState } from 'react'
 import { ArrowRight, ArrowUpRight, Check } from 'lucide-react'
 import NavbarDashboard from '../components/layout/Navbar'
-import Footer from '../components/layout/Footer'
+import DeferredFooter from '../components/layout/DeferredFooter'
 import member from '../assets/bfe838718c7f801119930d28d3d286f12b853b5e.jpg'
 
 /* -------------------------------------------------------------------------
@@ -183,7 +183,7 @@ function MembershipShowcase() {
 /* -------------------------------------------------------------------------
    Halaman
    ------------------------------------------------------------------------- */
-function MembershipPage() {
+function MembershipOptions() {
   const [selectedSport, setSelectedSport] = useState('badminton')
 
   const handleSubmitMembership = () => {
@@ -192,13 +192,6 @@ function MembershipPage() {
   }
 
   return (
-    <div className="min-h-screen bg-white font-body text-[#343133]">
-      <NavbarDashboard userName={USER_NAME} />
-
-      <main className="mx-auto max-w-[1288px] px-6 pb-32 pt-4 md:pb-16 md:pt-10">
-        {/* ================= Section showcase membership ================= */}
-        <MembershipShowcase />
-
         <div className="mt-6 grid grid-cols-1 items-start gap-5 md:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)] md:gap-6">
           <a
             href="#membership-details"
@@ -282,9 +275,18 @@ function MembershipPage() {
             </button>
           </section>
         </div>
-      </main>
+  )
+}
 
-      <Footer />
+function MembershipPage() {
+  return (
+    <div className="min-h-screen bg-white font-body text-[#343133]">
+      <NavbarDashboard userName={USER_NAME} />
+      <main className="mx-auto max-w-[1288px] px-6 pb-32 pt-4 md:pb-16 md:pt-10">
+        <MembershipShowcase />
+        <MembershipOptions />
+      </main>
+      <DeferredFooter />
     </div>
   )
 }

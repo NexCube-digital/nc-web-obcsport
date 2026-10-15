@@ -1,10 +1,12 @@
-import { useState } from 'react'
+import { lazy, Suspense, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { CalendarDays, Check } from 'lucide-react'
 import NavbarDashboard from '../../components/layout/Navbar'
 import MobileHeader from '../../components/layout/MobileHeader'
-import Footer from '../../components/layout/Footer'
-import PendingOrderModal from '../../components/ui/PendingOrderModal'
+import DeferredFooter from '../../components/layout/DeferredFooter'
+import { useIsMobile } from '../../hooks/useIsMobile'
+
+const PendingOrderModal = lazy(() => import('../../components/ui/PendingOrderModal'))
 
 /* -------------------------------------------------------------------------
    Tipe data
@@ -155,6 +157,7 @@ const hourOf = (time: string) => Number(time.split(':')[0])
 function PaymentPage() {
   const navigate = useNavigate()
   const location = useLocation()
+  const isMobile = useIsMobile()
   const state = (location.state as CheckoutState | null) ?? {}
 
   const [method, setMethod] = useState<PaymentMethodId>('qris')
@@ -239,13 +242,15 @@ function PaymentPage() {
   return (
     <>
       
-      <MobileHeader
-        variant="title"
-        title="Konfirmasi & Pembayaran"
-        showShare
-        showBottomNav={false}
-      />
-      <div className="md:hidden min-h-[100dvh] bg-white font-body text-[#343133] pb-28">
+      {isMobile && (
+        <MobileHeader
+          variant="title"
+          title="Konfirmasi & Pembayaran"
+          showShare
+          showBottomNav={false}
+        />
+      )}
+      {isMobile && <div className="min-h-[100dvh] bg-white font-body text-[#343133] pb-28">
 
         <div className="px-4 pt-4">
           {/* Kartu reservasi + rincian biaya */}
@@ -408,13 +413,13 @@ function PaymentPage() {
             Bayar Sekarang
           </button>
         </div>
-      </div>
+      </div>}
 
       {/* ===================================================================
           TAMPILAN DESKTOP (>= md): tampilan asli
           =================================================================== */}
-      <div className="hidden md:block min-h-screen bg-white font-body text-[#343133]">
-        <NavbarDashboard userName={USER_NAME} showDesktopNavigation={false} />
+      {!isMobile && <div className="min-h-screen bg-white font-body text-[#343133]">
+        <NavbarDashboard userName={USER_NAME} showDesktopNavigation={false} showMobileHeader={false} />
 
         {/* Lebar konten 1200px sesuai desain */}
         <main className="max-w-[1248px] mx-auto px-6 pt-6 pb-16">
@@ -563,22 +568,26 @@ function PaymentPage() {
           </div>
         </main>
 
-        <Footer />
-      </div>
+        <DeferredFooter />
+      </div>}
 
-      <PendingOrderModal
-        isOpen={pendingPayment !== null}
-        date={date}
-        time={`${startTime} - ${endTime}`}
-        paymentMethod={pendingPayment?.method ?? ''}
-        amount={pendingPayment?.total ?? 0}
-        onClose={() => setPendingPayment(null)}
-        onReturnHome={() => {
-          setPendingPayment(null)
-          navigate('/home')
-        }}
-        onOpenOrderStatus={handleOpenOrderStatus}
-      />
+      {pendingPayment !== null && (
+        <Suspense fallback={null}>
+          <PendingOrderModal
+            isOpen
+            date={date}
+            time={`${startTime} - ${endTime}`}
+            paymentMethod={pendingPayment.method}
+            amount={pendingPayment.total}
+            onClose={() => setPendingPayment(null)}
+            onReturnHome={() => {
+              setPendingPayment(null)
+              navigate('/home')
+            }}
+            onOpenOrderStatus={handleOpenOrderStatus}
+          />
+        </Suspense>
+      )}
     </>
   )
 }

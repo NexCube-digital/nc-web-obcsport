@@ -1,8 +1,9 @@
-import { useEffect, useRef, useState } from 'react'
+import { lazy, Suspense, useEffect, useRef, useState } from 'react'
 import { ChevronDown, Globe, ShoppingCart, UserRound } from 'lucide-react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
-import CartModal from '../ui/CartModal'
 import NotificationDropdown from './NotificationDropdown'
+
+const CartModal = lazy(() => import('../ui/CartModal'))
 
 /* -------------------------------------------------------------------------
    Tipe data
@@ -365,7 +366,11 @@ function MobileHeader({
         </nav>
       )}
 
-      <CartModal isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} />
+      {isCartOpen && (
+        <Suspense fallback={null}>
+          <CartModal isOpen onClose={() => setIsCartOpen(false)} />
+        </Suspense>
+      )}
     </>
   )
 }

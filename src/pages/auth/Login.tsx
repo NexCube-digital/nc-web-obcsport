@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { Eye, EyeOff, House } from 'lucide-react'
 import loginIllustration from '../../assets/figma/login.jpg'
 import logo from '../../assets/logo/unit bisnis/LOGO OBC SPORT CENTER.png'
+import { useIsMobile } from '../../hooks/useIsMobile'
 
 /* Ikon Google */
 function GoogleIcon() {
@@ -27,6 +28,7 @@ function LoginPage() {
   const [password, setPassword] = useState('')
   const [rememberMe, setRememberMe] = useState(false)
   const navigate = useNavigate()
+  const isMobile = useIsMobile()
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -41,7 +43,8 @@ function LoginPage() {
   return (
     <>
       {/* ===================== MOBILE (< md) — satu layar, tanpa scroll ===================== */}
-      <div className="relative flex h-[100dvh] flex-col justify-center overflow-hidden bg-[#FDFCF7] px-6 py-[clamp(8px,2.5vh,40px)] font-heading text-[#343133] md:hidden">
+      {isMobile && (
+      <div className="relative flex h-[100dvh] flex-col justify-center overflow-hidden bg-[#FDFCF7] px-6 py-[clamp(8px,2.5vh,40px)] font-heading text-[#343133]">
         <Link
           to="/"
           aria-label="Kembali ke Home"
@@ -158,9 +161,11 @@ function LoginPage() {
           </Link>
         </p>
       </div>
+      )}
 
       {/*  DESKTOP (>= md) — satu layar, tanpa scroll  */}
-      <div className="relative hidden h-[100dvh] flex-col overflow-hidden bg-white font-body text-[#343133] md:flex">
+      {!isMobile && (
+      <div className="relative h-[100dvh] flex flex-col overflow-hidden bg-white font-body text-[#343133]">
         <Link
           to="/"
           aria-label="Kembali ke Home"
@@ -294,6 +299,7 @@ function LoginPage() {
           </section>
         </main>
       </div>
+      )}
 
     </>
   )

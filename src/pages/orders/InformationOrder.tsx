@@ -1,9 +1,10 @@
-import { useEffect, useRef, useState } from 'react'
+import { memo, useEffect, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { Clock, Download } from 'lucide-react'
 import NavbarDashboard from '../../components/layout/Navbar'
 import MobileHeader from '../../components/layout/MobileHeader'
-import Footer from '../../components/layout/Footer'
+import DeferredFooter from '../../components/layout/DeferredFooter'
+import { useIsMobile } from '../../hooks/useIsMobile'
 
 /* -------------------------------------------------------------------------
    Tipe data
@@ -55,47 +56,51 @@ const formatRupiah = (value: number) => `Rp ${value.toLocaleString('id-ID')}`
  * Placeholder kode QR (pola acak tetap + 3 penanda sudut).
  * TODO: ganti dengan gambar / string QRIS asli dari API pembayaran.
  */
-const QrPlaceholder = ({
-  className = 'h-[62px] w-[62px]',
-  svgRef,
-}: {
+interface QrPlaceholderProps {
   className?: string
   svgRef?: React.Ref<SVGSVGElement>
-}) => {
-  const size = 25
-  const cells: { x: number; y: number }[] = []
-  let seed = 7
-  const isFinder = (x: number, y: number) =>
-    (x < 8 && y < 8) || (x >= size - 8 && y < 8) || (x < 8 && y >= size - 8)
+}
 
-  for (let y = 0; y < size; y += 1) {
-    for (let x = 0; x < size; x += 1) {
-      seed = (seed * 9301 + 49297) % 233280
-      if (!isFinder(x, y) && seed / 233280 > 0.5) cells.push({ x, y })
-    }
+const QR_SIZE = 25
+const QR_CELLS: { x: number; y: number }[] = []
+let qrSeed = 7
+const isQrFinder = (x: number, y: number) =>
+  (x < 8 && y < 8) ||
+  (x >= QR_SIZE - 8 && y < 8) ||
+  (x < 8 && y >= QR_SIZE - 8)
+
+for (let y = 0; y < QR_SIZE; y += 1) {
+  for (let x = 0; x < QR_SIZE; x += 1) {
+    qrSeed = (qrSeed * 9301 + 49297) % 233280
+    if (!isQrFinder(x, y) && qrSeed / 233280 > 0.5) QR_CELLS.push({ x, y })
   }
+}
 
-  const finders = [
-    [0, 0],
-    [size - 7, 0],
-    [0, size - 7],
-  ]
+const QR_FINDERS = [
+  [0, 0],
+  [QR_SIZE - 7, 0],
+  [0, QR_SIZE - 7],
+]
 
+function QrPlaceholder({
+  className = 'h-[62px] w-[62px]',
+  svgRef,
+}: QrPlaceholderProps) {
   return (
     <svg
       ref={svgRef}
       xmlns="http://www.w3.org/2000/svg"
-      viewBox={`0 0 ${size} ${size}`}
+      viewBox={`0 0 ${QR_SIZE} ${QR_SIZE}`}
       className={className}
       shapeRendering="crispEdges"
       role="img"
       aria-label="Kode QRIS"
     >
-      <rect width={size} height={size} fill="#fff" />
-      {cells.map(({ x, y }) => (
+      <rect width={QR_SIZE} height={QR_SIZE} fill="#fff" />
+      {QR_CELLS.map(({ x, y }) => (
         <rect key={`${x}-${y}`} x={x} y={y} width="1" height="1" fill="#121212" />
       ))}
-      {finders.map(([fx, fy]) => (
+      {QR_FINDERS.map(([fx, fy]) => (
         <g key={`${fx}-${fy}`}>
           <rect x={fx} y={fy} width="7" height="7" fill="#121212" />
           <rect x={fx + 1} y={fy + 1} width="5" height="5" fill="#fff" />
@@ -106,30 +111,51 @@ const QrPlaceholder = ({
   )
 }
 
-function InformationOrder() {
+const MemoQrPlaceholder = memo(QrPlaceholder)
+
+function PaymentCountdown() {
   const navigate = useNavigate()
-  const location = useLocation()
-  const state = (location.state as InformationState | null) ?? {}
-
-  const total = state.total ?? DEFAULT_TOTAL
-  const transactionId = state.transactionId ?? DEFAULT_TRANSACTION_ID
-
   const [secondsLeft, setSecondsLeft] = useState(DEFAULT_SECONDS)
-  const [copied, setCopied] = useState(false)
-  const mobileQrRef = useRef<SVGSVGElement>(null)
 
-  // Hitung mundur; saat habis, arahkan ke halaman gagal
   useEffect(() => {
     if (secondsLeft <= 0) {
-      navigate('/pembayaran/gagal', { replace: true })
+      navigate('/failed-order', { replace: true })
       return
     }
-    const timer = window.setTimeout(() => setSecondsLeft((prev) => prev - 1), 1000)
+
+    const timer = window.setTimeout(() => setSecondsLeft((previous) => previous - 1), 1000)
     return () => window.clearTimeout(timer)
   }, [secondsLeft, navigate])
 
   const minutes = Math.floor(secondsLeft / 60)
   const seconds = secondsLeft % 60
+
+  return (
+    <>
+      <span className="md:hidden">
+        Selesaikan pembayaran dalam:{' '}
+        <span className="font-bold">
+          {String(minutes).padStart(2, '0')}:{String(seconds).padStart(2, '0')} mins
+        </span>
+      </span>
+      <span className="hidden md:inline">
+        Batas Waktu: {minutes} Menit {String(seconds).padStart(2, '0')} Detik
+      </span>
+    </>
+  )
+}
+
+function InformationOrder() {
+  const navigate = useNavigate()
+  const location = useLocation()
+  const isMobile = useIsMobile()
+  const state = (location.state as InformationState | null) ?? {}
+
+  const total = state.total ?? DEFAULT_TOTAL
+  const transactionId = state.transactionId ?? DEFAULT_TRANSACTION_ID
+
+  const [copied, setCopied] = useState(false)
+  const mobileQrRef = useRef<SVGSVGElement>(null)
 
   // Total versi mobile: nominal + kode verifikasi unik (3 digit terakhir)
   const mobileTotal = total + UNIQUE_CODE
@@ -170,31 +196,28 @@ function InformationOrder() {
       {/* ===================================================================
           TAMPILAN MOBILE (< md): tanpa navbar & footer, sesuai desain
           =================================================================== */}
-      <MobileHeader
-        variant="title"
-        title="Pembayaran QRIS"
-        centerTitle
-        showBottomNav={false}
-      />
-      <div className="md:hidden flex h-[calc(100dvh-4rem)] flex-col overflow-hidden bg-white font-body text-[#343133] pb-24 overscroll-none">
+      {isMobile && (
+        <MobileHeader
+          variant="title"
+          title="Pembayaran QRIS"
+          centerTitle
+          showBottomNav={false}
+        />
+      )}
+      {isMobile && <div className="flex h-[calc(100dvh-4rem)] flex-col overflow-hidden bg-white font-body text-[#343133] pb-24 overscroll-none">
         {/* Banner batas waktu */}
         <div
           role="timer"
           className="flex items-center justify-center gap-2 bg-[#FDF2F2] px-3 py-2 font-heading text-xs text-[#E02424]"
         >
           <Clock size={16} aria-hidden="true" />
-          <span>
-            Selesaikan pembayaran dalam:{' '}
-            <span className="font-bold">
-              {String(minutes).padStart(2, '0')}:{String(seconds).padStart(2, '0')} mins
-            </span>
-          </span>
+          <PaymentCountdown />
         </div>
 
         <div className="min-h-0 px-3 pt-3">
           {/* Kartu QR */}
           <section className="flex flex-col items-center rounded-2xl border border-[#D4D4D4] bg-white px-3 pb-3 pt-4">
-            <QrPlaceholder className="h-[140px] w-[140px]" svgRef={mobileQrRef} />
+            <MemoQrPlaceholder className="h-[140px] w-[140px]" svgRef={mobileQrRef} />
             <button
               type="button"
               onClick={handleDownloadQr}
@@ -241,13 +264,13 @@ function InformationOrder() {
             Cek Status Pembayaran
           </button>
         </div>
-      </div>
+      </div>}
 
       {/* ===================================================================
           TAMPILAN DESKTOP (>= md): tampilan asli
           =================================================================== */}
-      <div className="hidden md:flex min-h-screen flex-col bg-white font-body text-[#343133]">
-        <NavbarDashboard userName={USER_NAME} showDesktopNavigation={false} />
+      {!isMobile && <div className="min-h-screen flex flex-col bg-white font-body text-[#343133]">
+        <NavbarDashboard userName={USER_NAME} showDesktopNavigation={false} showMobileHeader={false} />
 
         <main className="mx-auto w-full max-w-[1248px] flex-1 px-6 pb-16 pt-6">
           <div className="text-center">
@@ -258,7 +281,7 @@ function InformationOrder() {
               className="mt-0.5 inline-block rounded-full border border-[#E02424] bg-[#FDF2F2] px-3 py-0.5 font-heading text-xs font-bold text-[#E02424]"
               role="timer"
             >
-              Batas Waktu: {minutes} Menit {String(seconds).padStart(2, '0')} Detik
+              <PaymentCountdown />
             </span>
           </div>
 
@@ -270,7 +293,7 @@ function InformationOrder() {
                 <p className="font-heading text-[11px] font-bold text-[#265021]">[Scan QRIS]</p>
                 <div className="mt-1 flex h-[100px] w-[100px] items-center justify-center bg-[#EEF0F3]">
                   <div className="bg-white p-1 shadow-sm">
-                    <QrPlaceholder />
+                    <MemoQrPlaceholder />
                   </div>
                 </div>
                 <p className="mt-2 font-heading text-[8px] text-[#343133]">GPN - QRIS STANDAR</p>
@@ -321,8 +344,8 @@ function InformationOrder() {
           </button>
         </main>
 
-        <Footer />
-      </div>
+        <DeferredFooter />
+      </div>}
     </>
   )
 }

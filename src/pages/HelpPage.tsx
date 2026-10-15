@@ -3,6 +3,7 @@ import { Plus, Search } from 'lucide-react'
 import NavbarDashboard from '../components/layout/Navbar'
 import MobileHeader from '../components/layout/MobileHeader'
 import Footer from '../components/layout/Footer'
+import { useIsMobile } from '../hooks/useIsMobile'
 
 /* -------------------------------------------------------------------------
    Tipe data
@@ -52,6 +53,7 @@ const CS_WHATSAPP_MESSAGE = 'Halo, saya butuh bantuan terkait layanan OBC Sport 
 
 function HelpPage() {
   const [searchQuery, setSearchQuery] = useState('')
+  const isMobile = useIsMobile()
 
   // State khusus mobile: FAQ yang sedang terbuka (awal: item pertama, sesuai desain)
   const [openFaqId, setOpenFaqId] = useState<string | null>(FAQ_ITEMS[0].id)
@@ -71,18 +73,18 @@ function HelpPage() {
 
   return (
     <div className="min-h-screen bg-white font-body text-[#343133]">
-      <div className="hidden md:block">
+      {!isMobile && (
         <NavbarDashboard userName={USER_NAME} />
-      </div>
-      <div className="md:hidden">
+      )}
+      {isMobile && (
         <MobileHeader variant="title" title="Bantuan & QnA" />
-      </div>
+      )}
 
       {/* ===================================================================
           TAMPILAN MOBILE (< md)
           Warna & font mengikuti versi PC
           =================================================================== */}
-      <div className="md:hidden px-4 pt-5 pb-44">
+      {isMobile && <div className="px-4 pt-5 pb-44">
         <p className="mt-2 font-heading text-xs text-[#6F6B6E]">
           Pertanyaan populer dan panduan pusat olahraga
         </p>
@@ -156,13 +158,13 @@ function HelpPage() {
             Hubungi Admin Hub via WhatsApp
           </button>
         </div>
-      </div>
+      </div>}
 
       {/* ===================================================================
           TAMPILAN DESKTOP (>= md): tampilan asli
           =================================================================== */}
       {/* Lebar konten 1068px sesuai desain */}
-      <main className="hidden md:block max-w-[1116px] mx-auto px-6 pt-5 pb-16">
+      {!isMobile && <main className="max-w-[1116px] mx-auto px-6 pt-5 pb-16">
         <span className="inline-block rounded-full bg-[#E8EDE3] px-3 py-2 text-xs font-heading font-bold text-[#404F14] tracking-wide">
           DUKUNGAN PELANGGAN &amp; FAQ
         </span>
@@ -233,12 +235,12 @@ function HelpPage() {
             </button>
           </div>
         </div>
-      </main>
+      </main>}
 
       {/* Footer hanya tampil di desktop */}
-      <div className="hidden md:block">
+      {!isMobile && (
         <Footer />
-      </div>
+      )}
     </div>
   )
 }

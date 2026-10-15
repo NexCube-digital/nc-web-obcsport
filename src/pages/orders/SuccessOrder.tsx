@@ -1,11 +1,13 @@
-import { useState } from 'react'
+import { lazy, Suspense, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { ChevronDown, CircleCheck } from 'lucide-react'
 import NavbarDashboard from '../../components/layout/Navbar'
 import MobileHeader from '../../components/layout/MobileHeader'
-import Footer from '../../components/layout/Footer'
-import TestimonialModal from '../../components/ui/TestimonialModal'
+import DeferredFooter from '../../components/layout/DeferredFooter'
 import lapangF1 from '../../assets/layanan/Lapang F1.png'
+import { useIsMobile } from '../../hooks/useIsMobile'
+
+const TestimonialModal = lazy(() => import('../../components/ui/TestimonialModal'))
 
 /* -------------------------------------------------------------------------
    Tipe data
@@ -52,6 +54,7 @@ const formatRupiah = (value: number) => `Rp ${value.toLocaleString('id-ID')}`
 function SuccesOrder() {
   const navigate = useNavigate()
   const location = useLocation()
+  const isMobile = useIsMobile()
   const data = { ...DEFAULTS, ...((location.state as SuccessState | null) ?? {}) }
   const reviewStorageKey = `obc:review:${data.bookingCode}`
   const [reviewStatus, setReviewStatus] = useState(
@@ -85,12 +88,13 @@ function SuccesOrder() {
           TAMPILAN MOBILE (< md): layout mengikuti desain mobile,
           isi & teks mengikuti versi PC.
           =================================================================== */}
-      <MobileHeader variant="title" title="Pesanan Berhasil" showBottomNav={false} />
-      <div
-        className={`md:hidden flex h-[calc(100dvh-4rem)] flex-col bg-white px-4 pb-5 pt-3 font-body text-[#343133] overscroll-contain ${
+      {isMobile && <MobileHeader variant="title" title="Pesanan Berhasil" showBottomNav={false} />}
+      {isMobile && (
+        <div
+          className={`flex h-[calc(100dvh-4rem)] flex-col bg-white px-4 pb-5 pt-3 font-body text-[#343133] overscroll-contain ${
           isPaymentDetailsOpen ? 'overflow-y-auto' : 'overflow-hidden'
-        }`}
-      >
+          }`}
+        >
         <div
           role="img"
           aria-label="Pembayaran berhasil"
@@ -244,13 +248,16 @@ function SuccesOrder() {
             Kembali ke Beranda
           </button>
         </div>
-      </div>
+        </div>
+      )}
 
-      {/* ===================================================================
+        {/* ===================================================================
           TAMPILAN DESKTOP (>= md): tampilan asli
           =================================================================== */}
-      <div className="hidden md:flex min-h-screen flex-col bg-white font-body text-[#343133]">
-        <NavbarDashboard userName={USER_NAME} showDesktopNavigation={false} />
+
+      {!isMobile && (
+        <div className="min-h-screen flex flex-col bg-white font-body text-[#343133]">
+        <NavbarDashboard userName={USER_NAME} showDesktopNavigation={false} showMobileHeader={false} />
 
         <main className="mx-auto flex w-full max-w-[1068px] flex-1 items-center px-6 py-12">
           <div className="grid w-full items-center gap-12 lg:grid-cols-[1fr_480px]">
@@ -390,17 +397,22 @@ function SuccesOrder() {
           </div>
         </main>
 
-        <Footer />
-      </div>
+        <DeferredFooter />
+        </div>
+      )}
 
-      <TestimonialModal
-        isOpen={isTestimonialOpen}
-        onClose={() => setIsTestimonialOpen(false)}
-        onDefer={handleDeferReview}
-        facilityName={data.facility}
-        dateLabel={data.schedule}
-        onSubmit={handleReviewSubmitted}
-      />
+      {isTestimonialOpen && (
+        <Suspense fallback={null}>
+          <TestimonialModal
+            isOpen
+            onClose={() => setIsTestimonialOpen(false)}
+            onDefer={handleDeferReview}
+            facilityName={data.facility}
+            dateLabel={data.schedule}
+            onSubmit={handleReviewSubmitted}
+          />
+        </Suspense>
+      )}
     </>
   )
 }

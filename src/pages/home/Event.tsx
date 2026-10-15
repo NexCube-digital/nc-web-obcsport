@@ -58,7 +58,13 @@ function Event({ onPreviewImage }: EventProps) {
 							className="absolute inset-0 z-10 cursor-zoom-in rounded-2xl focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#404F14]"
 						/>
 						<div className="h-[88px] w-14 shrink-0 overflow-hidden rounded-lg min-[360px]:h-[110px] min-[360px]:w-[72px]">
-							<img src={promo.image} alt="" className="h-full w-full object-cover" loading="lazy" />
+							<img
+								src={promo.image}
+								alt=""
+								className="h-full w-full object-cover"
+								loading="lazy"
+								decoding="async"
+							/>
 						</div>
 						<div className="pointer-events-none relative min-w-0">
 							<span className="inline-block rounded bg-[#E6F0E0] px-2 py-1 text-[10px] font-bold leading-none text-[#404F14] font-heading">

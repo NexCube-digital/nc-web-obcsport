@@ -68,13 +68,16 @@ const FACILITIES: FacilityCard[] = [
 	},
 ]
 
+const SEARCHABLE_FACILITIES = FACILITIES.map((facility) => ({
+	facility,
+	searchText: `${facility.name} ${facility.description}`.toLocaleLowerCase('id-ID'),
+}))
+
 function Court({ submittedSearch, onPreviewImage, onSelectFacility }: CourtProps) {
 	const normalizedSearch = submittedSearch.toLocaleLowerCase('id-ID')
-	const filteredFacilities = FACILITIES.filter((facility) =>
-		`${facility.name} ${facility.description}`
-			.toLocaleLowerCase('id-ID')
-			.includes(normalizedSearch),
-	)
+	const filteredFacilities = SEARCHABLE_FACILITIES.filter(({ searchText }) =>
+		searchText.includes(normalizedSearch),
+	).map(({ facility }) => facility)
 
 	return (
 		<section className="mt-4 sm:mt-6">
@@ -103,6 +106,7 @@ function Court({ submittedSearch, onPreviewImage, onSelectFacility }: CourtProps
 								alt=""
 								className="h-full w-full object-cover transition-transform duration-300 hover:scale-105"
 								loading="lazy"
+								decoding="async"
 							/>
 						</div>
 						<div className="pointer-events-none relative flex flex-1 flex-col px-2.5 pt-2.5 pb-2.5 min-[360px]:px-3 min-[360px]:pt-3 min-[360px]:pb-3 sm:pb-4">

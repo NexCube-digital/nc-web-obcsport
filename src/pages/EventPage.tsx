@@ -1,5 +1,5 @@
 import NavbarDashboard from '../components/layout/Navbar'
-import Footer from '../components/layout/Footer'
+import DeferredFooter from '../components/layout/DeferredFooter'
 import whatsappIcon from '../assets/icon/whatsapp2.svg'
 
 /* -------------------------------------------------------------------------
@@ -145,7 +145,7 @@ function OrderPage() {
         </div>
       </main>
 
-      <Footer />
+      <DeferredFooter />
     </div>
   )
 }

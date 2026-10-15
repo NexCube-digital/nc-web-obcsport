@@ -1,19 +1,58 @@
-import { lazy, Suspense, useState } from 'react'
+import { lazy, Suspense, useEffect, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import NavbarDashboard from '../../components/layout/Navbar'
 import MobileHeader from '../../components/layout/MobileHeader'
-import Footer from '../../components/layout/Footer'
+import DeferredFooter from '../../components/layout/DeferredFooter'
 import type { CartItem } from '../../components/ui/CartModal'
 import { COURT_FACILITIES } from '../../data/facilitiesData'
 import FacilityDetails from './checkout/FacilityDetails'
-import ReviewSection from './checkout/ReviewSection'
-import BookingCalendar from './checkout/BookingCalendar'
-import TimeSlotPicker from './checkout/TimeSlotPicker'
-import MobileBookingSheet from './checkout/MobileBookingSheet'
+import { useIsMobile } from '../../hooks/useIsMobile'
 
 const ScheduleConflict = lazy(() => import('./checkout/ScheduleConflict'))
 const ModalCheckout = lazy(() => import('../../components/ui/ModalCheckout'))
 const CartModal = lazy(() => import('../../components/ui/CartModal'))
+const ReviewSection = lazy(() => import('./checkout/ReviewSection'))
+const BookingCalendar = lazy(() => import('./checkout/BookingCalendar'))
+const TimeSlotPicker = lazy(() => import('./checkout/TimeSlotPicker'))
+const MobileBookingSheet = lazy(() => import('./checkout/MobileBookingSheet'))
+
+interface DeferredReviewProps {
+  variant: 'mobile' | 'desktop'
+}
+
+function DeferredReview({ variant }: DeferredReviewProps) {
+  const sectionRef = useRef<HTMLDivElement>(null)
+  const [isNearViewport, setIsNearViewport] = useState(false)
+
+  useEffect(() => {
+    const section = sectionRef.current
+    if (!section) return
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (!entry.isIntersecting) return
+        setIsNearViewport(true)
+        observer.disconnect()
+      },
+      { rootMargin: '300px 0px' },
+    )
+
+    observer.observe(section)
+    return () => observer.disconnect()
+  }, [])
+
+  return (
+    <div ref={sectionRef} className="flow-root">
+      {isNearViewport ? (
+        <Suspense fallback={<div aria-hidden="true" className="min-h-[240px]" />}>
+          <ReviewSection variant={variant} />
+        </Suspense>
+      ) : (
+        <div aria-hidden="true" className="min-h-[240px]" />
+      )}
+    </div>
+  )
+}
 
 /* -------------------------------------------------------------------------
    Tipe data
@@ -65,6 +104,7 @@ type CheckoutState = {
 function DetailOrder() {
   const navigate = useNavigate()
   const location = useLocation()
+  const isMobile = useIsMobile()
   const facility =
     (location.state as CheckoutState | null)?.facility ?? COURT_FACILITIES[0]
 
@@ -240,92 +280,96 @@ function DetailOrder() {
 
   return (
     <>
-      <MobileHeader
-        variant="title"
-        title="Checkout"
-        showShare
-        showBottomNav={false}
-      />
-      <div className="md:hidden min-h-[100dvh] bg-white font-body text-[#343133] px-4 pt-6 pb-52">
-        <FacilityDetails />
-        <ReviewSection />
-      </div>
-      <MobileBookingSheet
-        isOpen={isSheetOpen}
-        onToggle={handleToggleMobileSheet}
-        onClose={() => setIsSheetOpen(false)}
-        onChangeMonth={handleChangeMonth}
-        onSelectDate={handleSelectDate}
-        onToggleTime={handleToggleTime}
-        onOrderNow={handleOrderNowMobile}
-        onSearchOther={handleSearchOtherMobile}
-        onAddToCart={handleAddToCart}
-        viewYear={viewYear}
-        viewMonth={viewMonth}
-        selectedDate={selectedDate}
-        selectedDateLabel={selectedDateLabel}
-        bookedDates={BOOKED_DATES}
-        bookedSlotsToday={bookedSlotsToday}
-        selectedTimes={selectedTimes}
-        isDateBooked={isDateBooked}
-        sessionCount={sessionCount}
-        startTime={startTime}
-        endTime={endTime}
-        totalPrice={totalPrice}
-        maxSessionHours={MAX_SESSION_HOURS}
-      />
-
-      {/* ===================================================================
-          TAMPILAN DESKTOP (>= md): tampilan asli
-          =================================================================== */}
-      <div className="hidden md:block min-h-screen bg-white font-body text-[#343133]">
-        <NavbarDashboard userName={USER_NAME} showDesktopNavigation={false} />
-
-        {/* Lebar konten 1200px sesuai desain */}
-        <main className="max-w-[1248px] mx-auto px-6 pt-6 pb-16">
-          <div className="grid items-start gap-12 lg:grid-cols-[736px_1fr]">
-            <div>
-              <FacilityDetails />
-              <ReviewSection />
-            </div>
-
-            <div>
-              <h2 className="font-heading text-2xl font-bold text-[#343133]">
-                Pilih Tanggal &amp; Waktu Booking
-              </h2>
-              <p className="mt-2 max-w-[320px] text-sm leading-relaxed text-[#343133]">
-                Silakan pilih tanggal yang tersedia (Hijau) dan jam latihan Anda. Tanggal
-                merah / soft-red sudah dibooking.
-              </p>
-              <BookingCalendar
-                variant="desktop"
-                viewYear={viewYear}
-                viewMonth={viewMonth}
-                selectedDate={selectedDate}
-                bookedDates={BOOKED_DATES}
-                onChangeMonth={handleChangeMonth}
-                onSelectDate={handleSelectDate}
-              />
-              <TimeSlotPicker
-                variant="desktop"
-                isDateBooked={isDateBooked}
-                bookedSlotsToday={bookedSlotsToday}
-                selectedTimes={selectedTimes}
-                sessionCount={sessionCount}
-                selectedDateLabel={selectedDateLabel}
-                startTime={startTime}
-                endTime={endTime}
-                maxSessionHours={MAX_SESSION_HOURS}
-                onToggleTime={handleToggleTime}
-                onConfirmSchedule={handleConfirmSchedule}
-                onResetSearch={handleResetSearch}
-              />
-            </div>
+      {isMobile ? (
+        <>
+          <MobileHeader
+            variant="title"
+            title="Checkout"
+            showShare
+            showBottomNav={false}
+          />
+          <div className="min-h-[100dvh] bg-white font-body text-[#343133] px-4 pt-6 pb-52">
+            <FacilityDetails variant="mobile" />
+            <DeferredReview variant="mobile" />
           </div>
-        </main>
+          <Suspense fallback={null}>
+            <MobileBookingSheet
+              isOpen={isSheetOpen}
+              onToggle={handleToggleMobileSheet}
+              onClose={() => setIsSheetOpen(false)}
+              onChangeMonth={handleChangeMonth}
+              onSelectDate={handleSelectDate}
+              onToggleTime={handleToggleTime}
+              onOrderNow={handleOrderNowMobile}
+              onSearchOther={handleSearchOtherMobile}
+              onAddToCart={handleAddToCart}
+              viewYear={viewYear}
+              viewMonth={viewMonth}
+              selectedDate={selectedDate}
+              selectedDateLabel={selectedDateLabel}
+              bookedDates={BOOKED_DATES}
+              bookedSlotsToday={bookedSlotsToday}
+              selectedTimes={selectedTimes}
+              isDateBooked={isDateBooked}
+              sessionCount={sessionCount}
+              startTime={startTime}
+              endTime={endTime}
+              totalPrice={totalPrice}
+              maxSessionHours={MAX_SESSION_HOURS}
+            />
+          </Suspense>
+        </>
+      ) : (
+        <div className="min-h-screen bg-white font-body text-[#343133]">
+          <NavbarDashboard userName={USER_NAME} showDesktopNavigation={false} showMobileHeader={false} />
 
-        <Footer />
-      </div>
+          <main className="max-w-[1248px] mx-auto px-6 pt-6 pb-16">
+            <div className="grid items-start gap-12 lg:grid-cols-[736px_1fr]">
+              <div>
+                <FacilityDetails variant="desktop" />
+                <DeferredReview variant="desktop" />
+              </div>
+
+              <div>
+                <h2 className="font-heading text-2xl font-bold text-[#343133]">
+                  Pilih Tanggal &amp; Waktu Booking
+                </h2>
+                <p className="mt-2 max-w-[320px] text-sm leading-relaxed text-[#343133]">
+                  Silakan pilih tanggal yang tersedia (Hijau) dan jam latihan Anda. Tanggal
+                  merah / soft-red sudah dibooking.
+                </p>
+                <Suspense fallback={<div aria-hidden="true" className="min-h-[420px]" />}>
+                  <BookingCalendar
+                    variant="desktop"
+                    viewYear={viewYear}
+                    viewMonth={viewMonth}
+                    selectedDate={selectedDate}
+                    bookedDates={BOOKED_DATES}
+                    onChangeMonth={handleChangeMonth}
+                    onSelectDate={handleSelectDate}
+                  />
+                  <TimeSlotPicker
+                    variant="desktop"
+                    isDateBooked={isDateBooked}
+                    bookedSlotsToday={bookedSlotsToday}
+                    selectedTimes={selectedTimes}
+                    sessionCount={sessionCount}
+                    selectedDateLabel={selectedDateLabel}
+                    startTime={startTime}
+                    endTime={endTime}
+                    maxSessionHours={MAX_SESSION_HOURS}
+                    onToggleTime={handleToggleTime}
+                    onConfirmSchedule={handleConfirmSchedule}
+                    onResetSearch={handleResetSearch}
+                  />
+                </Suspense>
+              </div>
+            </div>
+          </main>
+
+          <DeferredFooter />
+        </div>
+      )}
 
       <Suspense fallback={null}>
         {isCheckoutModalOpen && (

@@ -1,6 +1,7 @@
 import { lazy, Suspense, useEffect, useRef, useState, type ReactNode } from 'react'
 import Navbar from '../../components/layout/LandingNavbar'
 import BtnStart from '../../components/ui/BtnStart'
+import ScrollReveal from '../../components/animation/ScrollReveal'
 import Hero from './sections/Hero'
 
 const Footer = lazy(() => import('../../components/layout/LandingFooter'))
@@ -44,7 +45,7 @@ function DeferredSection({ children, placeholderClassName, isEnabled, id }: Defe
     <div ref={sectionRef} id={id}>
       {isNearViewport ? (
         <Suspense fallback={<div aria-hidden="true" className={placeholderClassName} />}>
-          {children}
+          <ScrollReveal>{children}</ScrollReveal>
         </Suspense>
       ) : (
         <div aria-hidden="true" className={placeholderClassName} />
@@ -58,7 +59,11 @@ function LandingPage() {
   const [isFooterVisible, setIsFooterVisible] = useState(false)
 
   useEffect(() => {
-    const updateScrollState = () => setHasScrolled(window.scrollY > 0)
+    const updateScrollState = () => {
+      if (window.scrollY === 0) return
+      setHasScrolled(true)
+      window.removeEventListener('scroll', updateScrollState)
+    }
     const footer = document.getElementById('landing-footer')
     const footerObserver = footer
       ? new IntersectionObserver(([entry]) => setIsFooterVisible(entry.isIntersecting))

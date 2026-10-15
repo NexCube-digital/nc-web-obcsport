@@ -1,14 +1,16 @@
-import { lazy, Suspense, useEffect, useRef, useState, type ReactNode } from 'react'
+import { lazy, Suspense, useEffect, useState, type ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { X, ZoomIn, ZoomOut } from 'lucide-react'
 import NavbarDashboard from '../components/layout/Navbar'
 import Footer from '../components/layout/Footer'
+import ScrollReveal from '../components/animation/ScrollReveal'
 import type { OrderModalFacility } from '../components/ui/OrderModal'
 import Hero from './home/Hero'
 import Information from './home/Information'
+import Event from './home/Event'
 import type { FacilityCard } from './home/Court'
+import { useIsMobile } from '../hooks/useIsMobile'
 
-const Event = lazy(() => import('./home/Event'))
 const Court = lazy(() => import('./home/Court'))
 const OrderModal = lazy(() => import('../components/ui/OrderModal'))
 
@@ -18,31 +20,24 @@ interface DeferredSectionProps {
 }
 
 function DeferredSection({ children, placeholderClassName }: DeferredSectionProps) {
-  const sectionRef = useRef<HTMLDivElement>(null)
-  const [isNearViewport, setIsNearViewport] = useState(false)
+  const [hasScrolled, setHasScrolled] = useState(false)
 
   useEffect(() => {
-    const section = sectionRef.current
-    if (!section) return
+    const handleScroll = () => {
+      if (window.scrollY === 0) return
+      setHasScrolled(true)
+      window.removeEventListener('scroll', handleScroll)
+    }
 
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (!entry.isIntersecting) return
-        setIsNearViewport(true)
-        observer.disconnect()
-      },
-      { rootMargin: '250px 0px' },
-    )
-
-    observer.observe(section)
-    return () => observer.disconnect()
+    window.addEventListener('scroll', handleScroll, { passive: true })
+    return () => window.removeEventListener('scroll', handleScroll)
   }, [])
 
   return (
-    <div ref={sectionRef} className="flow-root">
-      {isNearViewport ? (
+    <div className="flow-root">
+      {hasScrolled ? (
         <Suspense fallback={<div aria-hidden="true" className={placeholderClassName} />}>
-          {children}
+          <ScrollReveal>{children}</ScrollReveal>
         </Suspense>
       ) : (
         <div aria-hidden="true" className={placeholderClassName} />
@@ -112,6 +107,7 @@ function HomePage() {
   const [previewImage, setPreviewImage] = useState<{ src: string; alt: string } | null>(null)
   const [isImageZoomed, setIsImageZoomed] = useState(false)
   const navigate = useNavigate()
+  const isMobile = useIsMobile()
 
   useEffect(() => {
     if (!previewImage) return
@@ -167,17 +163,25 @@ function HomePage() {
         />
         <Information />
 
-        <DeferredSection placeholderClassName="min-h-[180px]">
-          <Event onPreviewImage={setPreviewImage} />
-        </DeferredSection>
+        <Event onPreviewImage={setPreviewImage} />
 
-        <DeferredSection placeholderClassName="min-h-[680px] md:min-h-[420px]">
-          <Court
-            submittedSearch={submittedSearch}
-            onPreviewImage={setPreviewImage}
-            onSelectFacility={setSelectedFacility}
-          />
-        </DeferredSection>
+        {isMobile ? (
+          <Suspense fallback={<div aria-hidden="true" className="min-h-[680px]" />}>
+            <Court
+              submittedSearch={submittedSearch}
+              onPreviewImage={setPreviewImage}
+              onSelectFacility={setSelectedFacility}
+            />
+          </Suspense>
+        ) : (
+          <DeferredSection placeholderClassName="min-h-[680px] md:min-h-[420px]">
+            <Court
+              submittedSearch={submittedSearch}
+              onPreviewImage={setPreviewImage}
+              onSelectFacility={setSelectedFacility}
+            />
+          </DeferredSection>
+        )}
       </main>
 
       <Footer />

@@ -92,15 +92,19 @@ function MobileStars({ rating, size = 12 }: { rating: number; size?: number }) {
 const getInitials = (name: string) =>
   name.trim().split(/\s+/).slice(0, 2).map((word) => word.charAt(0).toUpperCase()).join('')
 
-function ReviewSection() {
+interface ReviewSectionProps {
+  variant: 'mobile' | 'desktop'
+}
+
+function ReviewSection({ variant }: ReviewSectionProps) {
   const [reviewFilter, setReviewFilter] = useState<ReviewFilter>('semua')
   const filteredReviews = REVIEWS.filter(
     (review) => reviewFilter === 'semua' || review.category === reviewFilter,
   )
 
   return (
-    <>
-      <section className="mt-6 rounded-2xl border border-[#E5E5E5] bg-white p-4 md:hidden">
+    variant === 'mobile' ? (
+      <section className="mt-6 rounded-2xl border border-[#E5E5E5] bg-white p-4">
         <div className="flex items-center justify-between">
           <h2 className="font-heading text-lg font-bold text-[#265021]">Ulasan Komunitas</h2>
           <span className="inline-flex items-center gap-1 text-xs text-[#6F6B6E]">
@@ -141,8 +145,8 @@ function ReviewSection() {
           </button>
         </div>
       </section>
-
-      <section className="mt-6 hidden md:block">
+    ) : (
+      <section className="mt-6">
         <h2 className="font-heading text-base font-bold text-[#343133]">Ulasan Pengguna</h2>
         <div className="mt-2 flex flex-wrap gap-2">
           {REVIEW_FILTERS.map((filter) => {
@@ -180,7 +184,7 @@ function ReviewSection() {
           ))}
         </div>
       </section>
-    </>
+    )
   )
 }
 

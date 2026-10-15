@@ -37,10 +37,14 @@ const MOBILE_RATING_DETAILS = [
   { id: 'pendukung', label: 'Fasilitas Pendukung', value: '4.8/5' },
 ]
 
-function FacilityDetails() {
+interface FacilityDetailsProps {
+  variant: 'mobile' | 'desktop'
+}
+
+function FacilityDetails({ variant }: FacilityDetailsProps) {
   return (
-    <>
-      <div className="md:hidden">
+    variant === 'mobile' ? (
+      <div>
         <img src={lapangF1} alt={COURT_NAME} className="h-[205px] w-full rounded-2xl object-cover" />
         <h1 className="mt-5 font-heading text-xl font-bold text-[#121212]">OBC Futsal</h1>
         <p className="mt-1 text-xs text-[#6F6B6E]">OBC Sport Center - {COURT_NAME}</p>
@@ -85,8 +89,8 @@ function FacilityDetails() {
           </ul>
         </div>
       </div>
-
-      <div className="hidden md:block">
+    ) : (
+      <div>
         <img src={lapangF1} alt={COURT_NAME} className="h-[364px] w-full rounded-xl object-cover" />
         <h1 className="mt-6 font-heading text-2xl font-bold text-[#343133]">{COURT_NAME}</h1>
         <div className="mt-1 flex items-center gap-2">
@@ -125,7 +129,7 @@ function FacilityDetails() {
           ))}
         </div>
       </div>
-    </>
+    )
   )
 }
 

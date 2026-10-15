@@ -1,10 +1,12 @@
-import { useEffect, useRef, useState } from 'react'
+import { lazy, Suspense, useEffect, useRef, useState } from 'react'
 import { ChevronDown, History, LogOut, Settings, ShoppingCart } from 'lucide-react'
 import { Link, useLocation } from 'react-router-dom'
 import logo from '../../assets/logo/unit bisnis/LOGO OBC SPORT CENTER.png'
-import CartModal from '../ui/CartModal'
-import MobileHeader from './MobileHeader'
+import { useIsMobile } from '../../hooks/useIsMobile'
 import NotificationDropdown from './NotificationDropdown'
+
+const CartModal = lazy(() => import('../ui/CartModal'))
+const MobileHeader = lazy(() => import('./MobileHeader'))
 
 /* -------------------------------------------------------------------------
    Tipe data
@@ -24,6 +26,7 @@ interface NavbarDashboardProps {
   userName?: string // TODO: ganti default ini dengan nama user dari auth context / API
   profileImage?: string
   showDesktopNavigation?: boolean
+  showMobileHeader?: boolean
 }
 
 /* -------------------------------------------------------------------------
@@ -45,6 +48,12 @@ const USER_MENU_ITEMS = [
   { id: 'pengaturan', label: 'Pengaturan', href: '/pengaturan', icon: Settings },
   { id: 'riwayat', label: 'Riwayat Transaksi', href: '/history', icon: History },
 ] as const
+
+
+const EASE = 'ease-[cubic-bezier(0.22,1,0.36,1)]'
+const dropdownBase = `transition-[opacity,transform,visibility] duration-200 ${EASE} motion-reduce:transition-none`
+const dropdownOpen = 'visible opacity-100 scale-100 translate-y-0'
+const dropdownClosed = 'invisible opacity-0 scale-95 -translate-y-1 pointer-events-none'
 
 function getInitials(name: string): string {
   return name
@@ -83,8 +92,10 @@ function Navbar({
   userName = 'Budiman Santoso',
   profileImage,
   showDesktopNavigation = true,
+  showMobileHeader = true,
 }: NavbarDashboardProps) {
   const location = useLocation()
+  const isMobile = useIsMobile()
 
   // State dropdown bahasa dan menu user
   const [activeLang, setActiveLang] = useState<Language>(LANGUAGES[0])
@@ -152,9 +163,14 @@ function Navbar({
   return (
     <>
       {/* Header + bottom nav mobile (< md) dipisah ke MobileHeader.tsx */}
-      <MobileHeader userName={userName} profileImage={profileImage} />
+      {isMobile && showMobileHeader && (
+        <Suspense fallback={null}>
+          <MobileHeader userName={userName} profileImage={profileImage} />
+        </Suspense>
+      )}
 
-      <header className="hidden md:sticky md:top-0 md:z-50 md:block bg-white border-b border-[#D4D4D4] px-4 lg:px-6">
+      {!isMobile && (
+      <header className="sticky top-0 z-50 bg-white border-b border-[#D4D4D4] px-4 lg:px-6">
         <div
           className={`max-w-[1194px] mx-auto h-[84px] xl:h-[100px] grid items-center gap-3 ${
             showDesktopNavigation ? 'grid-cols-[auto_1fr_auto]' : 'grid-cols-[auto_1fr]'
@@ -162,20 +178,22 @@ function Navbar({
         >
           {/* Kiri: logo */}
           <div className="flex shrink-0 items-center">
-            {/* Logo */}
-            <Link to="/home" className="flex items-center gap-4 shrink-0">
+            {/* Logo: sedikit membesar saat hover, group agar teks ikut berubah warna */}
+            <Link to="/home" className="group flex items-center gap-4 shrink-0">
               <img
                 src={logo}
                 alt="OBC Sport Center"
-                className="w-11 h-11 xl:w-12 xl:h-12 rounded-full object-contain"
+                className={`w-11 h-11 xl:w-12 xl:h-12 rounded-full object-contain transition-transform duration-300 ${EASE} group-hover:scale-105 group-active:scale-95 motion-reduce:transition-none`}
               />
-              <span className="hidden xl:inline font-['Montserrat',sans-serif] font-bold text-xl text-[#343133] whitespace-nowrap">
+              <span
+                className={`hidden xl:inline font-['Montserrat',sans-serif] font-bold text-xl text-[#343133] whitespace-nowrap transition-colors duration-200 group-hover:text-[#004000] motion-reduce:transition-none`}
+              >
                 OBC Sport Center
               </span>
             </Link>
           </div>
 
-          {/* Tengah: menu + keranjang, dipusatkan di ruang antara logo dan sisi kanan */}
+          {/* Tengah: menu, dipusatkan di ruang antara logo dan sisi kanan */}
           {showDesktopNavigation && (
             <div className="flex min-w-0 items-center justify-center">
               {/* Menu */}
@@ -186,11 +204,17 @@ function Navbar({
                     <Link
                       key={link.id}
                       to={link.href}
-                      className={`text-[13px] lg:text-sm font-heading whitespace-nowrap transition-colors ${
-                        isActive
-                          ? 'font-bold text-[#004000] underline underline-offset-4'
-                          : 'font-normal text-[#343133] hover:text-[#004000]'
-                      }`}
+                      aria-current={isActive ? 'page' : undefined}
+                      /* Garis bawah dibuat dengan ::after dan dianimasikan lewat scale-x,
+                         sehingga "menggambar" dari kiri ke kanan (bukan muncul tiba-tiba) */
+                      className={`relative py-1 text-[13px] lg:text-sm font-heading whitespace-nowrap transition-colors duration-200 motion-reduce:transition-none
+                        after:absolute after:-bottom-0.5 after:left-0 after:h-0.5 after:w-full after:origin-left after:rounded-full after:bg-[#004000]
+                        after:transition-transform after:duration-300 ${EASE} motion-reduce:after:transition-none
+                        hover:after:scale-x-100 focus-visible:after:scale-x-100 focus-visible:outline-none ${
+                          isActive
+                            ? 'font-bold text-[#004000] after:scale-x-100'
+                            : 'font-normal text-[#343133] hover:text-[#004000] after:scale-x-0'
+                        }`}
                     >
                       {link.label}
                     </Link>
@@ -200,7 +224,7 @@ function Navbar({
             </div>
           )}
 
-          {/* Kanan: notifikasi, user, bahasa */}
+          {/* Kanan: notifikasi, keranjang, user, bahasa */}
           <div
             className={`flex shrink-0 items-center gap-3 lg:gap-5 ${
               showDesktopNavigation ? '' : 'justify-self-end'
@@ -216,9 +240,15 @@ function Navbar({
                 aria-label="Keranjang"
                 aria-haspopup="dialog"
                 aria-expanded={isCartOpen}
-                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[#404F14] transition-colors hover:bg-[#F1F4EA] hover:text-[#004000]"
+                className={`group flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[#404F14] transition-[background-color,color,transform] duration-200 ${EASE} hover:bg-[#F1F4EA] hover:text-[#004000] active:scale-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#004000] motion-reduce:transition-none`}
               >
-                <ShoppingCart size={19} strokeWidth={1.8} aria-hidden="true" />
+                {/* Ikon bergerak tipis ke atas saat hover */}
+                <ShoppingCart
+                  size={19}
+                  strokeWidth={1.8}
+                  aria-hidden="true"
+                  className={`transition-transform duration-200 ${EASE} group-hover:-translate-y-px group-hover:scale-110 motion-reduce:transition-none`}
+                />
               </button>
             )}
 
@@ -232,13 +262,17 @@ function Navbar({
                 aria-label={`Menu pengguna, ${userName}`}
                 aria-haspopup="menu"
                 aria-expanded={isUserOpen}
-                className={`flex items-center gap-2.5 rounded-full border py-1 pl-1 pr-3 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#004000] ${
+                className={`group flex items-center gap-2.5 rounded-full border py-1 pl-1 pr-3 transition-[background-color,border-color,box-shadow,transform] duration-200 ${EASE} active:scale-[0.97] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#004000] motion-reduce:transition-none ${
                   isUserOpen
-                    ? 'border-[#9AAD3E] bg-[#F1F4EA]'
-                    : 'border-[#E5E5E5] bg-white hover:border-[#9AAD3E] hover:bg-[#F1F4EA]'
+                    ? 'border-[#9AAD3E] bg-[#F1F4EA] shadow-sm'
+                    : 'border-[#E5E5E5] bg-white hover:border-[#9AAD3E] hover:bg-[#F1F4EA] hover:shadow-sm'
                 }`}
               >
-                <Avatar name={userName} image={profileImage} />
+                <Avatar
+                  name={userName}
+                  image={profileImage}
+                  className={`h-9 w-9 text-sm transition-transform duration-200 ${EASE} group-hover:scale-105 motion-reduce:transition-none`}
+                />
                 {/* Nama user disembunyikan di bawah lg agar muat */}
                 <span className="hidden max-w-[160px] truncate text-sm font-heading font-semibold text-[#343133] lg:inline">
                   {userName}
@@ -247,59 +281,73 @@ function Navbar({
                   size={16}
                   strokeWidth={2.2}
                   aria-hidden="true"
-                  className={`shrink-0 text-[#404F14] transition-transform duration-200 ${
-                    isUserOpen ? 'rotate-180' : ''
+                  className={`shrink-0 text-[#404F14] transition-transform duration-300 ${EASE} motion-reduce:transition-none ${
+                    isUserOpen ? 'rotate-180' : 'group-hover:translate-y-0.5'
                   }`}
                 />
               </button>
 
-              {isUserOpen && (
-                <div
-                  role="menu"
-                  aria-label="Menu pengguna"
-                  className="absolute right-0 top-full z-50 mt-2 w-64 overflow-hidden rounded-xl border border-[#E5E5E5] bg-white shadow-[0_8px_24px_rgba(0,0,0,0.12)]"
-                >
-                  {/* Identitas akun */}
-                  <div className="flex items-center gap-3 border-b border-[#EDEDED] bg-[#FDFCF7] px-4 py-3.5">
-                    <Avatar name={userName} image={profileImage} className="h-10 w-10 text-base" />
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-heading font-semibold text-[#343133]">
-                        {userName}
-                      </p>
-                      <p className="text-xs font-heading text-[#6B6B6B]">Akun saya</p>
-                    </div>
-                  </div>
-
-                  {/* Pengaturan & Riwayat */}
-                  <div className="py-1.5">
-                    {USER_MENU_ITEMS.map(({ id, label, href, icon: Icon }) => (
-                      <Link
-                        key={id}
-                        to={href}
-                        role="menuitem"
-                        onClick={() => setIsUserOpen(false)}
-                        className="flex items-center gap-3 px-4 py-2.5 text-sm font-heading font-medium text-[#121212] transition-colors hover:bg-[#F1F4EA] hover:text-[#004000] focus-visible:bg-[#F1F4EA] focus-visible:outline-none"
-                      >
-                        <Icon size={18} strokeWidth={1.8} aria-hidden="true" className="shrink-0" />
-                        {label}
-                      </Link>
-                    ))}
-                  </div>
-
-                  {/* Keluar dipisah agar tidak tertekan tidak sengaja */}
-                  <div className="border-t border-[#EDEDED] py-1.5">
-                    <button
-                      type="button"
-                      role="menuitem"
-                      onClick={handleLogout}
-                      className="flex w-full cursor-pointer items-center gap-3 px-4 py-2.5 text-left text-sm font-heading font-bold text-[#C41E1E] transition-colors hover:bg-[#FEF3F2] focus-visible:bg-[#FEF3F2] focus-visible:outline-none"
-                    >
-                      <LogOut size={18} strokeWidth={1.8} aria-hidden="true" className="shrink-0" />
-                      Keluar
-                    </button>
+              {/* Dropdown selalu ter-render agar bisa dianimasikan masuk & keluar */}
+              <div
+                role="menu"
+                aria-label="Menu pengguna"
+                aria-hidden={!isUserOpen}
+                className={`absolute right-0 top-full z-50 mt-2 w-64 origin-top-right overflow-hidden rounded-xl border border-[#E5E5E5] bg-white shadow-[0_8px_24px_rgba(0,0,0,0.12)] ${dropdownBase} ${
+                  isUserOpen ? dropdownOpen : dropdownClosed
+                }`}
+              >
+                {/* Identitas akun */}
+                <div className="flex items-center gap-3 border-b border-[#EDEDED] bg-[#FDFCF7] px-4 py-3.5">
+                  <Avatar name={userName} image={profileImage} className="h-10 w-10 text-base" />
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-heading font-semibold text-[#343133]">
+                      {userName}
+                    </p>
+                    <p className="text-xs font-heading text-[#6B6B6B]">Akun saya</p>
                   </div>
                 </div>
-              )}
+
+                {/* Pengaturan & Riwayat */}
+                <div className="py-1.5">
+                  {USER_MENU_ITEMS.map(({ id, label, href, icon: Icon }) => (
+                    <Link
+                      key={id}
+                      to={href}
+                      role="menuitem"
+                      tabIndex={isUserOpen ? 0 : -1}
+                      onClick={() => setIsUserOpen(false)}
+                      className="group flex items-center gap-3 px-4 py-2.5 text-sm font-heading font-medium text-[#121212] transition-[background-color,color,padding] duration-200 hover:bg-[#F1F4EA] hover:pl-5 hover:text-[#004000] focus-visible:bg-[#F1F4EA] focus-visible:outline-none motion-reduce:transition-none"
+                    >
+                      <Icon
+                        size={18}
+                        strokeWidth={1.8}
+                        aria-hidden="true"
+                        className={`shrink-0 transition-transform duration-200 ${EASE} group-hover:scale-110 motion-reduce:transition-none`}
+                      />
+                      {label}
+                    </Link>
+                  ))}
+                </div>
+
+                {/* Keluar dipisah agar tidak tertekan tidak sengaja */}
+                <div className="border-t border-[#EDEDED] py-1.5">
+                  <button
+                    type="button"
+                    role="menuitem"
+                    tabIndex={isUserOpen ? 0 : -1}
+                    onClick={handleLogout}
+                    className="group flex w-full cursor-pointer items-center gap-3 px-4 py-2.5 text-left text-sm font-heading font-bold text-[#C41E1E] transition-[background-color,padding] duration-200 hover:bg-[#FEF3F2] hover:pl-5 focus-visible:bg-[#FEF3F2] focus-visible:outline-none motion-reduce:transition-none"
+                  >
+                    <LogOut
+                      size={18}
+                      strokeWidth={1.8}
+                      aria-hidden="true"
+                      className={`shrink-0 transition-transform duration-200 ${EASE} group-hover:translate-x-0.5 motion-reduce:transition-none`}
+                    />
+                    Keluar
+                  </button>
+                </div>
+              </div>
             </div>
 
             {/* Pemilih bahasa */}
@@ -307,7 +355,9 @@ function Navbar({
               <button
                 type="button"
                 onClick={() => setIsLangOpen((prev) => !prev)}
-                className="inline-flex items-center gap-1.5 rounded-full border border-[#E5E5E5] bg-white px-3 h-7 text-xs font-heading font-medium text-[#343133] hover:bg-[#FDFCF7] transition-colors"
+                className={`group inline-flex h-7 items-center gap-1.5 rounded-full border bg-white px-3 text-xs font-heading font-medium text-[#343133] transition-[background-color,border-color,transform] duration-200 ${EASE} hover:border-[#9AAD3E] hover:bg-[#F1F4EA] active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#004000] motion-reduce:transition-none ${
+                  isLangOpen ? 'border-[#9AAD3E] bg-[#F1F4EA]' : 'border-[#E5E5E5]'
+                }`}
                 aria-haspopup="listbox"
                 aria-expanded={isLangOpen}
               >
@@ -321,6 +371,7 @@ function Navbar({
                   strokeLinecap="round"
                   strokeLinejoin="round"
                   aria-hidden="true"
+                  className={`transition-transform duration-500 ${EASE} group-hover:rotate-[20deg] motion-reduce:transition-none`}
                 >
                   <circle cx="12" cy="12" r="10" />
                   <path d="M2 12h20" />
@@ -336,42 +387,50 @@ function Navbar({
                   strokeWidth="3"
                   strokeLinecap="round"
                   strokeLinejoin="round"
-                  className={`transition-transform ${isLangOpen ? 'rotate-180' : ''}`}
+                  className={`transition-transform duration-300 ${EASE} motion-reduce:transition-none ${
+                    isLangOpen ? 'rotate-180' : ''
+                  }`}
                   aria-hidden="true"
                 >
                   <path d="m6 9 6 6 6-6" />
                 </svg>
               </button>
 
-              {isLangOpen && (
-                <ul
-                  role="listbox"
-                  className="absolute right-0 mt-2 w-32 rounded-lg border border-[#E5E5E5] bg-white py-1 shadow-md z-50"
-                >
-                  {LANGUAGES.map((lang) => (
-                    <li key={lang.code}>
-                      <button
-                        type="button"
-                        onClick={() => handleSelectLang(lang)}
-                        className={`w-full text-left px-3 py-2 text-xs font-heading hover:bg-[#FDFCF7] ${
-                          lang.code === activeLang.code
-                            ? 'font-bold text-[#004000]'
-                            : 'font-medium text-[#343133]'
-                        }`}
-                      >
-                        {lang.code} – {lang.label}
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              )}
+              {/* Dropdown bahasa: selalu ter-render, dianimasikan fade + scale */}
+              <ul
+                role="listbox"
+                aria-hidden={!isLangOpen}
+                className={`absolute right-0 z-50 mt-2 w-32 origin-top-right rounded-lg border border-[#E5E5E5] bg-white py-1 shadow-md ${dropdownBase} ${
+                  isLangOpen ? dropdownOpen : dropdownClosed
+                }`}
+              >
+                {LANGUAGES.map((lang) => (
+                  <li key={lang.code}>
+                    <button
+                      type="button"
+                      tabIndex={isLangOpen ? 0 : -1}
+                      onClick={() => handleSelectLang(lang)}
+                      className={`w-full px-3 py-2 text-left text-xs font-heading transition-[background-color,padding] duration-200 hover:bg-[#F1F4EA] hover:pl-4 focus-visible:bg-[#F1F4EA] focus-visible:outline-none motion-reduce:transition-none ${
+                        lang.code === activeLang.code
+                          ? 'font-bold text-[#004000]'
+                          : 'font-medium text-[#343133]'
+                      }`}
+                    >
+                      {lang.code} – {lang.label}
+                    </button>
+                  </li>
+                ))}
+              </ul>
             </div>
           </div>
         </div>
       </header>
+      )}
 
-      {showDesktopNavigation && (
-        <CartModal isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} />
+      {isCartOpen && (
+        <Suspense fallback={null}>
+          <CartModal isOpen onClose={() => setIsCartOpen(false)} />
+        </Suspense>
       )}
     </>
   )

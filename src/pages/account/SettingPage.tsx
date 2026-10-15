@@ -1,9 +1,10 @@
-import { useRef, useState } from 'react'
+import { lazy, Suspense, useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ArrowRight, Check } from 'lucide-react'
 import NavbarDashboard from '../../components/layout/Navbar'
-import Footer from '../../components/layout/Footer'
-import PhotoCropModal from './Photocropmodal'
+import DeferredFooter from '../../components/layout/DeferredFooter'
+
+const PhotoCropModal = lazy(() => import('./Photocropmodal'))
 
 /* -------------------------------------------------------------------------
    Tipe data
@@ -61,18 +62,25 @@ function SettingsPage() {
 
   // State profil
   const [fullName, setFullName] = useState(USER_NAME)
-  const [username, setUsername] = useState(INITIAL_USERNAME)
-  const [bio, setBio] = useState(INITIAL_BIO)
   const [photoPreview, setPhotoPreview] = useState<string | null>(null)
-  const [photoBlob, setPhotoBlob] = useState<Blob | null>(null) // hasil foto setelah diatur user
   const [cropSource, setCropSource] = useState<File | null>(null) // file yang sedang diatur di modal
   const [photoError, setPhotoError] = useState('')
 
+  const usernameRef = useRef<HTMLInputElement>(null)
+  const bioRef = useRef<HTMLTextAreaElement>(null)
+  const photoBlobRef = useRef<Blob | null>(null)
+
   // State sandi
-  const [oldPassword, setOldPassword] = useState('')
-  const [newPassword, setNewPassword] = useState('')
-  const [confirmPassword, setConfirmPassword] = useState('')
   const [passwordError, setPasswordError] = useState('')
+  const oldPasswordRef = useRef<HTMLInputElement>(null)
+  const newPasswordRef = useRef<HTMLInputElement>(null)
+  const confirmPasswordRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    return () => {
+      if (photoPreview) URL.revokeObjectURL(photoPreview)
+    }
+  }, [photoPreview])
 
   const handlePickPhoto = () => fileInputRef.current?.click()
 
@@ -101,13 +109,17 @@ function SettingsPage() {
     // Bersihkan URL pratinjau lama agar tidak bocor memori
     if (photoPreview) URL.revokeObjectURL(photoPreview)
 
-    setPhotoBlob(blob)
+    photoBlobRef.current = blob
     setPhotoPreview(URL.createObjectURL(blob))
     setCropSource(null)
     // TODO: unggah photoBlob ke services/profileService.js (POST /profile/photo, FormData field "photo")
   }
 
   const handleUpdatePassword = () => {
+    const oldPassword = oldPasswordRef.current?.value ?? ''
+    const newPassword = newPasswordRef.current?.value ?? ''
+    const confirmPassword = confirmPasswordRef.current?.value ?? ''
+
     if (!oldPassword || !newPassword || !confirmPassword) {
       setPasswordError('Semua kolom sandi wajib diisi.')
       return
@@ -128,7 +140,12 @@ function SettingsPage() {
 
   const handleSaveChanges = () => {
     // TODO: sambungkan ke services/profileService.js (PUT /profile)
-    console.log({ fullName, username, bio, photoBlob })
+    console.log({
+      fullName,
+      username: usernameRef.current?.value ?? '',
+      bio: bioRef.current?.value ?? '',
+      photoBlob: photoBlobRef.current,
+    })
   }
 
   const handleHelpLink = (link: HelpLink) => {
@@ -213,8 +230,8 @@ function SettingsPage() {
                 <input
                   id="username"
                   type="text"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
+                  ref={usernameRef}
+                  defaultValue={INITIAL_USERNAME}
                   className={INPUT_CLASS}
                 />
               </div>
@@ -227,8 +244,8 @@ function SettingsPage() {
               </label>
               <textarea
                 id="bio"
-                value={bio}
-                onChange={(e) => setBio(e.target.value)}
+                ref={bioRef}
+                defaultValue={INITIAL_BIO}
                 className="w-full h-20 resize-none rounded-lg border border-[#E5E5E5] bg-white px-4 py-3 text-sm text-[#121212] focus:outline-none focus:border-[#404F14]"
               />
             </div>
@@ -271,8 +288,7 @@ function SettingsPage() {
                 <input
                   id="oldPassword"
                   type="password"
-                  value={oldPassword}
-                  onChange={(e) => setOldPassword(e.target.value)}
+                  ref={oldPasswordRef}
                   className={INPUT_CLASS}
                 />
               </div>
@@ -283,8 +299,7 @@ function SettingsPage() {
                 <input
                   id="newPassword"
                   type="password"
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
+                  ref={newPasswordRef}
                   placeholder="Minimal 8 karakter"
                   className={INPUT_CLASS}
                 />
@@ -296,8 +311,7 @@ function SettingsPage() {
                 <input
                   id="confirmPassword"
                   type="password"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  ref={confirmPasswordRef}
                   placeholder="Minimal 8 karakter"
                   className={INPUT_CLASS}
                 />
@@ -348,15 +362,17 @@ function SettingsPage() {
         </div>
       </main>
 
-      <Footer />
+      <DeferredFooter />
 
       {/* Modal atur ukuran & posisi foto, muncul setelah user memilih file */}
       {cropSource && (
-        <PhotoCropModal
-          file={cropSource}
-          onCancel={() => setCropSource(null)}
-          onApply={handleCropApply}
-        />
+        <Suspense fallback={null}>
+          <PhotoCropModal
+            file={cropSource}
+            onCancel={() => setCropSource(null)}
+            onApply={handleCropApply}
+          />
+        </Suspense>
       )}
     </div>
   )
