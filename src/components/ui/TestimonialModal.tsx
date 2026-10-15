@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type ChangeEvent } from 'react'
-import { Camera, Star } from 'lucide-react'
+import { Camera, Star, X } from 'lucide-react'
 
 /* -------------------------------------------------------------------------
    Tipe data
@@ -82,6 +82,7 @@ function TestimonialModal({
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-[#343133]/40 p-4"
+      onClick={onClose}
     >
       {/* Ukuran PC pas: 556 x 525, tanpa scroll */}
       <section
@@ -89,8 +90,17 @@ function TestimonialModal({
         aria-modal="true"
         aria-labelledby="testimonial-modal-title"
         onClick={(event) => event.stopPropagation()}
-        className="flex max-h-[calc(100vh-32px)] w-full max-w-[556px] flex-col overflow-y-auto rounded-lg bg-[#FDFCF7] shadow-[0_8px_32px_rgba(0,0,0,0.2)]"
+        className="relative flex max-h-[calc(100vh-32px)] w-full max-w-[556px] flex-col overflow-y-auto rounded-lg bg-[#FDFCF7] shadow-[0_8px_32px_rgba(0,0,0,0.2)]"
       >
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="Tutup modal ulasan"
+          className="absolute right-4 top-4 z-10 grid h-9 w-9 place-items-center rounded-full text-[#343133] transition-colors hover:bg-[#F0F0E8] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#404F14]"
+        >
+          <X size={20} aria-hidden="true" />
+        </button>
+
         {/* ================= Header ================= */}
         <header className="flex h-[94px] shrink-0 flex-col justify-center border-b border-[#D4D4D4] bg-white px-[26px]">
           <h2
