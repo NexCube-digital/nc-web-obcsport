@@ -1,8 +1,9 @@
-import { lazy, Suspense, useEffect, useRef, useState } from 'react'
+import { lazy, Suspense, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import NavbarDashboard from '../../components/layout/Navbar'
 import MobileHeader from '../../components/layout/MobileHeader'
 import DeferredFooter from '../../components/layout/DeferredFooter'
+import DeferredSection from '../../components/layout/DeferredSection'
 import type { CartItem } from '../../components/ui/CartModal'
 import { COURT_FACILITIES } from '../../data/facilitiesData'
 import FacilityDetails from './checkout/FacilityDetails'
@@ -15,44 +16,6 @@ const ReviewSection = lazy(() => import('./checkout/ReviewSection'))
 const BookingCalendar = lazy(() => import('./checkout/BookingCalendar'))
 const TimeSlotPicker = lazy(() => import('./checkout/TimeSlotPicker'))
 const MobileBookingSheet = lazy(() => import('./checkout/MobileBookingSheet'))
-
-interface DeferredReviewProps {
-  variant: 'mobile' | 'desktop'
-}
-
-function DeferredReview({ variant }: DeferredReviewProps) {
-  const sectionRef = useRef<HTMLDivElement>(null)
-  const [isNearViewport, setIsNearViewport] = useState(false)
-
-  useEffect(() => {
-    const section = sectionRef.current
-    if (!section) return
-
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (!entry.isIntersecting) return
-        setIsNearViewport(true)
-        observer.disconnect()
-      },
-      { rootMargin: '300px 0px' },
-    )
-
-    observer.observe(section)
-    return () => observer.disconnect()
-  }, [])
-
-  return (
-    <div ref={sectionRef} className="flow-root">
-      {isNearViewport ? (
-        <Suspense fallback={<div aria-hidden="true" className="min-h-[240px]" />}>
-          <ReviewSection variant={variant} />
-        </Suspense>
-      ) : (
-        <div aria-hidden="true" className="min-h-[240px]" />
-      )}
-    </div>
-  )
-}
 
 /* -------------------------------------------------------------------------
    Tipe data
@@ -290,7 +253,9 @@ function DetailOrder() {
           />
           <div className="min-h-[100dvh] bg-white font-body text-[#343133] px-4 pt-6 pb-52">
             <FacilityDetails variant="mobile" />
-            <DeferredReview variant="mobile" />
+            <DeferredSection placeholderClassName="min-h-[240px]">
+              <ReviewSection variant="mobile" />
+            </DeferredSection>
           </div>
           <Suspense fallback={null}>
             <MobileBookingSheet
@@ -327,7 +292,9 @@ function DetailOrder() {
             <div className="grid items-start gap-12 lg:grid-cols-[736px_1fr]">
               <div>
                 <FacilityDetails variant="desktop" />
-                <DeferredReview variant="desktop" />
+                <DeferredSection placeholderClassName="min-h-[240px]">
+                  <ReviewSection variant="desktop" />
+                </DeferredSection>
               </div>
 
               <div>

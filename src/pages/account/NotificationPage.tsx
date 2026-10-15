@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import NavbarDashboard from '../../components/layout/Navbar'
-import Footer from '../../components/layout/Footer'
+import DeferredFooter from '../../components/layout/DeferredFooter'
 import { INITIAL_NOTIFICATIONS, type PromoNotification } from '../../data/notificationsData'
 
 /* -------------------------------------------------------------------------
@@ -70,7 +70,7 @@ function NotificationPage() {
         </section>
       </main>
 
-      <Footer />
+      <DeferredFooter />
     </div>
   )
 }

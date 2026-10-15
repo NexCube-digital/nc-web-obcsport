@@ -2,7 +2,8 @@ import { useState } from 'react'
 import { Plus, Search } from 'lucide-react'
 import NavbarDashboard from '../components/layout/Navbar'
 import MobileHeader from '../components/layout/MobileHeader'
-import Footer from '../components/layout/Footer'
+import DeferredFooter from '../components/layout/DeferredFooter'
+import DeferredSection from '../components/layout/DeferredSection'
 import { useIsMobile } from '../hooks/useIsMobile'
 
 /* -------------------------------------------------------------------------
@@ -106,6 +107,7 @@ function HelpPage() {
         </div>
 
         {/* Daftar FAQ (accordion) */}
+        <DeferredSection placeholderClassName="mt-6 min-h-[360px]">
         <div className="mt-6 space-y-3">
           {filteredFaqs.map((faq) => {
             const isOpen = openFaqId === faq.id
@@ -145,6 +147,7 @@ function HelpPage() {
             </p>
           )}
         </div>
+        </DeferredSection>
 
         {/* Tombol WhatsApp (fixed, di atas bottom nav)
             Catatan: bottom-[68px] disesuaikan dengan tinggi bottom nav di Navbar.
@@ -175,6 +178,7 @@ function HelpPage() {
         </h1>
 
         {/* Kolom kiri 540px, kolom kanan fleksibel (480px), jarak 48px */}
+        <DeferredSection placeholderClassName="mt-6 min-h-[540px] lg:min-h-[420px]">
         <div className="mt-6 grid lg:grid-cols-[540px_1fr] gap-12 items-start">
           {/* ================= Kolom kiri: pencarian & FAQ ================= */}
           <div>
@@ -235,11 +239,12 @@ function HelpPage() {
             </button>
           </div>
         </div>
+        </DeferredSection>
       </main>}
 
       {/* Footer hanya tampil di desktop */}
       {!isMobile && (
-        <Footer />
+        <DeferredFooter />
       )}
     </div>
   )

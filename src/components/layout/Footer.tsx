@@ -6,12 +6,11 @@ import whatsappIcon from '../../assets/icon/whatsapp2.svg'
 
 const NAVIGASI_LINKS = [
 	{ label: 'Beranda', to: '/' },
-	{ label: 'Tentang Kami', to: '/tentang-kami' },
-	{ label: 'Unit Bisnis', to: '/unit-bisnis' },
-	{ label: 'OBC Sport Center', to: '/unit-bisnis/sport-center' },
-	{ label: 'OBC Gedung Multifungsi', to: '/unit-bisnis/gedung-multifungsi' },
-	{ label: 'Galeri', to: '/galeri' },
-	{ label: 'Testimoni', to: '/testimoni' },
+	{ label: 'Booking Lapangan', to: '/home' },
+	{ label: 'Sewa Event', to: '/event' },
+	{ label: 'Membership', to: '/membership' },
+	{ label: 'Riwayat Transaksi', to: '/history' },
+	{ label: 'Bantuan & QnA', to: '/bantuan' },
 	{ label: 'Kontak', to: '#kontak' },
 ]
 
@@ -81,20 +80,23 @@ function NexcubeLink() {
 
 /* Kelas bersama */
 const headingClass =
-	"font-['Montserrat'] text-[14px] font-bold uppercase leading-4 tracking-[0px] text-white md:h-4 md:w-[169px]"
+	"font-['Montserrat'] text-[14px] font-bold uppercase leading-4 tracking-[0px] text-white md:h-4 md:w-auto lg:w-[169px]"
+
+/* Ukuran teks: 12px di mobile-kecil/desktop, 13px di tablet (md) supaya tetap terbaca di layar tinggi */
 const linkClass =
-	"font-['Montserrat'] text-[clamp(11px,1.7svh,13px)] font-medium leading-[clamp(14px,2.2svh,16px)] tracking-[0px] text-white! transition-colors hover:text-[#CDF178]! md:text-[12px] md:leading-4"
+	"font-['Montserrat'] text-[clamp(11px,1.7svh,13px)] font-medium leading-[clamp(14px,2.2svh,16px)] tracking-[0px] text-white! transition-colors hover:text-[#CDF178]! md:text-[13px] md:leading-5 lg:text-[12px] lg:leading-4"
 
 /*
  * Jarak antar daftar tautan di mobile dibuat fleksibel mengikuti tinggi layar (svh),
- * jadi di HP pendek jaraknya rapat dan di HP tinggi lebih lega. Mulai md kembali ke nilai tetap.
+ * jadi di HP pendek jaraknya rapat dan di HP tinggi lebih lega.
+ * Di tablet (md) jarak dibuat tetap, di desktop (lg) kembali ke nilai asli.
  */
 const listClass =
-	"mt-[clamp(4px,calc(1.4svh_-_1px),16px)] flex flex-col gap-[clamp(3px,calc(1.6svh_-_4px),14px)] font-['Montserrat'] text-[clamp(11px,1.7svh,13px)] font-medium leading-[clamp(14px,2.2svh,16px)] tracking-[0px] text-white md:mt-[15px] md:gap-[15px] md:text-[12px] md:leading-4"
+	"mt-[clamp(4px,calc(1.4svh_-_1px),16px)] flex flex-col gap-[clamp(3px,calc(1.6svh_-_4px),14px)] font-['Montserrat'] text-[clamp(11px,1.7svh,13px)] font-medium leading-[clamp(14px,2.2svh,16px)] tracking-[0px] text-white md:mt-4 md:gap-3 md:text-[13px] md:leading-5 lg:mt-[15px] lg:gap-[15px] lg:text-[12px] lg:leading-4"
 
 /* Kelas tombol sosmed bulat di bagian atas (ukuran mengikuti tinggi layar di mobile) */
 const socialButtonClass =
-	'relative isolate grid h-[clamp(28px,4.5svh,36px)] w-[clamp(28px,4.5svh,36px)] shrink-0 place-items-center rounded-full bg-transparent text-black transition-transform before:absolute before:inset-0 before:-z-10 before:rounded-full before:bg-[#FFFFF7] before:scale-[0.82] before:shadow-[0px_1px_1px_0px_#00000040] hover:scale-110 md:h-8 md:w-8 md:before:scale-100'
+	'relative isolate grid h-[clamp(28px,4.5svh,36px)] w-[clamp(28px,4.5svh,36px)] shrink-0 place-items-center rounded-full bg-transparent text-black transition-transform before:absolute before:inset-0 before:-z-10 before:rounded-full before:bg-[#FFFFF7] before:scale-[0.82] before:shadow-[0px_1px_1px_0px_#00000040] hover:scale-110 md:h-9 md:w-9 md:before:scale-100 lg:h-8 lg:w-8'
 
 /* Kelas dasar tombol kembali ke atas */
 const backTopClass =
@@ -104,10 +106,14 @@ function Footer() {
 	const scrollToTop = () => window.scrollTo({ top: 0, behavior: 'smooth' })
 
 	return (
-		
+		/*
+		 * Mobile: tinggi minimal = tinggi layar, tapi dibatasi maksimal 820px lewat min(100svh,820px)
+		 * supaya di layar sangat tinggi (mis. lebar 300–700 x tinggi 1600) footer tidak melar
+		 * dan isinya tidak "mengambang". Di tablet (md) tinggi mengikuti isi.
+		 */
 		<footer
 			id="kontak"
-			className="flex min-h-[100svh] flex-col bg-white p-2 pb-[calc(var(--bottom-nav-height,64px)+8px)] sm:px-[34px] sm:py-[20px] sm:pb-[calc(var(--bottom-nav-height,64px)+20px)] lg:block lg:min-h-0 lg:pb-[20px]"
+			className="flex min-h-[min(100svh,820px)] flex-col bg-white p-2 pb-[calc(var(--bottom-nav-height,64px)+8px)] sm:px-[34px] sm:py-[20px] sm:pb-[calc(var(--bottom-nav-height,64px)+20px)] md:min-h-0 lg:block lg:pb-[20px]"
 		>
 			<div
 				className="relative mx-auto flex w-full flex-1 flex-col overflow-hidden rounded-[20px] bg-cover bg-center bg-no-repeat md:rounded-[25px] lg:block lg:min-h-[550px]"
@@ -116,24 +122,30 @@ function Footer() {
 					backgroundImage: `linear-gradient(180deg, rgba(1, 38, 3, 0.84) 0%, rgba(1, 38, 3, 0.84) 100%), url(${lapangF1Image})`,
 				}}
 			>
-				
-				<div className="mx-auto flex w-full max-w-[1246px] flex-1 flex-col justify-center px-4 pb-[clamp(2px,1svh,16px)] pt-[clamp(10px,2.8svh,26px)] md:px-10 md:pt-[60px] lg:block lg:flex-none lg:px-12 lg:pb-0">
-					<div className="grid grid-cols-2 gap-x-4 gap-y-[clamp(6px,calc(2.4svh_-_6px),32px)] lg:grid-cols-[1.3fr_0.9fr_1fr_1.1fr] lg:gap-8 xl:gap-12">
-						
-						<div className="relative order-1 col-span-2 flex w-full flex-col items-center lg:order-none lg:col-span-1 lg:items-start lg:gap-3 [@media(max-width:1023px)_and_(max-height:640px)]:flex-row [@media(max-width:1023px)_and_(max-height:640px)]:justify-between [@media(max-width:1023px)_and_(max-height:640px)]:gap-2">
+				{/* ===== Konten utama ===== */}
+				<div className="mx-auto flex w-full max-w-[1246px] flex-1 flex-col justify-center px-4 pb-[clamp(2px,1svh,16px)] pt-[clamp(10px,2.8svh,26px)] md:flex-none md:px-8 md:pb-2 md:pt-12 lg:block lg:px-12 lg:pb-0 lg:pt-[60px]">
+					{/*
+					 * Grid:
+					 * - Mobile  : 2 kolom
+					 * - Tablet  : 3 kolom (Perusahaan | Unit Bisnis | Hubungi Kami), logo di baris sendiri
+					 * - Desktop : 4 kolom
+					 */}
+					<div className="grid grid-cols-2 gap-x-4 gap-y-[clamp(6px,calc(2.4svh_-_6px),32px)] md:grid-cols-[1fr_1fr_1.5fr] md:gap-x-6 md:gap-y-8 lg:grid-cols-[1.3fr_0.9fr_1fr_1.1fr] lg:gap-8 xl:gap-12">
+						{/* Logo + sosmed (tablet: satu baris penuh, logo kiri & sosmed kanan) */}
+						<div className="relative order-1 col-span-2 flex w-full flex-col items-center md:order-none md:col-span-3 md:flex-row md:justify-between md:gap-4 lg:col-span-1 lg:flex-col lg:items-start lg:justify-start lg:gap-3 [@media(max-width:1023px)_and_(max-height:640px)]:flex-row [@media(max-width:1023px)_and_(max-height:640px)]:justify-between [@media(max-width:1023px)_and_(max-height:640px)]:gap-2">
 							<Link
 								to="/"
 								aria-label="Beranda"
 								className="inline-flex items-center justify-center md:h-[95px] md:justify-start"
 							>
-								
+								{/* Logo diperbesar lewat scale supaya padding bawaan gambar tidak membuatnya terlihat kecil */}
 								<img
 									src={logo}
 									alt="OBC"
 									className="h-[clamp(56px,12.5svh,140px)] w-auto max-w-full origin-center scale-[1.8] object-contain object-center md:h-full md:w-auto md:origin-left md:scale-[1.25] md:object-left lg:-translate-x-9 [@media(max-width:1023px)_and_(max-height:640px)]:h-[clamp(80px,15svh,110px)] [@media(max-width:1023px)_and_(max-height:640px)]:scale-[1.3]"
 								/>
 							</Link>
-							<div className="mt-[clamp(10px,2svh,20px)] flex items-center justify-center gap-3 md:mt-0 md:justify-start md:gap-4 md:pt-1 [@media(max-width:1023px)_and_(max-height:640px)]:mt-0 [@media(max-width:1023px)_and_(max-height:640px)]:gap-2">
+							<div className="mt-[clamp(10px,2svh,20px)] flex items-center justify-center gap-3 md:mt-0 md:justify-end md:gap-4 lg:justify-start lg:pt-1 [@media(max-width:1023px)_and_(max-height:640px)]:mt-0 [@media(max-width:1023px)_and_(max-height:640px)]:gap-2">
 								<a
 									href={CONTACT.whatsapp}
 									target="_blank"
@@ -145,7 +157,7 @@ function Footer() {
 										src={whatsappIcon}
 										alt=""
 										aria-hidden="true"
-										className="h-4 w-4 md:h-4 md:w-4"
+										className="h-4 w-4"
 										style={{ filter: 'brightness(0)' }}
 									/>
 								</a>
@@ -156,7 +168,7 @@ function Footer() {
 									aria-label="Instagram OBC Group"
 									className={socialButtonClass}
 								>
-									<InstagramLogo className="h-4 w-4 md:h-4 md:w-4" />
+									<InstagramLogo className="h-4 w-4" />
 								</a>
 								<a
 									href={CONTACT.tiktok}
@@ -165,11 +177,11 @@ function Footer() {
 									aria-label="TikTok OBC Group"
 									className={socialButtonClass}
 								>
-									<TikTokLogo className="h-4 w-4 md:h-4 md:w-4" />
+									<TikTokLogo className="h-4 w-4" />
 								</a>
 							</div>
 
-							
+							{/* Tombol kembali ke atas versi layar pendek (landscape): ditaruh sejajar dengan logo & sosmed */}
 							<button
 								type="button"
 								onClick={scrollToTop}
@@ -181,7 +193,7 @@ function Footer() {
 						</div>
 
 						{/* Perusahaan */}
-						<div className="order-3 px-2 lg:order-none lg:px-0">
+						<div className="order-3 px-2 md:order-none md:px-0">
 							<h3 className={headingClass}>Perusahaan</h3>
 							<ul className={listClass}>
 								{NAVIGASI_LINKS.map((link) => (
@@ -201,7 +213,7 @@ function Footer() {
 						</div>
 
 						{/* Unit bisnis */}
-						<div className="order-4 px-2 lg:order-none lg:px-0">
+						<div className="order-4 px-2 md:order-none md:px-0">
 							<h3 className={headingClass}>Unit Bisnis</h3>
 							<ul className={listClass}>
 								{UNIT_LINKS.map((unit) => (
@@ -214,13 +226,13 @@ function Footer() {
 							</ul>
 						</div>
 
-						
-						<div className="order-2 col-span-2 px-2 lg:order-none lg:col-span-1 lg:px-0">
-							<h3 className={`${headingClass} flex items-center gap-2 md:gap-1`}>
+						{/* Hubungi kami (mobile: tepat di bawah logo; tablet & desktop: kolom terakhir) */}
+						<div className="order-2 col-span-2 px-2 md:order-none md:col-span-1 md:px-0">
+							<h3 className={`${headingClass} flex items-center gap-2 lg:gap-1`}>
 								<Headphones size={14} />
 								Hubungi Kami
 							</h3>
-							<ul className="mt-[clamp(4px,calc(1.4svh_-_1px),16px)] flex flex-col gap-[clamp(3px,calc(1.6svh_-_4px),14px)] font-['Montserrat'] text-[clamp(11px,1.7svh,13px)] font-medium leading-[clamp(14px,2.3svh,20px)] tracking-[0px] text-white md:mt-[15px] md:text-[12px] md:leading-4">
+							<ul className="mt-[clamp(4px,calc(1.4svh_-_1px),16px)] flex flex-col gap-[clamp(3px,calc(1.6svh_-_4px),14px)] font-['Montserrat'] text-[clamp(11px,1.7svh,13px)] font-medium leading-[clamp(14px,2.3svh,20px)] tracking-[0px] text-white md:mt-4 md:gap-3 md:text-[13px] md:leading-5 lg:mt-[15px] lg:gap-[15px] lg:text-[12px] lg:leading-4">
 								<li className="flex items-center gap-3 md:gap-2">
 									<Mail size={15} className="shrink-0" />
 									<a
@@ -231,12 +243,13 @@ function Footer() {
 									</a>
 								</li>
 								<li className="flex items-start gap-3 md:gap-2">
-									<MapPin size={15} className="mt-[3px] shrink-0" />
+									<MapPin size={15} className="mt-[3px] shrink-0 md:mt-[2px] lg:mt-[3px]" />
+									{/* Rata kiri di tablet (kolom sempit), rata justify hanya di desktop seperti desain asli */}
 									<a
 										href={CONTACT.maps}
 										target="_blank"
 										rel="noreferrer"
-										className="text-left transition-colors hover:text-[#CDF178] md:text-justify"
+										className="text-left transition-colors hover:text-[#CDF178] lg:text-justify"
 									>
 										{CONTACT.address}
 									</a>
@@ -259,23 +272,24 @@ function Footer() {
 				</div>
 
 				{/* Tombol kembali ke atas versi mobile/tablet: tepat di atas teks "OBC GROUP", rata kanan */}
-				<div className="flex shrink-0 justify-end px-4 md:px-10 lg:hidden [@media(max-width:1023px)_and_(max-height:640px)]:hidden">
+				<div className="flex shrink-0 justify-end px-4 md:mt-4 md:px-8 lg:hidden [@media(max-width:1023px)_and_(max-height:640px)]:hidden">
 					<button
 						type="button"
 						onClick={scrollToTop}
 						aria-label="Kembali ke atas"
-						className={`${backTopClass} grid h-[clamp(32px,5svh,40px)] w-[clamp(32px,5svh,40px)]`}
+						className={`${backTopClass} grid h-[clamp(32px,5svh,40px)] w-[clamp(32px,5svh,40px)] md:h-10 md:w-10`}
 					>
 						<ArrowUp className="h-4 w-4" />
 					</button>
 				</div>
 
 				{/* ===== Teks besar "OBC GROUP" (memudar ke bawah) ===== */}
-				{/* Disembunyikan di layar sangat pendek (tinggi ≤ 640px) karena hanya dekorasi */}
-				<div className="mx-auto mt-1 flex h-[clamp(36px,calc(7svh_-_6px),64px)] w-full max-w-[1246px] shrink-0 justify-center overflow-hidden lg:mt-[36px] lg:h-[110px] [@media(max-width:1023px)_and_(max-height:640px)]:hidden">
+				{/* Disembunyikan di layar sangat pendek (tinggi ≤ 640px) karena hanya dekorasi.
+				    Di tablet ukurannya ikut lebar layar (vw) supaya proporsional di 768–1023px. */}
+				<div className="mx-auto mt-1 flex h-[clamp(36px,calc(7svh_-_6px),64px)] w-full max-w-[1246px] shrink-0 justify-center overflow-hidden md:mt-4 md:h-[clamp(80px,11vw,110px)] lg:mt-[36px] lg:h-[110px] [@media(max-width:1023px)_and_(max-height:640px)]:hidden">
 					<span
 						aria-hidden="true"
-						className="mt-[2px] w-auto max-w-full select-none whitespace-nowrap bg-clip-text text-center font-['Montserrat'] text-[clamp(34px,min(12vw,8svh),56px)] font-black leading-[1.1] text-transparent lg:mt-[10px] lg:h-[83px] lg:text-[90px] lg:leading-[83px] xl:text-[105px]"
+						className="mt-[2px] w-auto max-w-full select-none whitespace-nowrap bg-clip-text text-center font-['Montserrat'] text-[clamp(34px,min(12vw,8svh),56px)] font-black leading-[1.1] text-transparent md:text-[clamp(64px,11vw,96px)] lg:mt-[10px] lg:h-[83px] lg:text-[90px] lg:leading-[83px] xl:text-[105px]"
 						style={{
 							backgroundImage: 'linear-gradient(180deg, #FFFFFF 0.24%, rgba(31, 51, 32, 0) 90%)',
 						}}
@@ -286,8 +300,8 @@ function Footer() {
 
 				{/* ===== Bar bawah ===== */}
 				<div className="shrink-0 lg:border-t lg:border-white/10">
-					<div className="mx-auto flex w-full max-w-[1246px] flex-col items-center gap-1 px-4 pb-[clamp(6px,1.8svh,20px)] pt-1 text-center font-['Montserrat'] text-[11px] font-normal leading-4 tracking-[0px] text-white md:px-6 md:text-[12px] lg:h-[70px] lg:min-h-[70px] lg:flex-row lg:justify-between lg:gap-4 lg:px-10 lg:py-5 lg:text-left xl:px-12">
-						{/* Mobile/tablet: teks hak cipta diringkas jadi satu baris, tanpa pilihan bahasa */}
+					<div className="mx-auto flex w-full max-w-[1246px] flex-col items-center gap-1 px-4 pb-[clamp(6px,1.8svh,20px)] pt-1 text-center font-['Montserrat'] text-[11px] font-normal leading-4 tracking-[0px] text-white md:gap-1.5 md:px-6 md:pb-5 md:pt-2 md:text-[12px] lg:h-[70px] lg:min-h-[70px] lg:flex-row lg:justify-between lg:gap-4 lg:px-10 lg:py-5 lg:text-left xl:px-12">
+						{/* Mobile/tablet: teks hak cipta diringkas, tanpa pilihan bahasa */}
 						<p className="lg:hidden">© {new Date().getFullYear()} OBC Group. Hak cipta dilindungi undang-undang.</p>
 						<p className="lg:hidden">
 							Dikembangkan oleh <NexcubeLink />
@@ -302,7 +316,7 @@ function Footer() {
 							Dikembangkan oleh <NexcubeLink />
 						</p>
 
-						{/* Bahasa + ikon sosial versi desktop; di mobile ikon sosial sudah ada di bagian atas */}
+						{/* Bahasa + ikon sosial versi desktop; di mobile/tablet ikon sosial sudah ada di bagian atas */}
 						<div className="hidden items-center gap-6 lg:flex">
 							<span className="flex items-center gap-2">
 								<Globe width={15.5} height={15.5} className="text-white" />

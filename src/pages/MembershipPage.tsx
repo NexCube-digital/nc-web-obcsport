@@ -2,7 +2,9 @@
 import { useState } from 'react'
 import { ArrowRight, ArrowUpRight, Check } from 'lucide-react'
 import NavbarDashboard from '../components/layout/Navbar'
+import DeferredSection from '../components/layout/DeferredSection'
 import DeferredFooter from '../components/layout/DeferredFooter'
+import ScrollReveal from '../components/animation/ScrollReveal'
 import member from '../assets/bfe838718c7f801119930d28d3d286f12b853b5e.jpg'
 
 /* -------------------------------------------------------------------------
@@ -283,8 +285,12 @@ function MembershipPage() {
     <div className="min-h-screen bg-white font-body text-[#343133]">
       <NavbarDashboard userName={USER_NAME} />
       <main className="mx-auto max-w-[1288px] px-6 pb-32 pt-4 md:pb-16 md:pt-10">
-        <MembershipShowcase />
-        <MembershipOptions />
+        <ScrollReveal>
+          <MembershipShowcase />
+        </ScrollReveal>
+        <DeferredSection placeholderClassName="mt-6 min-h-[520px] md:min-h-[460px]">
+          <MembershipOptions />
+        </DeferredSection>
       </main>
       <DeferredFooter />
     </div>

@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { Check } from 'lucide-react'
 import NavbarDashboard from '../components/layout/Navbar'
-import Footer from '../components/layout/Footer'
+import DeferredSection from '../components/layout/DeferredSection'
+import DeferredFooter from '../components/layout/DeferredFooter'
 
 /* -------------------------------------------------------------------------
    Data sementara
@@ -122,6 +123,7 @@ function ProfilePage() {
           </section>
 
           {/* ================= Email ================= */}
+          <DeferredSection startAfterScroll placeholderClassName="min-h-[100px]">
           <section className={`${CARD_CLASS} pb-6`}>
             <h2 className={CARD_TITLE_CLASS}>Email</h2>
 
@@ -141,10 +143,11 @@ function ProfilePage() {
               </span>
             </div>
           </section>
+          </DeferredSection>
         </div>
       </main>
 
-      <Footer />
+      <DeferredFooter />
     </div>
   )
 }

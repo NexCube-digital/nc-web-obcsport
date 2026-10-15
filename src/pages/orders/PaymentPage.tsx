@@ -3,7 +3,9 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import { CalendarDays, Check } from 'lucide-react'
 import NavbarDashboard from '../../components/layout/Navbar'
 import MobileHeader from '../../components/layout/MobileHeader'
+import DeferredSection from '../../components/layout/DeferredSection'
 import DeferredFooter from '../../components/layout/DeferredFooter'
+import ScrollReveal from '../../components/animation/ScrollReveal'
 import { useIsMobile } from '../../hooks/useIsMobile'
 
 const PendingOrderModal = lazy(() => import('../../components/ui/PendingOrderModal'))
@@ -243,17 +245,18 @@ function PaymentPage() {
     <>
       
       {isMobile && (
+        <>
         <MobileHeader
           variant="title"
           title="Konfirmasi & Pembayaran"
           showShare
           showBottomNav={false}
         />
-      )}
-      {isMobile && <div className="min-h-[100dvh] bg-white font-body text-[#343133] pb-28">
+        <div className="min-h-[100dvh] bg-white font-body text-[#343133] pb-28">
 
         <div className="px-4 pt-4">
           {/* Kartu reservasi + rincian biaya */}
+          <ScrollReveal>
           <section className="rounded-2xl border border-[#D4D4D4] bg-white p-4">
             <div className="flex items-start gap-3">
               <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#E6F0E0] text-[#404F14]">
@@ -299,108 +302,116 @@ function PaymentPage() {
               </span>
             </div>
           </section>
+          </ScrollReveal>
 
           {/* Sewa alat tambahan */}
-          <h2 className={`${FONT_MONTSERRAT} mt-6 font-semibold text-base text-[#343133]`}>
-            Sewa Alat Tambahan
-          </h2>
-          <div className="mt-2 space-y-2">
-            {EXTRA_ITEMS.map((item) => {
-              const isChecked = selectedExtras.includes(item.id)
-              return (
-                <button
-                  key={item.id}
-                  type="button"
-                  role="checkbox"
-                  aria-checked={isChecked}
-                  onClick={() => handleToggleExtra(item.id)}
-                  className={`flex h-12 w-full items-center gap-3 rounded-lg bg-white px-3 text-left cursor-pointer transition-colors ${
-                    isChecked ? 'border-2 border-[#404F14]' : 'border border-[#D4D4D4]'
-                  }`}
-                >
-                  <span
-                    className={`flex h-5 w-5 shrink-0 items-center justify-center rounded ${
-                      isChecked ? 'bg-[#404F14] text-white' : 'border border-[#D4D4D4] bg-white'
-                    }`}
-                    aria-hidden="true"
-                  >
-                    {isChecked && <Check size={14} strokeWidth={3} />}
-                  </span>
-                  <span className="flex-1 font-heading text-sm text-[#343133]">{item.name}</span>
-                  <span
-                    className={`font-heading text-sm ${
-                      isChecked ? 'font-bold text-[#404F14]' : 'text-[#6F6B6E]'
-                    }`}
-                  >
-                    {formatRupiah(item.price)}
-                  </span>
-                </button>
-              )
-            })}
-          </div>
-
-          {/* Metode pembayaran */}
-          <h2 className={`${FONT_MONTSERRAT} mt-6 font-semibold text-base text-[#343133]`}>
-            Metode Pembayaran
-          </h2>
-
-          <div role="radiogroup" aria-label="Metode pembayaran" className="mt-2 space-y-3">
-            {MOBILE_METHOD_GROUPS.map((group) => (
-              <div
-                key={group.id}
-                className="overflow-hidden rounded-2xl border border-[#D4D4D4] bg-white"
-              >
-                <h3 className={`${FONT_MONTSERRAT} px-3 pt-3 pb-1 font-bold text-[11px] text-[#404F14]`}>
-                  {group.label}
-                </h3>
-
-                {group.methods.map((item, index) => {
-                  const isActive = mobileMethod === item.id
+          <DeferredSection placeholderClassName="mt-6 min-h-[150px]">
+            <div className="mt-6">
+              <h2 className={`${FONT_MONTSERRAT} font-semibold text-base text-[#343133]`}>
+                Sewa Alat Tambahan
+              </h2>
+              <div className="mt-2 space-y-2">
+                {EXTRA_ITEMS.map((item) => {
+                  const isChecked = selectedExtras.includes(item.id)
                   return (
                     <button
                       key={item.id}
                       type="button"
-                      role="radio"
-                      aria-checked={isActive}
-                      onClick={() => setMobileMethod(item.id)}
-                      className={`flex h-12 w-full items-center gap-3 bg-white px-3 text-left cursor-pointer ${
-                        index > 0 ? 'border-t border-[#D4D4D4]' : ''
+                      role="checkbox"
+                      aria-checked={isChecked}
+                      onClick={() => handleToggleExtra(item.id)}
+                      className={`flex h-12 w-full items-center gap-3 rounded-lg bg-white px-3 text-left cursor-pointer transition-colors ${
+                        isChecked ? 'border-2 border-[#404F14]' : 'border border-[#D4D4D4]'
                       }`}
                     >
                       <span
-                        className={`flex h-6 w-14 shrink-0 items-center justify-center rounded px-1 text-[9px] font-heading font-bold ${
-                          isActive
-                            ? 'bg-[#E6F0E0] text-[#404F14]'
-                            : 'bg-[#F0F0F0] text-[#6F6B6E]'
-                        }`}
-                      >
-                        {item.badge}
-                      </span>
-                      <span className="flex-1 font-heading text-sm font-semibold text-[#343133]">
-                        {item.name}
-                      </span>
-                      <span
-                        className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full ${
-                          isActive ? 'border-2 border-[#404F14]' : 'border border-[#D4D4D4]'
+                        className={`flex h-5 w-5 shrink-0 items-center justify-center rounded ${
+                          isChecked ? 'bg-[#404F14] text-white' : 'border border-[#D4D4D4] bg-white'
                         }`}
                         aria-hidden="true"
                       >
-                        {isActive && <span className="h-2.5 w-2.5 rounded-full bg-[#404F14]" />}
+                        {isChecked && <Check size={14} strokeWidth={3} />}
+                      </span>
+                      <span className="flex-1 font-heading text-sm text-[#343133]">{item.name}</span>
+                      <span
+                        className={`font-heading text-sm ${
+                          isChecked ? 'font-bold text-[#404F14]' : 'text-[#6F6B6E]'
+                        }`}
+                      >
+                        {formatRupiah(item.price)}
                       </span>
                     </button>
                   )
                 })}
               </div>
-            ))}
-          </div>
+            </div>
+          </DeferredSection>
 
-          {/* Peringatan cashless (sama dengan versi PC) */}
-          <div className="mt-4 rounded-lg border border-[#C00000] bg-[#FDF2F2] px-2 py-2">
-            <p className="font-heading text-[10px] leading-4 text-[#C00000]">
-              <span aria-hidden="true">⚠️</span> Sistem OBC Sport Center sepenuhnya cashless.
-              Pembayaran di tempat (COD) tidak didukung untuk mengamankan slot secara real-time.
-            </p>
-          </div>
+          <DeferredSection placeholderClassName="mt-6 min-h-[360px]">
+            <div className="mt-6">
+              <h2 className={`${FONT_MONTSERRAT} font-semibold text-base text-[#343133]`}>
+                Metode Pembayaran
+              </h2>
+
+              <div role="radiogroup" aria-label="Metode pembayaran" className="mt-2 space-y-3">
+                {MOBILE_METHOD_GROUPS.map((group) => (
+                  <div
+                    key={group.id}
+                    className="overflow-hidden rounded-2xl border border-[#D4D4D4] bg-white"
+                  >
+                    <h3 className={`${FONT_MONTSERRAT} px-3 pt-3 pb-1 font-bold text-[11px] text-[#404F14]`}>
+                      {group.label}
+                    </h3>
+
+                    {group.methods.map((item, index) => {
+                      const isActive = mobileMethod === item.id
+                      return (
+                        <button
+                          key={item.id}
+                          type="button"
+                          role="radio"
+                          aria-checked={isActive}
+                          onClick={() => setMobileMethod(item.id)}
+                          className={`flex h-12 w-full items-center gap-3 bg-white px-3 text-left cursor-pointer ${
+                            index > 0 ? 'border-t border-[#D4D4D4]' : ''
+                          }`}
+                        >
+                          <span
+                            className={`flex h-6 w-14 shrink-0 items-center justify-center rounded px-1 text-[9px] font-heading font-bold ${
+                              isActive
+                                ? 'bg-[#E6F0E0] text-[#404F14]'
+                                : 'bg-[#F0F0F0] text-[#6F6B6E]'
+                            }`}
+                          >
+                            {item.badge}
+                          </span>
+                          <span className="flex-1 font-heading text-sm font-semibold text-[#343133]">
+                            {item.name}
+                          </span>
+                          <span
+                            className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full ${
+                              isActive ? 'border-2 border-[#404F14]' : 'border border-[#D4D4D4]'
+                            }`}
+                            aria-hidden="true"
+                          >
+                            {isActive && <span className="h-2.5 w-2.5 rounded-full bg-[#404F14]" />}
+                          </span>
+                        </button>
+                      )
+                    })}
+                  </div>
+                ))}
+              </div>
+
+              {/* Peringatan cashless (sama dengan versi PC) */}
+              <div className="mt-4 rounded-lg border border-[#C00000] bg-[#FDF2F2] px-2 py-2">
+                <p className="font-heading text-[10px] leading-4 text-[#C00000]">
+                  <span aria-hidden="true">⚠️</span> Sistem OBC Sport Center sepenuhnya cashless.
+                  Pembayaran di tempat (COD) tidak didukung untuk mengamankan slot secara real-time.
+                </p>
+              </div>
+            </div>
+          </DeferredSection>
         </div>
 
         {/* Tombol bayar (fixed di bawah) */}
@@ -413,7 +424,9 @@ function PaymentPage() {
             Bayar Sekarang
           </button>
         </div>
-      </div>}
+        </div>
+        </>
+      )}
 
       {/* ===================================================================
           TAMPILAN DESKTOP (>= md): tampilan asli
@@ -430,6 +443,7 @@ function PaymentPage() {
             Selesaikan transaksi Anda dengan memilih opsi pembayaran di bawah ini.
           </p>
 
+          <ScrollReveal>
           <div className="mt-5 grid lg:grid-cols-[1fr_420px] gap-8 items-start">
             {/* ================= Kolom kiri: metode pembayaran ================= */}
             <section className="rounded-2xl border border-[#D4D4D4] bg-white p-5">
@@ -566,6 +580,7 @@ function PaymentPage() {
               </button>
             </div>
           </div>
+          </ScrollReveal>
         </main>
 
         <DeferredFooter />

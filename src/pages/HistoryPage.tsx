@@ -3,7 +3,8 @@ import { useNavigate } from 'react-router-dom'
 import { Zap } from 'lucide-react'
 import NavbarDashboard from '../components/layout/Navbar'
 import MobileHeader from '../components/layout/MobileHeader'
-import Footer from '../components/layout/Footer'
+import DeferredFooter from '../components/layout/DeferredFooter'
+import DeferredSection from '../components/layout/DeferredSection'
 
 /* -------------------------------------------------------------------------
    Tipe data
@@ -330,6 +331,7 @@ function HistoryPage() {
 
         {/* ================= Kartu transaksi (mobile) ================= */}
         <div className="md:hidden">
+          <DeferredSection placeholderClassName="mt-4 min-h-[420px]">
           {filteredMobile.length > 0 ? (
             <ul className="mt-4 space-y-4">
               {filteredMobile.map((trx) => {
@@ -385,9 +387,11 @@ function HistoryPage() {
               )}
             </div>
           )}
+          </DeferredSection>
         </div>
 
         {/* ================= Tabel transaksi (desktop) ================= */}
+        <DeferredSection placeholderClassName="hidden min-h-[320px] md:block">
         <section className="mt-6 hidden min-h-0 overflow-auto rounded-2xl border border-[#D4D4D4] bg-white px-4 pb-6 md:block lg:px-6">
           <table className="w-full min-w-[820px] border-separate border-spacing-0 text-left">
             <thead>
@@ -456,11 +460,12 @@ function HistoryPage() {
             </p>
           )}
         </section>
+        </DeferredSection>
       </main>
 
       {/* Footer selalu menempel di dasar halaman */}
       <div className="mt-auto w-full">
-        <Footer />
+        <DeferredFooter />
       </div>
         
     </div>

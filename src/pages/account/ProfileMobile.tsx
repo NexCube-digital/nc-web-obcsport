@@ -1,7 +1,8 @@
-import { ChevronRight, CircleHelp, Clock3, Settings, UserRound } from 'lucide-react'
+import { ChevronRight, CircleHelp, Clock3, LogOut, Settings, UserRound } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import MobileHeader from '../../components/layout/MobileHeader'
+import { clearUser } from '../../utils/auth'
 
 interface ProfileLink {
 	label: string
@@ -17,6 +18,7 @@ const PROFILE_LINKS: ProfileLink[] = [
 ]
 
 function ProfileMobile() {
+	const navigate = useNavigate()
 	// TODO: ganti dengan nama user dari auth context / API
 	const userName = 'Budiman Santoso'
 	const initials = userName
@@ -84,6 +86,33 @@ function ProfileMobile() {
 									</Link>
 								</li>
 							))}
+							<li>
+								<button
+									type="button"
+									onClick={() => {
+										clearUser()
+										navigate('/login', { replace: true })
+									}}
+									className="group flex min-h-[76px] w-full items-center gap-3.5 rounded-2xl border border-[#F1D2CF] bg-white px-4 py-3 text-left shadow-[0_4px_16px_rgba(52,49,51,0.06)] transition-colors hover:border-[#C41E1E] hover:bg-[#FEF7F6] active:scale-[0.99] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#C41E1E] md:min-h-[92px] md:gap-5 md:px-6 md:py-4"
+								>
+									<span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#FEF3F2] text-[#C41E1E] transition-colors group-hover:bg-[#FDE5E2] md:h-14 md:w-14 md:rounded-2xl">
+										<LogOut size={22} strokeWidth={1.8} aria-hidden="true" className="md:h-6 md:w-6" />
+									</span>
+									<span className="min-w-0 flex-1">
+										<span className="block font-heading text-sm font-semibold text-[#C41E1E] sm:text-base md:text-lg">
+											Keluar
+										</span>
+										<span className="mt-0.5 block text-xs text-[#6F6B6E] sm:text-sm">
+											Keluar dari akun Anda
+										</span>
+									</span>
+									<ChevronRight
+										size={20}
+										aria-hidden="true"
+										className="shrink-0 text-[#9A9A9A] transition-all group-hover:translate-x-0.5 group-hover:text-[#C41E1E]"
+									/>
+								</button>
+							</li>
 						</ul>
 					</nav>
 				</div>

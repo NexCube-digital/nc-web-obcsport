@@ -4,6 +4,7 @@ import { ChevronDown, CircleX } from 'lucide-react'
 import NavbarDashboard from '../../components/layout/Navbar'
 import MobileHeader from '../../components/layout/MobileHeader'
 import DeferredFooter from '../../components/layout/DeferredFooter'
+import ScrollReveal from '../../components/animation/ScrollReveal'
 import { useIsMobile } from '../../hooks/useIsMobile'
 
 /* -------------------------------------------------------------------------
@@ -66,6 +67,7 @@ function FailedOrder() {
           isOrderDetailsOpen ? 'overflow-y-auto' : 'overflow-hidden'
           }`}
         >
+        <ScrollReveal className="flex min-h-0 flex-1 flex-col">
         <div
           role="img"
           aria-label="Pembayaran gagal"
@@ -85,7 +87,7 @@ function FailedOrder() {
             TRANSAKSI DITOLAK / GAGAL BAYAR
           </span>
           <h1 className={`${FONT_MONTSERRAT} mt-2 text-lg font-bold leading-6 text-[#343133]`}>
-            Pemesanan Gagal: Waktu Pembayaran Habis
+            Pemesanan Gagal Waktu Pembayaran Habis
           </h1>
           <p className="mt-1.5 font-heading text-[11px] leading-4 text-[#343133]">
             Batas waktu pembayaran 15 menit menggunakan sistem otomatis QRIS atau Transfer
@@ -185,6 +187,7 @@ function FailedOrder() {
             Hubungi Admin OBC
           </a>
         </div>
+        </ScrollReveal>
         </div>
       )}
 
@@ -196,6 +199,7 @@ function FailedOrder() {
         <NavbarDashboard userName={USER_NAME} showDesktopNavigation={false} showMobileHeader={false} />
 
         <main className="mx-auto flex w-full max-w-[1068px] flex-1 items-center px-6 py-12">
+          <ScrollReveal className="w-full">
           <div className="grid w-full items-center gap-12 lg:grid-cols-[1fr_480px]">
             {/* ================= Kiri: penjelasan ================= */}
             <div>
@@ -206,7 +210,7 @@ function FailedOrder() {
               <h1
                 className={`${FONT_MONTSERRAT} mt-6 text-[38px] font-bold leading-[48px] text-[#343133]`}
               >
-                Pemesanan Gagal: Waktu Pembayaran Habis
+                Pemesanan Gagal Waktu Pembayaran Habis
               </h1>
 
               <p className="mt-6 font-heading text-[15px] leading-6 text-[#343133]">
@@ -226,11 +230,11 @@ function FailedOrder() {
                 ))}
               </ol>
 
-              <div className="mt-6 flex flex-wrap items-center gap-4">
+              <div className="mt-6 flex flex-nowrap items-center gap-3">
                 <button
                   type="button"
                   onClick={() => navigate('/checkout')}
-                  className="h-10 w-[306px] max-w-full cursor-pointer rounded-lg bg-[#CDF178] font-heading text-xs text-[#404F14] transition-colors hover:bg-[#9AAD3E]"
+                  className="h-10 w-[220px] shrink-0 cursor-pointer rounded-lg bg-[#CDF178] px-3 font-heading text-xs text-[#404F14] transition-colors hover:bg-[#9AAD3E]"
                 >
                   Coba Bayar Kembali
                 </button>
@@ -238,7 +242,7 @@ function FailedOrder() {
                   href={ADMIN_WA_URL}
                   target="_blank"
                   rel="noreferrer"
-                  className="flex h-[46px] w-[194px] items-center justify-center rounded-lg border border-[#404F14] bg-white font-heading text-sm font-bold text-[#404F14] transition-colors hover:bg-[#F5FAF3]"
+                  className="flex h-10 w-[176px] shrink-0 items-center justify-center rounded-lg border border-[#404F14] bg-white px-2 font-heading text-xs font-bold text-[#404F14] transition-colors hover:bg-[#F5FAF3]"
                 >
                   Hubungi Admin OBC
                 </a>
@@ -289,6 +293,7 @@ function FailedOrder() {
               </div>
             </section>
           </div>
+          </ScrollReveal>
         </main>
 
         <DeferredFooter />

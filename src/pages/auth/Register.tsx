@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { CircleCheck, Eye, EyeOff, House } from 'lucide-react'
 import logo from '../../assets/logo/unit bisnis/LOGO OBC SPORT CENTER.png'
 import { useIsMobile } from '../../hooks/useIsMobile'
+import ScrollReveal from '../../components/animation/ScrollReveal'
 
 /* Ikon Google */
 function GoogleIcon() {
@@ -100,7 +101,8 @@ function Register() {
     <>
       {/* ===================== MOBILE (< md) — satu layar, tanpa scroll ===================== */}
       {isMobile && (
-      <div className="relative flex h-[100dvh] flex-col justify-center overflow-hidden bg-white px-5 py-[clamp(8px,2vh,24px)] font-heading text-[#343133]">
+      <ScrollReveal className="h-dvh">
+      <div className="relative flex h-full flex-col justify-center overflow-hidden bg-white px-5 py-[clamp(8px,2vh,24px)] font-heading text-[#343133]">
         <Link
           to="/"
           aria-label="Kembali ke Home"
@@ -238,6 +240,7 @@ function Register() {
           </Link>
         </p>
       </div>
+      </ScrollReveal>
       )}
 
       {/* ===================== DESKTOP (>= md) — satu layar, tanpa scroll ===================== */}
@@ -254,6 +257,7 @@ function Register() {
         <main className="flex min-h-0 flex-1 items-center">
           <section className="mx-auto grid w-full max-w-[1120px] items-center gap-8 px-6 py-[clamp(8px,2vh,20px)] lg:grid-cols-[1fr_420px] lg:gap-14">
             {/* Kolom kiri */}
+            <ScrollReveal>
             <div>
               <h1 className="font-heading text-2xl font-bold leading-tight text-[#343133] lg:text-3xl">
                 Buat Akun OBC Anda
@@ -273,8 +277,10 @@ function Register() {
                 ))}
               </ul>
             </div>
+            </ScrollReveal>
 
             {/* Kolom kanan: kartu form */}
+            <ScrollReveal className="w-full" delay={140}>
             <div className="w-full rounded-2xl border border-[#D4D4D4] bg-white p-[clamp(14px,2.6vh,24px)] shadow-[0_4px_16px_rgba(0,0,0,0.08)]">
               <h2 className="font-heading text-xl font-bold text-[#343133]">
                 Daftar Akun Baru
@@ -411,6 +417,7 @@ function Register() {
                 Masuk dengan Google
               </button>
             </div>
+            </ScrollReveal>
           </section>
         </main>
       </div>

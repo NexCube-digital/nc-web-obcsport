@@ -1,7 +1,7 @@
-import { lazy, Suspense, useEffect, useRef, useState, type ReactNode } from 'react'
+import { lazy, useEffect, useState } from 'react'
 import Navbar from '../../components/layout/LandingNavbar'
 import BtnStart from '../../components/ui/BtnStart'
-import ScrollReveal from '../../components/animation/ScrollReveal'
+import DeferredSection from '../../components/layout/DeferredSection'
 import Hero from './sections/Hero'
 
 const Footer = lazy(() => import('../../components/layout/LandingFooter'))
@@ -10,49 +10,6 @@ const Highlight = lazy(() => import('./sections/Highlight'))
 const Booking = lazy(() => import('./sections/Booking'))
 const Testimoni = lazy(() => import('./sections/Testimoni'))
 const UnitBisnis = lazy(() => import('./sections/UnitBisnis'))
-
-interface DeferredSectionProps {
-  children: ReactNode
-  placeholderClassName: string
-  isEnabled: boolean
-  id?: string
-}
-
-function DeferredSection({ children, placeholderClassName, isEnabled, id }: DeferredSectionProps) {
-  const sectionRef = useRef<HTMLDivElement>(null)
-  const [isNearViewport, setIsNearViewport] = useState(false)
-
-  useEffect(() => {
-    if (!isEnabled) return
-
-    const section = sectionRef.current
-    if (!section) return
-
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (!entry.isIntersecting) return
-        setIsNearViewport(true)
-        observer.disconnect()
-      },
-      { rootMargin: '300px 0px' },
-    )
-
-    observer.observe(section)
-    return () => observer.disconnect()
-  }, [isEnabled])
-
-  return (
-    <div ref={sectionRef} id={id}>
-      {isNearViewport ? (
-        <Suspense fallback={<div aria-hidden="true" className={placeholderClassName} />}>
-          <ScrollReveal>{children}</ScrollReveal>
-        </Suspense>
-      ) : (
-        <div aria-hidden="true" className={placeholderClassName} />
-      )}
-    </div>
-  )
-}
 
 function LandingPage() {
   const [hasScrolled, setHasScrolled] = useState(false)
@@ -86,28 +43,24 @@ function LandingPage() {
         <Hero />
 
         <DeferredSection
-          isEnabled={hasScrolled}
           placeholderClassName="min-h-[280px] sm:min-h-[320px]"
         >
           <Promo />
         </DeferredSection>
 
         <DeferredSection
-          isEnabled={hasScrolled}
           placeholderClassName="min-h-[150px] sm:min-h-[180px]"
         >
           <Highlight />
         </DeferredSection>
 
         <DeferredSection
-          isEnabled={hasScrolled}
           placeholderClassName="min-h-[540px] lg:min-h-[640px]"
         >
           <Booking />
         </DeferredSection>
 
         <DeferredSection
-          isEnabled={hasScrolled}
           placeholderClassName="min-h-[420px] md:min-h-[480px] lg:min-h-[500px]"
         >
           <Testimoni />
@@ -115,7 +68,6 @@ function LandingPage() {
 
         <DeferredSection
           id="layanan"
-          isEnabled={hasScrolled}
           placeholderClassName="min-h-[620px] md:min-h-[700px]"
         >
           <UnitBisnis />
@@ -124,7 +76,6 @@ function LandingPage() {
         {/* Footer + spacer setinggi tombol sticky (mobile) supaya footer tidak tertutup */}
         <DeferredSection
           id="landing-footer"
-          isEnabled={hasScrolled}
           placeholderClassName="min-h-[100svh] lg:min-h-[590px]"
         >
           <Footer />

@@ -8,24 +8,37 @@ interface ScrollRevealProps {
 
 function ScrollReveal({ children, className = '', delay = 0 }: ScrollRevealProps) {
 	const sectionRef = useRef<HTMLDivElement>(null)
-	const [isVisible, setIsVisible] = useState(false)
+	const shouldSkipAnimation =
+		typeof window !== 'undefined' &&
+		(window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ||
+			!('IntersectionObserver' in window))
+	const [isVisible, setIsVisible] = useState(shouldSkipAnimation)
 
 	useEffect(() => {
 		const section = sectionRef.current
-		if (!section) return
+		if (!section || shouldSkipAnimation) return
+
+		let firstFrame = 0
+		let secondFrame = 0
 
 		const observer = new IntersectionObserver(
 			([entry]) => {
 				if (!entry.isIntersecting) return
-				setIsVisible(true)
 				observer.disconnect()
+				firstFrame = requestAnimationFrame(() => {
+					secondFrame = requestAnimationFrame(() => setIsVisible(true))
+				})
 			},
 			{ threshold: 0.08, rootMargin: '0px 0px -40px' },
 		)
 
 		observer.observe(section)
-		return () => observer.disconnect()
-	}, [])
+		return () => {
+			cancelAnimationFrame(firstFrame)
+			cancelAnimationFrame(secondFrame)
+			observer.disconnect()
+		}
+	}, [shouldSkipAnimation])
 
 	return (
 		<div

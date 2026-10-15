@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { ArrowRight, Check } from 'lucide-react'
 import NavbarDashboard from '../../components/layout/Navbar'
 import DeferredFooter from '../../components/layout/DeferredFooter'
+import DeferredSection from '../../components/layout/DeferredSection'
 
 const PhotoCropModal = lazy(() => import('./Photocropmodal'))
 
@@ -252,6 +253,7 @@ function SettingsPage() {
           </section>
 
           {/* ================= Email akun ================= */}
+          <DeferredSection placeholderClassName="min-h-[112px]">
           <section className={CARD_CLASS}>
             <h2 className={CARD_TITLE_CLASS}>Email Akun</h2>
 
@@ -275,8 +277,10 @@ function SettingsPage() {
               </div>
             </div>
           </section>
+          </DeferredSection>
 
           {/* ================= Keamanan sandi ================= */}
+          <DeferredSection placeholderClassName="min-h-[270px]">
           <section className={CARD_CLASS}>
             <h2 className={CARD_TITLE_CLASS}>Keamanan Sandi</h2>
 
@@ -328,8 +332,10 @@ function SettingsPage() {
               Perbarui Sandi
             </button>
           </section>
+          </DeferredSection>
 
           {/* ================= Pusat bantuan & dukungan ================= */}
+          <DeferredSection placeholderClassName="min-h-[180px]">
           <section className={`${CARD_CLASS} pb-3`}>
             <h2 className={CARD_TITLE_CLASS}>Pusat Bantuan &amp; Dukungan</h2>
 
@@ -348,9 +354,11 @@ function SettingsPage() {
               ))}
             </ul>
           </section>
+          </DeferredSection>
         </div>
 
         {/* ================= Tombol simpan ================= */}
+        <DeferredSection placeholderClassName="mt-6 min-h-[42px]">
         <div className="mt-6 flex justify-center">
           <button
             type="button"
@@ -360,6 +368,7 @@ function SettingsPage() {
             Simpan Perubahan
           </button>
         </div>
+        </DeferredSection>
       </main>
 
       <DeferredFooter />

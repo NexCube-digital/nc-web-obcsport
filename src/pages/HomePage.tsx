@@ -1,50 +1,18 @@
-import { lazy, Suspense, useEffect, useState, type ReactNode } from 'react'
+import { lazy, Suspense, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { X, ZoomIn, ZoomOut } from 'lucide-react'
 import NavbarDashboard from '../components/layout/Navbar'
-import Footer from '../components/layout/Footer'
+import DeferredFooter from '../components/layout/DeferredFooter'
 import ScrollReveal from '../components/animation/ScrollReveal'
+import DeferredSection from '../components/layout/DeferredSection'
 import type { OrderModalFacility } from '../components/ui/OrderModal'
 import Hero from './home/Hero'
-import Information from './home/Information'
-import Event from './home/Event'
 import type { FacilityCard } from './home/Court'
-import { useIsMobile } from '../hooks/useIsMobile'
 
 const Court = lazy(() => import('./home/Court'))
+const Information = lazy(() => import('./home/Information'))
+const Event = lazy(() => import('./home/Event'))
 const OrderModal = lazy(() => import('../components/ui/OrderModal'))
-
-interface DeferredSectionProps {
-  children: ReactNode
-  placeholderClassName: string
-}
-
-function DeferredSection({ children, placeholderClassName }: DeferredSectionProps) {
-  const [hasScrolled, setHasScrolled] = useState(false)
-
-  useEffect(() => {
-    const handleScroll = () => {
-      if (window.scrollY === 0) return
-      setHasScrolled(true)
-      window.removeEventListener('scroll', handleScroll)
-    }
-
-    window.addEventListener('scroll', handleScroll, { passive: true })
-    return () => window.removeEventListener('scroll', handleScroll)
-  }, [])
-
-  return (
-    <div className="flow-root">
-      {hasScrolled ? (
-        <Suspense fallback={<div aria-hidden="true" className={placeholderClassName} />}>
-          <ScrollReveal>{children}</ScrollReveal>
-        </Suspense>
-      ) : (
-        <div aria-hidden="true" className={placeholderClassName} />
-      )}
-    </div>
-  )
-}
 
 /* -------------------------------------------------------------------------
    Tipe data
@@ -107,7 +75,6 @@ function HomePage() {
   const [previewImage, setPreviewImage] = useState<{ src: string; alt: string } | null>(null)
   const [isImageZoomed, setIsImageZoomed] = useState(false)
   const navigate = useNavigate()
-  const isMobile = useIsMobile()
 
   useEffect(() => {
     if (!previewImage) return
@@ -149,42 +116,38 @@ function HomePage() {
     : null
 
   return (
-    // overflow-x-hidden: pengaman terakhir agar tidak pernah ada scroll horizontal
-    <div className="flex min-h-screen flex-col overflow-x-hidden bg-white font-body text-[#343133]">
+    <div className="flex min-h-screen flex-col overflow-x-clip bg-white font-body text-[#343133]">
       <NavbarDashboard userName={USER_NAME} />
 
       {/* Lebar konten 1200px sesuai desain; padding mengecil di layar kecil */}
       <main className="mx-auto w-full max-w-[1248px] flex-1 px-3 pt-4 pb-10 min-[360px]:px-4 sm:px-6 sm:pt-6 sm:pb-16">
-        <Hero
-          userName={USER_NAME}
-          searchQuery={searchQuery}
-          onSearchQueryChange={setSearchQuery}
-          onSearch={handleSearch}
-        />
-        <Information />
+        <ScrollReveal>
+          <Hero
+            userName={USER_NAME}
+            searchQuery={searchQuery}
+            onSearchQueryChange={setSearchQuery}
+            onSearch={handleSearch}
+          />
+        </ScrollReveal>
 
-        <Event onPreviewImage={setPreviewImage} />
+        <DeferredSection placeholderClassName="min-h-[164px] sm:min-h-[190px]">
+          <Information />
+        </DeferredSection>
 
-        {isMobile ? (
-          <Suspense fallback={<div aria-hidden="true" className="min-h-[680px]" />}>
-            <Court
-              submittedSearch={submittedSearch}
-              onPreviewImage={setPreviewImage}
-              onSelectFacility={setSelectedFacility}
-            />
-          </Suspense>
-        ) : (
-          <DeferredSection placeholderClassName="min-h-[680px] md:min-h-[420px]">
-            <Court
-              submittedSearch={submittedSearch}
-              onPreviewImage={setPreviewImage}
-              onSelectFacility={setSelectedFacility}
-            />
-          </DeferredSection>
-        )}
+        <DeferredSection placeholderClassName="min-h-[160px] min-[360px]:min-h-[180px] min-[833px]:min-h-[190px]">
+          <Event onPreviewImage={setPreviewImage} />
+        </DeferredSection>
+
+        <DeferredSection placeholderClassName="min-h-[680px] md:min-h-[1000px] lg:min-h-[720px]">
+          <Court
+            submittedSearch={submittedSearch}
+            onPreviewImage={setPreviewImage}
+            onSelectFacility={setSelectedFacility}
+          />
+        </DeferredSection>
       </main>
 
-      <Footer />
+      <DeferredFooter />
 
       {/* ================= Modal pemesanan ================= */}
       {modalFacility && (

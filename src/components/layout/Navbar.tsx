@@ -1,5 +1,5 @@
 import { lazy, Suspense, useEffect, useRef, useState } from 'react'
-import { ChevronDown, History, LogOut, Settings, ShoppingCart } from 'lucide-react'
+import { ChevronDown, CircleHelp, History, LogOut, Settings, ShoppingCart } from 'lucide-react'
 import { Link, useLocation } from 'react-router-dom'
 import logo from '../../assets/logo/unit bisnis/LOGO OBC SPORT CENTER.png'
 import { useIsMobile } from '../../hooks/useIsMobile'
@@ -47,6 +47,7 @@ const LANGUAGES: Language[] = [
 const USER_MENU_ITEMS = [
   { id: 'pengaturan', label: 'Pengaturan', href: '/pengaturan', icon: Settings },
   { id: 'riwayat', label: 'Riwayat Transaksi', href: '/history', icon: History },
+  { id: 'bantuan', label: 'Bantuan', href: '/bantuan', icon: CircleHelp },
 ] as const
 
 

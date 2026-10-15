@@ -1,5 +1,7 @@
 import NavbarDashboard from '../components/layout/Navbar'
 import DeferredFooter from '../components/layout/DeferredFooter'
+import DeferredSection from '../components/layout/DeferredSection'
+import ScrollReveal from '../components/animation/ScrollReveal'
 import whatsappIcon from '../assets/icon/whatsapp2.svg'
 
 /* -------------------------------------------------------------------------
@@ -62,15 +64,18 @@ function OrderPage() {
       {/* Lebar konten 1200px sesuai desain */}
       <main className="max-w-[1248px] mx-auto px-6 pt-6 pb-16">
         {/* ================= Judul halaman ================= */}
-        <h1 className={`${FONT_MONTSERRAT} font-bold text-2xl leading-8 text-[#343133]`}>
-          Layanan Sewa Event &amp; Multi-Day OBC
-        </h1>
-        <p className="mt-1 text-sm leading-[21px] font-heading text-[#343133]">
-          Penyelenggaraan turnamen korporat, liga komunitas, gathering, dan festival
-          olahraga premium.
-        </p>
+        <ScrollReveal>
+          <h1 className={`${FONT_MONTSERRAT} font-bold text-2xl leading-8 text-[#343133]`}>
+            Layanan Sewa Event &amp; Multi-Day OBC
+          </h1>
+          <p className="mt-1 text-sm leading-[21px] font-heading text-[#343133]">
+            Penyelenggaraan turnamen korporat, liga komunitas, gathering, dan festival
+            olahraga premium.
+          </p>
+        </ScrollReveal>
 
         {/* Kiri fleksibel (740px), kanan 420px, jarak 40px */}
+        <DeferredSection placeholderClassName="mt-6 min-h-[560px] md:min-h-[720px] lg:min-h-[500px]">
         <div className="mt-6 grid lg:grid-cols-[1fr_420px] gap-10">
           {/* ================= Ketentuan & alur reservasi ================= */}
           <section className="rounded-2xl border border-[#D4D4D4] bg-white p-6">
@@ -143,6 +148,7 @@ function OrderPage() {
             </button>
           </section>
         </div>
+        </DeferredSection>
       </main>
 
       <DeferredFooter />

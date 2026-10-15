@@ -4,6 +4,7 @@ import { ChevronDown, CircleCheck } from 'lucide-react'
 import NavbarDashboard from '../../components/layout/Navbar'
 import MobileHeader from '../../components/layout/MobileHeader'
 import DeferredFooter from '../../components/layout/DeferredFooter'
+import ScrollReveal from '../../components/animation/ScrollReveal'
 import lapangF1 from '../../assets/layanan/Lapang F1.png'
 import { useIsMobile } from '../../hooks/useIsMobile'
 
@@ -95,6 +96,7 @@ function SuccesOrder() {
           isPaymentDetailsOpen ? 'overflow-y-auto' : 'overflow-hidden'
           }`}
         >
+        <ScrollReveal className="flex min-h-0 flex-1 flex-col">
         <div
           role="img"
           aria-label="Pembayaran berhasil"
@@ -248,6 +250,7 @@ function SuccesOrder() {
             Kembali ke Beranda
           </button>
         </div>
+        </ScrollReveal>
         </div>
       )}
 
@@ -260,6 +263,7 @@ function SuccesOrder() {
         <NavbarDashboard userName={USER_NAME} showDesktopNavigation={false} showMobileHeader={false} />
 
         <main className="mx-auto flex w-full max-w-[1068px] flex-1 items-center px-6 py-12">
+          <ScrollReveal className="w-full">
           <div className="grid w-full items-center gap-12 lg:grid-cols-[1fr_480px]">
             {/* ================= Kiri: konfirmasi ================= */}
             <div>
@@ -395,6 +399,7 @@ function SuccesOrder() {
               </div>
             </section>
           </div>
+          </ScrollReveal>
         </main>
 
         <DeferredFooter />

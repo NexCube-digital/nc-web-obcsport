@@ -4,6 +4,7 @@ import { Eye, EyeOff, House } from 'lucide-react'
 import loginIllustration from '../../assets/figma/login.jpg'
 import logo from '../../assets/logo/unit bisnis/LOGO OBC SPORT CENTER.png'
 import { useIsMobile } from '../../hooks/useIsMobile'
+import ScrollReveal from '../../components/animation/ScrollReveal'
 
 /* Ikon Google */
 function GoogleIcon() {
@@ -44,7 +45,8 @@ function LoginPage() {
     <>
       {/* ===================== MOBILE (< md) — satu layar, tanpa scroll ===================== */}
       {isMobile && (
-      <div className="relative flex h-[100dvh] flex-col justify-center overflow-hidden bg-[#FDFCF7] px-6 py-[clamp(8px,2.5vh,40px)] font-heading text-[#343133]">
+      <ScrollReveal className="h-[100dvh]">
+      <div className="relative flex h-full flex-col justify-center overflow-hidden bg-[#FDFCF7] px-6 py-[clamp(8px,2.5vh,40px)] font-heading text-[#343133]">
         <Link
           to="/"
           aria-label="Kembali ke Home"
@@ -161,42 +163,53 @@ function LoginPage() {
           </Link>
         </p>
       </div>
+      </ScrollReveal>
       )}
 
-      {/*  DESKTOP (>= md) — satu layar, tanpa scroll  */}
+      {/*  DESKTOP / TABLET (>= md) — satu layar, TANPA scroll  */}
       {!isMobile && (
-      <div className="relative h-[100dvh] flex flex-col overflow-hidden bg-white font-body text-[#343133]">
-        <Link
-          to="/"
-          aria-label="Kembali ke Home"
-          className="absolute left-8 top-6 z-10 inline-flex items-center gap-2 rounded-lg px-2.5 py-2 text-sm font-semibold text-[#404F14] transition-colors hover:bg-[#F5FAF3]"
-        >
-          <House size={18} aria-hidden="true" />
-          Home
-        </Link>
-        <main className="flex min-h-0 flex-1 items-center">
-          <section className="mx-auto grid w-full max-w-[1400px] items-center gap-10 px-8 py-[clamp(8px,2vh,32px)] lg:grid-cols-[1fr_clamp(460px,34vw,560px)] lg:gap-[clamp(40px,6vw,96px)]">
+      <div className="flex h-[100dvh] flex-col overflow-hidden bg-white font-body text-[#343133]">
+        {/* Header: tombol Home sejajar dengan tepi konten */}
+        <header className="mx-auto w-full max-w-[1400px] shrink-0 px-8 pt-[clamp(10px,2vh,24px)] md:px-12 lg:px-8">
+          <Link
+            to="/"
+            aria-label="Kembali ke Home"
+            className="-ml-2.5 inline-flex items-center gap-2 rounded-lg px-2.5 py-2 text-sm font-semibold leading-none text-[#404F14] transition-colors hover:bg-[#F5FAF3]"
+          >
+            <House size={18} className="shrink-0" aria-hidden="true" />
+            <span>Home</span>
+          </Link>
+        </header>
+
+        <main className="min-h-0 flex-1">
+          {/* Tablet: kolom flex setinggi main. Desktop (lg): grid 2 kolom */}
+          <section className="mx-auto flex h-full w-full max-w-[1400px] flex-col gap-[clamp(12px,2.2vh,32px)] px-8 pb-[clamp(12px,2.5vh,32px)] pt-[clamp(4px,1vh,16px)] md:px-12 lg:grid lg:grid-cols-[1fr_clamp(460px,34vw,560px)] lg:items-center lg:gap-[clamp(40px,6vw,96px)] lg:px-8 lg:py-[clamp(8px,2vh,32px)]">
             {/* Kolom kiri */}
-            <div>
-              <h1 className="font-heading text-[clamp(28px,4.8vh,48px)] font-bold leading-tight text-[#343133]">
+            <ScrollReveal delay={0} className="flex min-h-0 flex-1 flex-col lg:block lg:flex-none">
+            <div className="mx-auto flex min-h-0 w-full max-w-[560px] flex-1 flex-col text-center lg:mx-0 lg:block lg:max-w-none lg:flex-none lg:text-left">
+              <h1 className="shrink-0 font-heading text-[clamp(24px,3.6vh,48px)] font-bold leading-tight text-[#343133] lg:text-[clamp(28px,4.8vh,48px)]">
                 Kembali Berolahraga Bersama Komunitas OBC
               </h1>
-              <p className="mt-[clamp(10px,1.8vh,20px)] max-w-xl text-[clamp(14px,2vh,18px)] leading-relaxed text-[#6F6B6E]">
+              <p className="mx-auto mt-[clamp(8px,1.5vh,20px)] max-w-xl shrink-0 text-[clamp(13px,1.8vh,18px)] leading-relaxed text-[#6F6B6E] lg:mx-0 lg:text-[clamp(14px,2vh,18px)]">
                 Kelola jadwal sewa lapangan, pantau status membership akademi Anda, dan
                 dapatkan penawaran diskon khusus pengguna terdaftar secara instan.
               </p>
 
-              <div className="mt-[clamp(14px,3vh,32px)] h-[clamp(140px,36vh,400px)] overflow-hidden rounded-2xl bg-[#A9AD86]">
+              {/* Tablet: ilustrasi mengisi sisa tinggi (flex-1), disembunyikan jika layar pendek.
+                  Desktop: tinggi tetap berbasis vh */}
+              <div className="relative mt-[clamp(12px,2.4vh,32px)] min-h-0 flex-1 overflow-hidden rounded-2xl bg-[#A9AD86] max-lg:max-h-[42vh] max-lg:[@media(max-height:820px)]:hidden lg:h-[clamp(140px,36vh,400px)] lg:flex-none">
                 <img
                   src={loginIllustration}
                   alt="Ilustrasi olahraga OBC Sport Center"
-                  className="h-full w-full object-cover"
+                  className="absolute inset-0 h-full w-full object-cover"
                 />
               </div>
             </div>
+            </ScrollReveal>
 
             {/* Kolom kanan: kartu form */}
-            <div className="w-full rounded-2xl border border-[#D4D4D4] bg-white p-[clamp(16px,3.6vh,40px)] shadow-[0_4px_20px_rgba(0,0,0,0.08)]">
+            <ScrollReveal className="w-full shrink-0" delay={140}>
+            <div className="mx-auto w-full max-w-[560px] rounded-2xl border border-[#D4D4D4] bg-white p-[clamp(16px,3.2vh,40px)] shadow-[0_4px_20px_rgba(0,0,0,0.08)] lg:mx-0 lg:max-w-none lg:p-[clamp(16px,3.6vh,40px)]">
               <h2 className="font-heading text-[clamp(20px,3.2vh,30px)] font-bold text-[#343133]">
                 Selamat Datang Kembali
               </h2>
@@ -206,7 +219,7 @@ function LoginPage() {
 
               <form
                 onSubmit={handleSubmit}
-                className="mt-[clamp(10px,2.4vh,28px)] space-y-[clamp(8px,2vh,20px)]"
+                className="mt-[clamp(10px,2.2vh,28px)] space-y-[clamp(8px,1.8vh,20px)]"
               >
                 <div>
                   <label
@@ -221,7 +234,7 @@ function LoginPage() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="Masukan email Anda"
-                    className="w-full rounded-lg border border-[#D4D4D4] bg-[#FDFCF7] px-4 py-[clamp(9px,1.9vh,18px)] text-[clamp(13px,1.9vh,17px)] placeholder:text-[#343133] focus:outline-none focus:border-[#404F14]"
+                    className="w-full rounded-lg border border-[#D4D4D4] bg-[#FDFCF7] px-4 py-[clamp(9px,1.8vh,18px)] text-[clamp(13px,1.9vh,17px)] placeholder:text-[#343133] focus:outline-none focus:border-[#404F14]"
                   />
                 </div>
 
@@ -239,7 +252,7 @@ function LoginPage() {
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       placeholder="Masukan kata sandi Anda"
-                      className="w-full rounded-lg border border-[#D4D4D4] bg-[#FDFCF7] px-4 py-[clamp(9px,1.9vh,18px)] pr-12 text-[clamp(13px,1.9vh,17px)] placeholder:text-[#343133] focus:outline-none focus:border-[#404F14]"
+                      className="w-full rounded-lg border border-[#D4D4D4] bg-[#FDFCF7] px-4 py-[clamp(9px,1.8vh,18px)] pr-12 text-[clamp(13px,1.9vh,17px)] placeholder:text-[#343133] focus:outline-none focus:border-[#404F14]"
                     />
                     <button
                       type="button"
@@ -270,32 +283,33 @@ function LoginPage() {
 
                 <button
                   type="submit"
-                  className="w-full rounded-lg bg-[#CDF178] py-[clamp(10px,2vh,18px)] text-[clamp(14px,2vh,17px)] font-heading font-bold text-[#404F14] shadow-[0_2px_6px_rgba(0,0,0,0.15)] hover:bg-[#9AAD3E] transition-colors cursor-pointer"
+                  className="w-full rounded-lg bg-[#CDF178] py-[clamp(10px,1.9vh,18px)] text-[clamp(14px,2vh,17px)] font-heading font-bold text-[#404F14] shadow-[0_2px_6px_rgba(0,0,0,0.15)] hover:bg-[#9AAD3E] transition-colors cursor-pointer"
                 >
                   Masuk Ke Akun
                 </button>
               </form>
 
-              <p className="mt-[clamp(8px,1.8vh,20px)] text-center text-[clamp(13px,1.8vh,16px)] text-[#343133]">
+              <p className="mt-[clamp(8px,1.6vh,20px)] text-center text-[clamp(13px,1.8vh,16px)] text-[#343133]">
                 Belum punya akun?{' '}
                 <Link to="/register" className="font-heading font-bold text-[#404F14]">
                   Daftar Sekarang
                 </Link>
               </p>
 
-              <p className="mt-[clamp(4px,1vh,12px)] text-center text-[clamp(12px,1.6vh,14px)] text-[#343133]">
+              <p className="mt-[clamp(4px,0.9vh,12px)] text-center text-[clamp(12px,1.6vh,14px)] text-[#343133]">
                 Atau
               </p>
 
               <button
                 type="button"
                 onClick={handleGoogleLogin}
-                className="mx-auto mt-[clamp(6px,1.2vh,12px)] flex w-full max-w-[300px] items-center justify-center gap-2 rounded-md border border-[#D4D4D4] bg-white py-[clamp(7px,1.4vh,12px)] font-heading text-[clamp(13px,1.8vh,16px)] font-bold text-[#121212] hover:bg-[#FDFCF7] transition-colors cursor-pointer"
+                className="mx-auto mt-[clamp(6px,1.1vh,12px)] flex w-full max-w-[300px] items-center justify-center gap-2 rounded-md border border-[#D4D4D4] bg-white py-[clamp(7px,1.3vh,12px)] font-heading text-[clamp(13px,1.8vh,16px)] font-bold text-[#121212] hover:bg-[#FDFCF7] transition-colors cursor-pointer"
               >
                 <GoogleIcon />
                 Masuk dengan Google
               </button>
             </div>
+            </ScrollReveal>
           </section>
         </main>
       </div>

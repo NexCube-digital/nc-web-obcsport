@@ -4,6 +4,7 @@ import { Clock, Download } from 'lucide-react'
 import NavbarDashboard from '../../components/layout/Navbar'
 import MobileHeader from '../../components/layout/MobileHeader'
 import DeferredFooter from '../../components/layout/DeferredFooter'
+import ScrollReveal from '../../components/animation/ScrollReveal'
 import { useIsMobile } from '../../hooks/useIsMobile'
 
 /* -------------------------------------------------------------------------
@@ -214,6 +215,7 @@ function InformationOrder() {
           <PaymentCountdown />
         </div>
 
+        <ScrollReveal className="min-h-0 flex-1 overflow-y-auto">
         <div className="min-h-0 px-3 pt-3">
           {/* Kartu QR */}
           <section className="flex flex-col items-center rounded-2xl border border-[#D4D4D4] bg-white px-3 pb-3 pt-4">
@@ -253,6 +255,7 @@ function InformationOrder() {
             ))}
           </ol>
         </div>
+          </ScrollReveal>
 
         {/* Tombol cek status (fixed di bawah) */}
         <div className="fixed inset-x-0 bottom-0 z-40 border-t border-[#D4D4D4] bg-white px-3 pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
@@ -273,6 +276,7 @@ function InformationOrder() {
         <NavbarDashboard userName={USER_NAME} showDesktopNavigation={false} showMobileHeader={false} />
 
         <main className="mx-auto w-full max-w-[1248px] flex-1 px-6 pb-16 pt-6">
+          <ScrollReveal className="w-full">
           <div className="text-center">
             <h1 className={`${FONT_MONTSERRAT} text-[26px] font-bold leading-9 text-[#343133]`}>
               Selesaikan Pembayaran QRIS
@@ -342,6 +346,7 @@ function InformationOrder() {
           >
             Cek Status Pembayaran
           </button>
+          </ScrollReveal>
         </main>
 
         <DeferredFooter />

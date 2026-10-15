@@ -106,7 +106,11 @@ function UnitCard({ unit, isFavorite, onToggleFavorite, className = '' }: UnitCa
 			{/* Logo di tengah */}
 			<div className="pointer-events-none relative z-10 mx-auto mt-4 grid h-[96px] w-[96px] place-items-center md:mt-3 md:h-[clamp(96px,17svh,144px)] md:w-[clamp(96px,17svh,144px)] lg:mt-2 lg:h-[clamp(88px,13svh,144px)] lg:w-[clamp(88px,13svh,144px)]">
 				<img
-					className="block max-h-full max-w-full object-contain transition-transform duration-300 group-hover:scale-105"
+					className={`block max-h-full max-w-full object-contain transition-transform duration-300 ${
+						unit.name === 'OBC Villa'
+							? 'scale-[0.83] group-hover:scale-[0.86]'
+							: 'group-hover:scale-105'
+					}`}
 					src={unit.image}
 					alt={`Logo ${unit.name}`}
 					loading="lazy"
