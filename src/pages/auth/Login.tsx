@@ -1,10 +1,13 @@
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { Eye, EyeOff, House } from 'lucide-react'
+import { toast } from 'sonner'
 import loginIllustration from '../../assets/figma/login.jpg'
 import logo from '../../assets/logo/unit bisnis/LOGO OBC SPORT CENTER.png'
 import { useIsMobile } from '../../hooks/useIsMobile'
 import ScrollReveal from '../../components/animation/ScrollReveal'
+import { getApiErrorMessage } from '../../services/apiService'
+import { loginCustomer } from '../../services/authService'
 
 /* Ikon Google */
 function GoogleIcon() {
@@ -28,12 +31,28 @@ function LoginPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [rememberMe, setRememberMe] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const location = useLocation()
   const navigate = useNavigate()
   const isMobile = useIsMobile()
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
-    navigate('/home')
+    setIsSubmitting(true)
+
+    try {
+      await loginCustomer(email.trim(), password, rememberMe)
+      toast.success('Berhasil masuk.')
+      const from = location.state?.from
+      const destination = from?.pathname
+        ? `${from.pathname}${from.search ?? ''}${from.hash ?? ''}`
+        : '/home'
+      navigate(destination, { replace: true })
+    } catch (error) {
+      toast.error(getApiErrorMessage(error, 'Login gagal. Periksa koneksi dan coba lagi.'))
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   const handleGoogleLogin = () => {
@@ -80,7 +99,7 @@ function LoginPage() {
           </label>
           <input
             id="m-email"
-            type="text"
+            type="email"
             inputMode="email"
             autoComplete="username"
             value={email}
@@ -132,12 +151,12 @@ function LoginPage() {
 
           <button
             type="submit"
+            disabled={isSubmitting}
             className="mt-[clamp(8px,1.8vh,20px)] h-[clamp(40px,6.8vh,54px)] w-full rounded-xl bg-[#CDF178] text-base font-bold text-[#343133] shadow-[0_6px_16px_rgba(154,173,62,0.35)] active:bg-[#9AAD3E] transition-colors cursor-pointer"
           >
-            Masuk Sekarang
+            {isSubmitting ? 'Memproses...' : 'Masuk Sekarang'}
           </button>
         </form>
-
         <div className="mt-[clamp(8px,1.8vh,20px)] flex items-center gap-3">
           <span className="h-px flex-1 bg-[#D4D4D4]" />
           <span className="font-body text-xs text-[#343133]">Atau</span>
@@ -283,12 +302,12 @@ function LoginPage() {
 
                 <button
                   type="submit"
+                  disabled={isSubmitting}
                   className="w-full rounded-lg bg-[#CDF178] py-[clamp(10px,1.9vh,18px)] text-[clamp(14px,2vh,17px)] font-heading font-bold text-[#404F14] shadow-[0_2px_6px_rgba(0,0,0,0.15)] hover:bg-[#9AAD3E] transition-colors cursor-pointer"
                 >
-                  Masuk Ke Akun
+                  {isSubmitting ? 'Memproses...' : 'Masuk Ke Akun'}
                 </button>
               </form>
-
               <p className="mt-[clamp(8px,1.6vh,20px)] text-center text-[clamp(13px,1.8vh,16px)] text-[#343133]">
                 Belum punya akun?{' '}
                 <Link to="/register" className="font-heading font-bold text-[#404F14]">

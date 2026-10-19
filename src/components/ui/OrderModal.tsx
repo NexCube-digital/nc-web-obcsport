@@ -158,18 +158,7 @@ function AmenityIcon({ name }: { name: FacilityIconKey }) {
   }
 }
 
-/* -------------------------------------------------------------------------
-   Komponen
-   -------------------------------------------------------------------------
-   Perilaku ukuran:
-   - Modal tingginya dibatasi layar (dvh). Hanya FOTO yang menyusut bila
-     layar pendek (mis. 375x667), dan membesar bila layar lega (mis. 360x800).
-   - Mobile (< sm): tombol cabang olahraga dibuat 2 kolom selebar layar
-     (gaya tombol tetap sama), jarak dan ukuran teks sedikit dirapatkan.
-   - >= sm: ukuran tombol dan jarak sama persis seperti desain awal.
-   - Cadangan: bila isi tetap tidak muat (layar sangat pendek / teks
-     spesifikasi panjang), modal bisa di-scroll dan header tetap menempel.
-   ------------------------------------------------------------------------- */
+
 function OrderModal({ facility, onClose, onOrder }: OrderModalProps): ReactNode {
   const [selectedSport, setSelectedSport] = useState<string>('')
 

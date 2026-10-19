@@ -1,4 +1,4 @@
-import { lazy, Suspense, useState } from 'react'
+import { lazy, Suspense, useEffect, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import NavbarDashboard from '../../components/layout/Navbar'
 import MobileHeader from '../../components/layout/MobileHeader'
@@ -6,6 +6,10 @@ import DeferredFooter from '../../components/layout/DeferredFooter'
 import DeferredSection from '../../components/layout/DeferredSection'
 import type { CartItem } from '../../components/ui/CartModal'
 import { COURT_FACILITIES } from '../../data/facilitiesData'
+import type { FacilityCard } from '../home/Court'
+import { getFacilityAvailability, type FacilityAvailability } from '../../services/facilityService'
+import { previewBookingPrice, type BookingPrice } from '../../services/bookingService'
+import { getApiErrorMessage } from '../../services/apiService'
 import FacilityDetails from './checkout/FacilityDetails'
 import { useIsMobile } from '../../hooks/useIsMobile'
 
@@ -26,15 +30,9 @@ const MobileBookingSheet = lazy(() => import('./checkout/MobileBookingSheet'))
 // TODO: nama user sementara hardcode, ganti dari auth context / API
 const USER_NAME = 'Budiman Santoso'
 
-// TODO: data fasilitas di bawah ini sementara statis, ambil dari API sesuai id lapangan
-const COURT_CATEGORY = 'Futsal Premium'
-const MAX_SESSION_HOURS = 10
+const MAX_SESSION_HOURS = 8
 
-// TODO: data booking di bawah ini sementara hardcode, ganti dari API ketersediaan jadwal
-const BOOKED_DATES: string[] = ['2026-01-05', '2026-01-10'] // tanggal yang penuh seharian
-const BOOKED_SLOTS: Record<string, string[]> = {
-  '2026-01-12': ['15:00'], // jam yang sudah dibooking pada tanggal tertentu
-}
+const BOOKED_DATES: string[] = []
 
 const DAY_NAMES = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu']
 const MONTH_NAMES = [
@@ -48,42 +46,84 @@ const MONTH_NAMES = [
 const toDateKey = (year: number, month: number, day: number) =>
   `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
 
-const hourOf = (time: string) => Number(time.split(':')[0])
+const timeToMinutes = (time: string) => {
+  const [hour, minute] = time.split(':').map(Number)
+  return hour * 60 + minute
+}
 
-const formatHour = (hour: number) => `${String(hour).padStart(2, '0')}:00`
+const getTodayKey = (date = new Date()) => {
+  const today = date
+  return toDateKey(today.getFullYear(), today.getMonth(), today.getDate())
+}
 
-// Harga per jam mengikuti tarif: 07-15 = 125k, 15-18 = 150k, selebihnya 175k
-// Catatan: jam 05:00 belum punya tarif di desain, sementara memakai tarif pagi
-const priceOfHour = (hour: number) => {
-  if (hour < 15) return 125000
-  if (hour < 18) return 150000
-  return 175000
+const isPastSlot = (date: string, time: string, now: Date) => {
+  if (date < getTodayKey(now)) return true
+  if (date > getTodayKey(now)) return false
+  return timeToMinutes(time) <= now.getHours() * 60 + now.getMinutes()
+}
+
+const formatDuration = (minutes: number) => {
+  const hours = minutes / 60
+  return `${Number.isInteger(hours) ? hours : hours.toLocaleString('id-ID')} Jam`
 }
 
 type CheckoutState = {
-  facility?: (typeof COURT_FACILITIES)[number]
+  resourceId?: string
+  sportType?: string
+  facility?: FacilityCard
 }
 
 function DetailOrder() {
   const navigate = useNavigate()
   const location = useLocation()
   const isMobile = useIsMobile()
-  const facility =
-    (location.state as CheckoutState | null)?.facility ?? COURT_FACILITIES[0]
+  const checkoutState = (location.state as CheckoutState | null) ?? {}
+  const resourceId = checkoutState.resourceId
+  const sportType = checkoutState.sportType ?? 'futsal'
+  const facility = checkoutState.facility ?? {
+    ...COURT_FACILITIES[0],
+    description: COURT_FACILITIES[0].description,
+    badge: 'TERSEDIA',
+    buttonLabel: 'Booking Sekarang',
+  }
 
-  // Bulan yang tampil di kalender (awal: Januari 2026 sesuai desain)
-  // TODO: ganti ke bulan berjalan dan nonaktifkan tanggal yang sudah lewat
-  const [viewYear, setViewYear] = useState(2026)
-  const [viewMonth, setViewMonth] = useState(0)
+  const [viewYear, setViewYear] = useState(() => new Date().getFullYear())
+  const [viewMonth, setViewMonth] = useState(() => new Date().getMonth())
+  const [currentTime, setCurrentTime] = useState(() => new Date())
 
-  // Pilihan awal mengikuti desain: 12 Januari, jam 08:00 dan 09:00
-  const [selectedDate, setSelectedDate] = useState<string | null>('2026-01-12')
-  const [selectedTimes, setSelectedTimes] = useState<string[]>(['08:00', '09:00'])
+  const [selectedDate, setSelectedDate] = useState<string | null>(() => getTodayKey())
+  const [selectedTimes, setSelectedTimes] = useState<string[]>([])
   const [isConfirmed, setIsConfirmed] = useState(false)
   const [isCheckoutModalOpen, setIsCheckoutModalOpen] = useState(false)
   const [isCartOpen, setIsCartOpen] = useState(false)
   const [cartItems, setCartItems] = useState<CartItem[]>([])
   const [conflictMessage, setConflictMessage] = useState<string | null>(null)
+  const [availability, setAvailability] = useState<FacilityAvailability | null>(null)
+  const [isAvailabilityLoading, setIsAvailabilityLoading] = useState(true)
+  const [pricePreview, setPricePreview] = useState<BookingPrice | null>(null)
+  const [isPriceLoading, setIsPriceLoading] = useState(false)
+
+  useEffect(() => {
+    const timer = window.setInterval(() => setCurrentTime(new Date()), 30_000)
+    return () => window.clearInterval(timer)
+  }, [])
+
+  useEffect(() => {
+    if (!resourceId) navigate('/home', { replace: true })
+  }, [navigate, resourceId])
+
+  useEffect(() => {
+    if (!resourceId || !selectedDate) return
+    let active = true
+    getFacilityAvailability(resourceId, selectedDate, sportType)
+      .then((result) => { if (active) setAvailability(result) })
+      .catch((error: unknown) => {
+        if (active) setConflictMessage(getApiErrorMessage(error, 'Jadwal tidak dapat dimuat.'))
+      })
+      .finally(() => { if (active) setIsAvailabilityLoading(false) })
+
+    return () => { active = false }
+  }, [resourceId, selectedDate, sportType])
 
   // State khusus mobile: bottom sheet pilih tanggal & jam
   const [isSheetOpen, setIsSheetOpen] = useState(false)
@@ -91,6 +131,10 @@ function DetailOrder() {
     const openMobileSheetForSelection = () => {
       setSelectedDate(null)
       setSelectedTimes([])
+      setAvailability(null)
+      setIsAvailabilityLoading(false)
+      setPricePreview(null)
+      setIsPriceLoading(false)
       setIsConfirmed(false)
       setIsSheetOpen(true)
     }
@@ -104,15 +148,53 @@ function DetailOrder() {
   }
 
   /* ---------- Turunan data kalender ---------- */
-  const isDateBooked = selectedDate !== null && BOOKED_DATES.includes(selectedDate)
-  const bookedSlotsToday = selectedDate ? BOOKED_SLOTS[selectedDate] ?? [] : []
+  const isDateBooked = Boolean(
+    availability && (availability.isClosed || availability.slots.length === 0 || availability.counts.available === 0),
+  )
+  const bookedSlotsToday = availability?.slots
+    .filter((slot) => !slot.available || isPastSlot(selectedDate ?? '', slot.startTime, currentTime))
+    .map((slot) => slot.startTime) ?? []
+  const availableTimeSlots = availability?.slots.map((slot) => slot.startTime) ?? []
 
   /* ---------- Turunan ringkasan pesanan ---------- */
-  const sortedHours = selectedTimes.map(hourOf).sort((a, b) => a - b)
-  const sessionCount = sortedHours.length
-  const startTime = sessionCount > 0 ? formatHour(sortedHours[0]) : ''
-  const endTime = sessionCount > 0 ? formatHour(sortedHours[sessionCount - 1] + 1) : ''
-  const totalPrice = sortedHours.reduce((sum, hour) => sum + priceOfHour(hour), 0)
+  const sortedTimes = [...selectedTimes].sort((left, right) => timeToMinutes(left) - timeToMinutes(right))
+  const sessionCount = sortedTimes.length
+  const slotMinutes = availability?.slotMinutes ?? facility.slotMinutes ?? 60
+  const selectedSlots = sortedTimes
+    .map((time) => availability?.slots.find((slot) => slot.startTime === time))
+    .filter((slot) => slot !== undefined)
+  const startTime = sortedTimes[0] ?? ''
+  const endTime = selectedSlots.at(-1)?.endTime ?? ''
+  const durationMinutes = sessionCount * slotMinutes
+  const durationLabel = formatDuration(durationMinutes)
+  const isConsecutive = sortedTimes.every(
+    (time, index) => index === 0 || timeToMinutes(time) - timeToMinutes(sortedTimes[index - 1]) === slotMinutes,
+  )
+  const totalPrice = pricePreview?.totalPrice ?? 0
+  const selectedTimesKey = sortedTimes.join(',')
+
+  useEffect(() => {
+    if (!resourceId || !selectedDate || !startTime || !endTime || !isConsecutive || !sessionCount) {
+      return
+    }
+
+    let active = true
+    previewBookingPrice({
+      resourceId,
+      bookingDate: selectedDate,
+      startTime,
+      endTime,
+      sportType,
+      bookingType: 'regular',
+    })
+      .then((price) => { if (active) setPricePreview(price) })
+      .catch((error: unknown) => {
+        if (active) setConflictMessage(getApiErrorMessage(error, 'Harga booking tidak dapat dihitung.'))
+      })
+      .finally(() => { if (active) setIsPriceLoading(false) })
+
+    return () => { active = false }
+  }, [resourceId, selectedDate, startTime, endTime, sportType, isConsecutive, sessionCount, selectedTimesKey])
 
   let selectedDateLabel = '-'
   let selectedDayAndDate = '-'
@@ -126,25 +208,41 @@ function DetailOrder() {
   /* ---------- Handler ---------- */
   const handleChangeMonth = (step: number) => {
     const next = new Date(viewYear, viewMonth + step, 1)
+    const currentMonth = new Date(currentTime.getFullYear(), currentTime.getMonth(), 1)
+    if (next < currentMonth) return
     setViewYear(next.getFullYear())
     setViewMonth(next.getMonth())
   }
 
   const handleSelectDate = (day: number) => {
-    setSelectedDate(toDateKey(viewYear, viewMonth, day))
+    const dateKey = toDateKey(viewYear, viewMonth, day)
+    if (dateKey < getTodayKey(currentTime)) return
+    if (dateKey === selectedDate) return
+    setSelectedDate(dateKey)
     setSelectedTimes([])
+    setAvailability(null)
+    setIsAvailabilityLoading(true)
+    setPricePreview(null)
+    setIsPriceLoading(false)
     setIsConfirmed(false)
   }
 
   const handleToggleTime = (time: string) => {
-    if (bookedSlotsToday.includes(time)) return
-    if (!selectedTimes.includes(time) && selectedTimes.length >= MAX_SESSION_HOURS) {
+    if (bookedSlotsToday.includes(time) || isPastSlot(selectedDate ?? '', time, new Date())) return
+    const nextTimes = selectedTimes.includes(time)
+      ? selectedTimes.filter((item) => item !== time)
+      : [...selectedTimes, time]
+    if (nextTimes.length * slotMinutes > MAX_SESSION_HOURS * 60) {
       setConflictMessage(`Maksimal ${MAX_SESSION_HOURS} jam per pesanan.`)
       return
     }
-    setSelectedTimes((prev) =>
-      prev.includes(time) ? prev.filter((item) => item !== time) : [...prev, time],
+    const nextSorted = [...nextTimes].sort((left, right) => timeToMinutes(left) - timeToMinutes(right))
+    const nextIsConsecutive = nextSorted.every(
+      (item, index) => index === 0 || timeToMinutes(item) - timeToMinutes(nextSorted[index - 1]) === slotMinutes,
     )
+    setSelectedTimes(nextTimes)
+    setPricePreview(null)
+    setIsPriceLoading(nextSorted.length > 0 && nextIsConsecutive)
     setIsConfirmed(false)
   }
 
@@ -152,17 +250,28 @@ function DetailOrder() {
     // Tombol "Cari Lain": kosongkan pilihan supaya user memilih tanggal lain
     setSelectedDate(null)
     setSelectedTimes([])
+    setAvailability(null)
+    setIsAvailabilityLoading(false)
+    setPricePreview(null)
+    setIsPriceLoading(false)
     setIsConfirmed(false)
   }
 
   // Validasi jadwal dipakai bersama oleh desktop & mobile. Mengembalikan pesan error atau null
   const getScheduleError = (): string | null => {
+    if (!resourceId) return 'Pilih fasilitas terlebih dahulu.'
+    if (selectedDate && selectedDate < getTodayKey(new Date())) return 'Tanggal yang dipilih sudah lewat. Pilih tanggal hari ini atau setelahnya.'
+    if (isAvailabilityLoading || !availability) return 'Ketersediaan jadwal belum selesai dimuat.'
+    if (isDateBooked) return 'Fasilitas tutup atau jadwal sudah penuh pada tanggal ini.'
     if (sessionCount === 0) return 'Pilih minimal satu sesi waktu terlebih dahulu.'
-    // Jam yang dipilih harus berurutan, kalau tidak jadwal dianggap bentrok
-    const isConsecutive = sortedHours.every(
-      (hour, index) => index === 0 || hour - sortedHours[index - 1] === 1,
-    )
     if (!isConsecutive) return 'Jam yang dipilih harus berurutan dalam satu sesi.'
+    if (selectedSlots.length !== sessionCount || selectedSlots.some((slot) => !slot.available)) {
+      return 'Salah satu slot sudah tidak tersedia. Muat ulang jadwal dan pilih waktu lain.'
+    }
+    if (selectedTimes.some((time) => isPastSlot(selectedDate, time, new Date()))) {
+      return 'Jam yang dipilih sudah lewat. Pilih waktu yang masih tersedia.'
+    }
+    if (isPriceLoading || !pricePreview) return 'Harga booking belum selesai dihitung.'
     return null
   }
 
@@ -179,11 +288,16 @@ function DetailOrder() {
   const goToPayment = () => {
     navigate('/payment', {
       state: {
+        resourceId,
+        sportType,
+        bookingDate: selectedDate,
         facility,
         date: selectedDateLabel,
         time: startTime,
         endTime,
         total: totalPrice,
+        durationMinutes,
+        price: pricePreview,
       },
     })
   }
@@ -228,7 +342,7 @@ function DetailOrder() {
     const cartItem: CartItem = {
       id: `${facility.id}-${selectedDate}-${startTime}-${endTime}`,
       code: facility.id.split('-').at(-1)?.toUpperCase() ?? 'OBC',
-      facilityName: facility.courtName,
+      facilityName: facility.name,
       sportName: facility.name,
       schedule: `${startTime} - ${endTime}, ${selectedDateLabel}`,
       price: totalPrice,
@@ -252,7 +366,12 @@ function DetailOrder() {
             showBottomNav={false}
           />
           <div className="min-h-[100dvh] bg-white font-body text-[#343133] px-4 pt-6 pb-52">
-            <FacilityDetails variant="mobile" />
+            <FacilityDetails
+              variant="mobile"
+              facilityName={facility.name}
+              image={facility.image}
+              locationName={facility.location?.name}
+            />
             <DeferredSection placeholderClassName="min-h-[240px]">
               <ReviewSection variant="mobile" />
             </DeferredSection>
@@ -274,9 +393,12 @@ function DetailOrder() {
               selectedDateLabel={selectedDateLabel}
               bookedDates={BOOKED_DATES}
               bookedSlotsToday={bookedSlotsToday}
+              availableTimeSlots={availableTimeSlots}
+              isAvailabilityLoading={isAvailabilityLoading}
               selectedTimes={selectedTimes}
               isDateBooked={isDateBooked}
               sessionCount={sessionCount}
+              durationLabel={durationLabel}
               startTime={startTime}
               endTime={endTime}
               totalPrice={totalPrice}
@@ -291,7 +413,12 @@ function DetailOrder() {
           <main className="max-w-[1248px] mx-auto px-6 pt-6 pb-16">
             <div className="grid items-start gap-12 lg:grid-cols-[736px_1fr]">
               <div>
-                <FacilityDetails variant="desktop" />
+                <FacilityDetails
+                  variant="desktop"
+                  facilityName={facility.name}
+                  image={facility.image}
+                  locationName={facility.location?.name}
+                />
                 <DeferredSection placeholderClassName="min-h-[240px]">
                   <ReviewSection variant="desktop" />
                 </DeferredSection>
@@ -319,8 +446,11 @@ function DetailOrder() {
                     variant="desktop"
                     isDateBooked={isDateBooked}
                     bookedSlotsToday={bookedSlotsToday}
+                    availableTimeSlots={availableTimeSlots}
+                    isLoading={isAvailabilityLoading}
                     selectedTimes={selectedTimes}
                     sessionCount={sessionCount}
+                    durationLabel={durationLabel}
                     selectedDateLabel={selectedDateLabel}
                     startTime={startTime}
                     endTime={endTime}
@@ -342,8 +472,8 @@ function DetailOrder() {
         {isCheckoutModalOpen && (
           <ModalCheckout
             isOpen={isCheckoutModalOpen}
-            facility={COURT_CATEGORY}
-            duration={sessionCount}
+            facility={facility.name}
+            duration={durationMinutes / 60}
             dateTime={sessionCount > 0 ? `${selectedDayAndDate} (${startTime} - ${endTime})` : '-'}
             total={totalPrice}
             onClose={() => setIsCheckoutModalOpen(false)}

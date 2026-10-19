@@ -1,9 +1,12 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { CircleCheck, Eye, EyeOff, House } from 'lucide-react'
+import { toast } from 'sonner'
 import logo from '../../assets/logo/unit bisnis/LOGO OBC SPORT CENTER.png'
 import { useIsMobile } from '../../hooks/useIsMobile'
 import ScrollReveal from '../../components/animation/ScrollReveal'
+import { getApiErrorMessage } from '../../services/apiService'
+import { registerCustomer } from '../../services/authService'
 
 /* Ikon Google */
 function GoogleIcon() {
@@ -74,22 +77,56 @@ function Register() {
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [agreed, setAgreed] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
   const navigate = useNavigate()
   const isMobile = useIsMobile()
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const submitRegistration = async (e: React.FormEvent, includePhone: boolean, requireAgreement: boolean) => {
     e.preventDefault()
-    if (!agreed) return // TODO: tampilkan validasi "harap setujui syarat & ketentuan"
-    // TODO: sambungkan ke services/authService.js (POST /register)
-    console.log({ fullName, phone, email, password, confirmPassword })
+    if (fullName.trim().length < 3) {
+      toast.error('Nama harus terdiri dari minimal 3 karakter.')
+      return
+    }
+    if (password.length < 12 || password.length > 128 || !/[a-z]/.test(password) || !/[A-Z]/.test(password) || !/\d/.test(password)) {
+      toast.error('Password harus 12-128 karakter dan mengandung huruf kecil, huruf besar, serta angka.')
+      return
+    }
+    if (password !== confirmPassword) {
+      toast.error('Konfirmasi password tidak sama.')
+      return
+    }
+    if (includePhone && phone && !/^(\+62|62|0)[0-9]{8,14}$/.test(phone.trim())) {
+      toast.error('Format nomor telepon Indonesia tidak valid.')
+      return
+    }
+    if (requireAgreement && !agreed) {
+      toast.error('Harap setujui syarat dan ketentuan terlebih dahulu.')
+      return
+    }
+
+    setIsSubmitting(true)
+    try {
+      await registerCustomer({
+        name: fullName.trim(),
+        email: email.trim(),
+        password,
+        ...(includePhone && phone.trim() ? { phone: phone.trim() } : {}),
+      })
+      toast.success('Pendaftaran berhasil.')
+      navigate('/home', { replace: true })
+    } catch (error) {
+      toast.error(getApiErrorMessage(error, 'Pendaftaran gagal. Periksa koneksi dan coba lagi.'))
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
-  const handleSubmitMobile = (e: React.FormEvent) => {
-    e.preventDefault()
-    // Catatan: desain mobile tidak memiliki field No. Telepon & checkbox syarat/ketentuan.
-    // TODO: validasi password min. 8 karakter & password === confirmPassword
-    // TODO: sambungkan ke services/authService.js (POST /register)
-    console.log({ fullName, email, password, confirmPassword })
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    void submitRegistration(e, true, true)
+  }
+
+  const handleSubmitMobile = (e: React.FormEvent<HTMLFormElement>) => {
+    void submitRegistration(e, false, false)
   }
 
   const handleGoogleLogin = () => {
@@ -209,12 +246,12 @@ function Register() {
 
           <button
             type="submit"
+            disabled={isSubmitting}
             className="mt-1 h-[clamp(36px,6vh,48px)] w-full rounded-xl bg-[#CDF178] text-sm font-heading font-bold text-[#404F14] hover:bg-[#9AAD3E] active:bg-[#9AAD3E] transition-colors cursor-pointer"
           >
-            Daftar Sekarang
+            {isSubmitting ? 'Memproses...' : 'Daftar Sekarang'}
           </button>
         </form>
-
         <div className="mt-[clamp(6px,1.4vh,14px)] flex items-center gap-3">
           <span className="h-px flex-1 bg-[#D4D4D4]" />
           <span className="font-body text-xs text-[#343133]">Atau</span>
@@ -393,12 +430,12 @@ function Register() {
 
                 <button
                   type="submit"
+                  disabled={isSubmitting}
                   className="w-full rounded-lg bg-[#CDF178] py-[clamp(7px,1.3vh,10px)] text-sm font-heading font-bold text-[#404F14] hover:bg-[#9AAD3E] transition-colors cursor-pointer"
                 >
-                  Daftar Sekarang
+                  {isSubmitting ? 'Memproses...' : 'Daftar Sekarang'}
                 </button>
               </form>
-
               <p className="mt-[clamp(6px,1.4vh,12px)] text-center text-xs text-[#343133]">
                 Sudah punya akun?{' '}
                 <Link to="/login" className="font-heading font-bold text-[#404F14]">

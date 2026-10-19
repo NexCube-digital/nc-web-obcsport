@@ -2,8 +2,11 @@ interface TimeSlotPickerProps {
   variant: 'desktop' | 'mobile'
   isDateBooked: boolean
   bookedSlotsToday: string[]
+  availableTimeSlots?: string[]
+  isLoading?: boolean
   selectedTimes: string[]
   sessionCount: number
+  durationLabel?: string
   selectedDateLabel: string
   startTime: string
   endTime: string
@@ -22,8 +25,11 @@ function TimeSlotPicker({
   variant,
   isDateBooked,
   bookedSlotsToday,
+  availableTimeSlots,
+  isLoading = false,
   selectedTimes,
   sessionCount,
+  durationLabel = `${sessionCount} Jam`,
   selectedDateLabel,
   startTime,
   endTime,
@@ -32,19 +38,23 @@ function TimeSlotPicker({
   onConfirmSchedule,
   onResetSearch,
 }: TimeSlotPickerProps) {
+  const timeSlots = availableTimeSlots ?? (variant === 'mobile' ? MOBILE_TIME_SLOTS : TIME_SLOTS)
+
   if (variant === 'mobile') {
     return (
       <>
         <h3 className="mt-8 font-heading text-xs font-bold text-[#121212] md:text-sm">
           Pilih Sesi Jam Main (Maks {maxSessionHours} jam)
         </h3>
-        {isDateBooked ? (
+        {isLoading ? (
+          <p role="status" className="mt-3 text-sm text-[#6F6B6E]">Memuat ketersediaan...</p>
+        ) : isDateBooked ? (
           <p className="mt-3 text-sm leading-relaxed text-[#E02424]">
             Seluruh sesi pada tanggal ini sudah penuh. Silakan pilih tanggal lain.
           </p>
         ) : (
           <div className="mt-3 grid grid-cols-3 gap-2.5 min-[600px]:grid-cols-[repeat(auto-fill,minmax(96px,1fr))] md:gap-3">
-            {MOBILE_TIME_SLOTS.map((time) => {
+            {timeSlots.map((time) => {
               const isBooked = bookedSlotsToday.includes(time)
               const isSelected = selectedTimes.includes(time)
               let style = 'bg-white border-[#E5E5E5] text-[#121212]'
@@ -93,7 +103,7 @@ function TimeSlotPicker({
     <section className="mt-3 w-full min-w-0 rounded-2xl border border-[#D4D4D4] bg-white p-4 md:p-5">
       <h3 className="font-heading text-base font-bold text-[#343133] md:text-lg">Pilih Waktu (05:00 - 22:00)</h3>
       <div className="mt-4 grid grid-cols-[repeat(auto-fill,minmax(88px,1fr))] gap-2 md:gap-2.5">
-        {TIME_SLOTS.map((time) => {
+          {timeSlots.map((time) => {
           const isBooked = bookedSlotsToday.includes(time)
           const isSelected = selectedTimes.includes(time)
           let style = 'bg-[#FDFCF7] border-[#E5E5E5] text-[#121212] hover:border-[#9AAD3E]'
@@ -112,7 +122,7 @@ function TimeSlotPicker({
         <div className="flex items-center justify-between gap-3">
           <span className="shrink-0 text-[#343133]">Sesi Terpilih:</span>
           <span className="min-w-0 text-right font-heading font-bold text-[#121212]">
-            {sessionCount > 0 ? `${sessionCount} Sesi (${sessionCount} Jam)` : '-'}
+            {sessionCount > 0 ? `${sessionCount} Sesi (${durationLabel})` : '-'}
           </span>
         </div>
         <div className="flex items-center justify-between gap-3">

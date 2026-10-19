@@ -10,6 +10,11 @@ export interface FacilityCard {
 	badge: string
 	buttonLabel: string
 	image: string
+	sportTypes?: string[]
+	slotMinutes?: number
+	fromPrice?: number | null
+	fromPriceFormatted?: string | null
+	location?: { name: string; city: string; address: string } | null
 }
 
 interface PreviewImage {
@@ -21,6 +26,7 @@ interface CourtProps {
 	submittedSearch: string
 	onPreviewImage: (image: PreviewImage) => void
 	onSelectFacility: (facility: FacilityCard) => void
+	facilities?: FacilityCard[]
 }
 
 const FONT_MONTSERRAT = "font-['Montserrat',sans-serif]"
@@ -68,16 +74,11 @@ const FACILITIES: FacilityCard[] = [
 	},
 ]
 
-const SEARCHABLE_FACILITIES = FACILITIES.map((facility) => ({
-	facility,
-	searchText: `${facility.name} ${facility.description}`.toLocaleLowerCase('id-ID'),
-}))
-
-function Court({ submittedSearch, onPreviewImage, onSelectFacility }: CourtProps) {
+function Court({ submittedSearch, onPreviewImage, onSelectFacility, facilities = FACILITIES }: CourtProps) {
 	const normalizedSearch = submittedSearch.toLocaleLowerCase('id-ID')
-	const filteredFacilities = SEARCHABLE_FACILITIES.filter(({ searchText }) =>
-		searchText.includes(normalizedSearch),
-	).map(({ facility }) => facility)
+	const filteredFacilities = facilities.filter((facility) =>
+		`${facility.name} ${facility.description}`.toLocaleLowerCase('id-ID').includes(normalizedSearch),
+	)
 
 	return (
 		<section className="mt-4 sm:mt-6">

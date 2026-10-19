@@ -29,6 +29,10 @@ function BookingCalendar({
   const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate()
   const leadingBlanks = (new Date(viewYear, viewMonth, 1).getDay() + 6) % 7
   const prevMonthDays = new Date(viewYear, viewMonth, 0).getDate()
+  const today = new Date()
+  const todayKey = toDateKey(today.getFullYear(), today.getMonth(), today.getDate())
+  const isPreviousMonthDisabled = viewYear < today.getFullYear()
+    || (viewYear === today.getFullYear() && viewMonth <= today.getMonth())
 
   if (variant === 'mobile') {
     const cells = [
@@ -55,7 +59,8 @@ function BookingCalendar({
             type="button"
             aria-label="Bulan sebelumnya"
             onClick={() => onChangeMonth(-1)}
-            className="flex h-8 w-8 items-center justify-center rounded-lg border border-[#E5E5E5] bg-white text-[#121212] cursor-pointer"
+            disabled={isPreviousMonthDisabled}
+            className="flex h-8 w-8 items-center justify-center rounded-lg border border-[#E5E5E5] bg-white text-[#121212] cursor-pointer disabled:cursor-not-allowed disabled:opacity-40"
           >
             <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
               <path d="m15 18-6-6 6-6" />
@@ -93,17 +98,20 @@ function BookingCalendar({
             }
 
             const isBooked = bookedDates.includes(cell.key)
+            const isPast = cell.key < todayKey
             const isSelected = selectedDate === cell.key
             let style = 'text-[#121212]'
             if (isBooked) style = 'bg-[#FDE8E8] text-[#E02424] font-bold'
-            if (isSelected) style = 'bg-[#265021] text-white font-bold'
+            if (isPast) style = 'text-[#C4C4C4] cursor-not-allowed'
+            if (isSelected && !isPast) style = 'bg-[#265021] text-white font-bold'
 
             return (
               <button
                 key={cell.key}
                 type="button"
+                disabled={isPast}
                 onClick={() => onSelectDate(cell.day)}
-                className={`relative mx-auto flex h-10 w-10 items-center justify-center rounded-xl text-sm font-heading transition-colors cursor-pointer ${style}`}
+                className={`relative mx-auto flex h-10 w-10 items-center justify-center rounded-xl text-sm font-heading transition-colors cursor-pointer disabled:cursor-not-allowed ${style}`}
               >
                 {cell.day}
                 {isBooked && <span className="absolute bottom-1 h-1 w-1 rounded-full bg-[#E02424]" />}
@@ -132,7 +140,7 @@ function BookingCalendar({
       <div className="flex items-center justify-between">
         <h3 className="font-heading text-lg font-bold text-[#343133]">{MONTH_NAMES[viewMonth]} {viewYear}</h3>
         <div className="flex gap-2">
-          <button type="button" aria-label="Bulan sebelumnya" onClick={() => onChangeMonth(-1)} className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#F7F6EF] text-[#121212] cursor-pointer">
+          <button type="button" aria-label="Bulan sebelumnya" onClick={() => onChangeMonth(-1)} disabled={isPreviousMonthDisabled} className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#F7F6EF] text-[#121212] cursor-pointer disabled:cursor-not-allowed disabled:opacity-40">
             <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><path d="m15 18-6-6 6-6" /></svg>
           </button>
           <button type="button" aria-label="Bulan berikutnya" onClick={() => onChangeMonth(1)} className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#F7F6EF] text-[#121212] cursor-pointer">
@@ -157,15 +165,17 @@ function BookingCalendar({
         {calendarCells.map((day, index) => {
           if (day === null) return <span key={`blank-${index}`} />
           const key = toDateKey(viewYear, viewMonth, day)
+          const isPast = key < todayKey
           const isBooked = bookedDates.includes(key)
           const isSelected = selectedDate === key
           let style = 'bg-[#E8EBE4] border-[#D4D4D4] text-[#121212]'
           if (isBooked) style = 'bg-[#FDE8E8] border-[#F5B5B5] text-[#E02424]'
+          if (isPast) style = 'bg-[#F3F3F3] border-[#E5E5E5] text-[#B5B5B5] cursor-not-allowed'
           if (isSelected && !isBooked) style = 'bg-[#FFF4D6] border-[#F59E0B] border-2 text-[#D97706]'
           if (isSelected && isBooked) style = 'bg-[#FDE8E8] border-[#9CA3AF] border-2 text-[#E02424]'
 
           return (
-            <button key={key} type="button" onClick={() => onSelectDate(day)} className={`h-9 rounded-md border text-xs font-heading font-bold transition-colors cursor-pointer ${style}`}>
+            <button key={key} type="button" disabled={isPast} onClick={() => onSelectDate(day)} className={`h-9 rounded-md border text-xs font-heading font-bold transition-colors cursor-pointer disabled:cursor-not-allowed ${style}`}>
               {day}
             </button>
           )

@@ -1,8 +1,10 @@
 import { lazy, Suspense, useEffect, useRef, useState } from 'react'
 import { ChevronDown, CircleHelp, History, LogOut, Settings, ShoppingCart } from 'lucide-react'
-import { Link, useLocation } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import logo from '../../assets/logo/unit bisnis/LOGO OBC SPORT CENTER.png'
 import { useIsMobile } from '../../hooks/useIsMobile'
+import { useAuth } from '../../hooks/useAuth'
+import { logoutCustomer } from '../../services/authService'
 import NotificationDropdown from './NotificationDropdown'
 
 const CartModal = lazy(() => import('../ui/CartModal'))
@@ -96,7 +98,10 @@ function Navbar({
   showMobileHeader = true,
 }: NavbarDashboardProps) {
   const location = useLocation()
+  const navigate = useNavigate()
   const isMobile = useIsMobile()
+  const { user } = useAuth()
+  const displayName = user?.name ?? userName
 
   // State dropdown bahasa dan menu user
   const [activeLang, setActiveLang] = useState<Language>(LANGUAGES[0])
@@ -156,9 +161,14 @@ function Navbar({
     setIsLangOpen(false)
   }
 
-  const handleLogout = () => {
-    // TODO: panggil endpoint logout / hapus token dari auth context
+  const handleLogout = async () => {
     setIsUserOpen(false)
+    try {
+      await logoutCustomer()
+    } catch {
+      // Local credentials are cleared even when the API is unavailable.
+    }
+    navigate('/login', { replace: true })
   }
 
   return (
@@ -166,7 +176,7 @@ function Navbar({
       {/* Header + bottom nav mobile (< md) dipisah ke MobileHeader.tsx */}
       {isMobile && showMobileHeader && (
         <Suspense fallback={null}>
-          <MobileHeader userName={userName} profileImage={profileImage} />
+          <MobileHeader userName={displayName} profileImage={profileImage} />
         </Suspense>
       )}
 
@@ -260,7 +270,7 @@ function Navbar({
                 ref={userTriggerRef}
                 type="button"
                 onClick={() => setIsUserOpen((open) => !open)}
-                aria-label={`Menu pengguna, ${userName}`}
+                aria-label={`Menu pengguna, ${displayName}`}
                 aria-haspopup="menu"
                 aria-expanded={isUserOpen}
                 className={`group flex items-center gap-2.5 rounded-full border py-1 pl-1 pr-3 transition-[background-color,border-color,box-shadow,transform] duration-200 ${EASE} active:scale-[0.97] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#004000] motion-reduce:transition-none ${
@@ -270,13 +280,13 @@ function Navbar({
                 }`}
               >
                 <Avatar
-                  name={userName}
+                  name={displayName}
                   image={profileImage}
                   className={`h-9 w-9 text-sm transition-transform duration-200 ${EASE} group-hover:scale-105 motion-reduce:transition-none`}
                 />
                 {/* Nama user disembunyikan di bawah lg agar muat */}
                 <span className="hidden max-w-[160px] truncate text-sm font-heading font-semibold text-[#343133] lg:inline">
-                  {userName}
+                  {displayName}
                 </span>
                 <ChevronDown
                   size={16}
@@ -299,10 +309,10 @@ function Navbar({
               >
                 {/* Identitas akun */}
                 <div className="flex items-center gap-3 border-b border-[#EDEDED] bg-[#FDFCF7] px-4 py-3.5">
-                  <Avatar name={userName} image={profileImage} className="h-10 w-10 text-base" />
+                  <Avatar name={displayName} image={profileImage} className="h-10 w-10 text-base" />
                   <div className="min-w-0">
                     <p className="truncate text-sm font-heading font-semibold text-[#343133]">
-                      {userName}
+                      {displayName}
                     </p>
                     <p className="text-xs font-heading text-[#6B6B6B]">Akun saya</p>
                   </div>

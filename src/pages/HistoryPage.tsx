@@ -1,10 +1,13 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Zap } from 'lucide-react'
+import { toast } from 'sonner'
 import NavbarDashboard from '../components/layout/Navbar'
 import MobileHeader from '../components/layout/MobileHeader'
 import DeferredFooter from '../components/layout/DeferredFooter'
 import DeferredSection from '../components/layout/DeferredSection'
+import { getBookings, type BookingSummary } from '../services/bookingService'
+import { getApiErrorMessage } from '../services/apiService'
 
 /* -------------------------------------------------------------------------
    Tipe data
@@ -71,71 +74,6 @@ const FACILITIES: Facility[] = [
   { id: 'billiard-premium', name: 'Meja Billiard Premium', price: 'Mulai Rp 60.000 / Jam' },
 ]
 
-// TODO: isi dari API / services/historyService.js
-const TRANSACTIONS: Transaction[] = [
-  {
-    id: 'trx-1',
-    code: 'OBC-FUT-9021',
-    date: '12 Mar 2026',
-    facility: 'Futsal Premium Hall A',
-    total: 'Rp 250.000',
-    status: 'success',
-  },
-  {
-    id: 'trx-2',
-    code: 'OBC-BAD-1120',
-    date: '11 Mar 2026',
-    facility: 'Badminton VIP Court',
-    total: 'Rp 160.000',
-    status: 'failed',
-  },
-  {
-    id: 'trx-3',
-    code: 'OBC-BIL-2321',
-    date: '05 Mar 2026',
-    facility: 'Billiard Premium Table',
-    total: 'Rp 120.000',
-    status: 'pending',
-  },
-  {
-    id: 'trx-4',
-    code: 'OBC-FUT-8812',
-    date: '28 Feb 2026',
-    facility: 'Futsal Premium Hall A',
-    total: 'Rp 250.000',
-    status: 'success',
-  },
-]
-
-// Data kartu transaksi tampilan mobile (sesuai desain mobile)
-// TODO: isi dari API / services/historyService.js
-const MOBILE_TRANSACTIONS: MobileTransaction[] = [
-  {
-    id: 'm-1',
-    date: '28 Sep 2024',
-    title: 'Futsal Lapangan 1 (Interlock)',
-    time: '08:00 - 10:00 (2 Jam)',
-    total: 'Rp 280.000',
-    status: 'success',
-  },
-  {
-    id: 'm-2',
-    date: '28 Sep 2024',
-    title: 'Badminton Lapangan 3',
-    time: '16:00 - 17:00 (1 Jam)',
-    total: 'Rp 125.000',
-    status: 'pending',
-  },
-  {
-    id: 'm-3',
-    date: '25 Sep 2024',
-    title: 'Billiard Meja 2',
-    time: '19:00 - 21:00 (2 Jam)',
-    total: 'Rp 150.000',
-    status: 'failed',
-  },
-]
-
 // Label dan warna badge per status (tabel desktop)
 const STATUS_BADGE: Record<TransactionStatus, { label: string; className: string }> = {
   success: { label: 'SUCCESS', className: 'bg-[#10B95B] text-white' },
@@ -150,25 +88,86 @@ const MOBILE_STATUS_BADGE: Record<TransactionStatus, { label: string; className:
   failed: { label: 'Gagal', className: 'border-[#6F6B6E] text-[#6F6B6E]' },
 }
 
+function toTransactionStatus(status: string): TransactionStatus {
+  if (status === 'fully_paid' || status === 'completed') return 'success'
+  if (status === 'cancelled' || status === 'expired' || status === 'refunded') return 'failed'
+  return 'pending'
+}
+
+function minutesToTime(minutes: number) {
+  return `${String(Math.floor(minutes / 60)).padStart(2, '0')}:${String(minutes % 60).padStart(2, '0')}`
+}
+
+function mapBooking(booking: BookingSummary): { desktop: Transaction; mobile: MobileTransaction } {
+  const status = toTransactionStatus(booking.status)
+  const date = new Date(`${booking.bookingDate}T00:00:00`).toLocaleDateString('id-ID', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  })
+  const startTime = minutesToTime(booking.startMinute)
+  const endTime = minutesToTime(booking.endMinute)
+  const code = `BOOK-${booking.id.slice(-8).toUpperCase()}`
+
+  return {
+    desktop: {
+      id: booking.id,
+      code,
+      date,
+      facility: booking.resource.name,
+      total: booking.totalPriceFormatted,
+      status,
+    },
+    mobile: {
+      id: booking.id,
+      date,
+      title: `${booking.resource.name} - ${booking.sportType}`,
+      time: `${startTime} - ${endTime} (${(booking.endMinute - booking.startMinute) / 60} Jam)`,
+      total: booking.totalPriceFormatted,
+      status,
+    },
+  }
+}
+
 function HistoryPage() {
   const navigate = useNavigate()
   const [activeFilter, setActiveFilter] = useState<FilterType>('all')
+  const [transactions, setTransactions] = useState<Transaction[]>([])
+  const [mobileTransactions, setMobileTransactions] = useState<MobileTransaction[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+
+  useEffect(() => {
+    let active = true
+    getBookings({ page: 1, limit: 100 })
+      .then(({ bookings }) => {
+        if (!active) return
+        const mapped = bookings.map(mapBooking)
+        setTransactions(mapped.map((item) => item.desktop))
+        setMobileTransactions(mapped.map((item) => item.mobile))
+      })
+      .catch((error: unknown) => {
+        if (active) toast.error(getApiErrorMessage(error, 'Riwayat booking tidak dapat dimuat.'))
+      })
+      .finally(() => { if (active) setIsLoading(false) })
+
+    return () => { active = false }
+  }, [])
 
   // Filter sesuai tombol (desktop: Semua / Berhasil / Menunggu)
-  const filteredTransactions = TRANSACTIONS.filter((trx) => {
+  const filteredTransactions = transactions.filter((trx) => {
     if (activeFilter === 'all') return true
     return trx.status === activeFilter
   })
 
   // Filter untuk kartu mobile (Semua / Aktif / Selesai / Gagal)
-  const filteredMobile = MOBILE_TRANSACTIONS.filter((trx) => {
+  const filteredMobile = mobileTransactions.filter((trx) => {
     if (activeFilter === 'all') return true
     return trx.status === activeFilter
   })
 
   // True jika user memang belum punya transaksi sama sekali (bukan karena filter)
-  const hasNoTransactions = TRANSACTIONS.length === 0
-  const hasNoMobileTransactions = MOBILE_TRANSACTIONS.length === 0
+  const hasNoTransactions = transactions.length === 0 && !isLoading
+  const hasNoMobileTransactions = mobileTransactions.length === 0 && !isLoading
 
   const handleDetail = (code: string) => {
     // TODO: arahkan ke halaman detail transaksi, mis. navigate(`/history/${code}`)
@@ -191,6 +190,7 @@ function HistoryPage() {
         <MobileHeader variant="title" title="Riwayat Transaksi" />
       </div>
 
+      {isLoading && <p role="status" className="mx-auto mt-6 text-sm text-[#6F6B6E]">Memuat riwayat booking...</p>}
       {/* ============================================================
           DESKTOP: kondisi kosong (belum ada transaksi sama sekali)
           ============================================================ */}

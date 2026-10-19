@@ -1,4 +1,4 @@
-import { lazy, Suspense, useState } from 'react'
+import { lazy, Suspense, useEffect, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { ChevronDown, CircleCheck } from 'lucide-react'
 import NavbarDashboard from '../../components/layout/Navbar'
@@ -7,6 +7,7 @@ import DeferredFooter from '../../components/layout/DeferredFooter'
 import ScrollReveal from '../../components/animation/ScrollReveal'
 import lapangF1 from '../../assets/layanan/Lapang F1.png'
 import { useIsMobile } from '../../hooks/useIsMobile'
+import { getBookingDetails, type BookingDetails } from '../../services/bookingService'
 
 const TestimonialModal = lazy(() => import('../../components/ui/TestimonialModal'))
 
@@ -14,6 +15,7 @@ const TestimonialModal = lazy(() => import('../../components/ui/TestimonialModal
    Tipe data
    ------------------------------------------------------------------------- */
 interface SuccessState {
+  bookingId?: string
   transactionNumber?: string
   paidAt?: string
   method?: string
@@ -56,8 +58,10 @@ function SuccesOrder() {
   const navigate = useNavigate()
   const location = useLocation()
   const isMobile = useIsMobile()
-  const data = { ...DEFAULTS, ...((location.state as SuccessState | null) ?? {}) }
-  const reviewStorageKey = `obc:review:${data.bookingCode}`
+  const state = (location.state as SuccessState | null) ?? {}
+  const bookingId = state.bookingId ?? new URLSearchParams(location.search).get('bookingId') ?? ''
+  const [booking, setBooking] = useState<BookingDetails | null>(null)
+  const reviewStorageKey = `obc:review:${bookingId}`
   const [reviewStatus, setReviewStatus] = useState(
     () => localStorage.getItem(reviewStorageKey) ?? 'unreviewed',
   )
@@ -66,7 +70,58 @@ function SuccesOrder() {
   )
   const [isPaymentDetailsOpen, setIsPaymentDetailsOpen] = useState(false)
 
-  const total = data.subtotal + data.serviceFee - data.promo
+  useEffect(() => {
+    if (!bookingId) {
+      navigate('/home', { replace: true })
+      return
+    }
+    let active = true
+    getBookingDetails(bookingId)
+      .then((details) => {
+        if (!active) return
+        if (details.status !== 'fully_paid' && details.status !== 'completed') {
+          navigate('/information-order', { replace: true, state: { bookingId } })
+          return
+        }
+        setBooking(details)
+      })
+      .catch(() => {
+        if (active) navigate('/information-order', { replace: true, state: { bookingId } })
+      })
+    return () => { active = false }
+  }, [bookingId, navigate])
+
+  const latestPayment = booking?.payments[0]
+  const method = latestPayment?.method === 'qris'
+    ? 'QRIS'
+    : latestPayment?.method === 'ewallet'
+      ? 'E-Wallet'
+      : latestPayment?.method === 'credit_card'
+        ? 'Kartu kredit / debit'
+        : latestPayment?.method === 'convenience_store'
+          ? 'Gerai retail'
+      : latestPayment?.method === 'bank_transfer'
+        ? 'Virtual Account'
+        : DEFAULTS.method
+  const data = {
+    ...DEFAULTS,
+    ...state,
+    ...(booking ? {
+      transactionNumber: latestPayment?.midtransOrderId ?? booking.id,
+      paidAt: booking.paidAt ? new Date(booking.paidAt).toLocaleString('id-ID') : DEFAULTS.paidAt,
+      method,
+      facility: booking.resource.name,
+      schedule: `${booking.bookingDate} (${booking.startTime} - ${booking.endTime})`,
+      duration: `${booking.durationMinutes / 60} Jam`,
+      subtotal: booking.pricing.basePrice,
+      serviceFee: booking.pricing.adminFee,
+      promo: booking.pricing.discountAmount,
+      bookingCode: booking.id.slice(-8).toUpperCase(),
+    } : {}),
+    bookingCode: booking?.id.slice(-8).toUpperCase() ?? state.bookingCode ?? DEFAULTS.bookingCode,
+  }
+
+  const total = booking?.pricing.totalPrice ?? data.subtotal + data.serviceFee - data.promo
 
   const handleDeferReview = () => {
     localStorage.setItem(reviewStorageKey, 'pending')
@@ -82,6 +137,8 @@ function SuccesOrder() {
   const handleDownloadTicket = () => {
     // TODO: unduh e-ticket PDF dari API (services/ticketService.js)
   }
+
+  if (!booking) return <div role="status" className="px-4 py-8 text-center text-sm text-[#6B6B6B]">Memuat status pembayaran...</div>
 
   return (
     <>

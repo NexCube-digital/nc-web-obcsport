@@ -2,7 +2,8 @@ import { ChevronRight, CircleHelp, Clock3, LogOut, Settings, UserRound } from 'l
 import type { LucideIcon } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
 import MobileHeader from '../../components/layout/MobileHeader'
-import { clearUser } from '../../utils/auth'
+import { useAuth } from '../../hooks/useAuth'
+import { logoutCustomer } from '../../services/authService'
 
 interface ProfileLink {
 	label: string
@@ -19,14 +20,23 @@ const PROFILE_LINKS: ProfileLink[] = [
 
 function ProfileMobile() {
 	const navigate = useNavigate()
-	// TODO: ganti dengan nama user dari auth context / API
-	const userName = 'Budiman Santoso'
+	const { user } = useAuth()
+	const userName = user?.name ?? 'Akun OBC'
 	const initials = userName
 		.trim()
 		.split(/\s+/)
 		.slice(0, 2)
 		.map((part) => part.charAt(0).toUpperCase())
 		.join('')
+
+	const handleLogout = async () => {
+		try {
+			await logoutCustomer()
+		} catch {
+			// Local credentials are cleared even when the API is unavailable.
+		}
+		navigate('/login', { replace: true })
+	}
 
 	return (
 		<div className="min-h-[100dvh] bg-[#FDFCF7] pb-28 font-body text-[#343133] md:flex md:flex-col md:justify-center md:pb-0">
@@ -89,10 +99,7 @@ function ProfileMobile() {
 							<li>
 								<button
 									type="button"
-									onClick={() => {
-										clearUser()
-										navigate('/login', { replace: true })
-									}}
+									onClick={() => void handleLogout()}
 									className="group flex min-h-[76px] w-full items-center gap-3.5 rounded-2xl border border-[#F1D2CF] bg-white px-4 py-3 text-left shadow-[0_4px_16px_rgba(52,49,51,0.06)] transition-colors hover:border-[#C41E1E] hover:bg-[#FEF7F6] active:scale-[0.99] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#C41E1E] md:min-h-[92px] md:gap-5 md:px-6 md:py-4"
 								>
 									<span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#FEF3F2] text-[#C41E1E] transition-colors group-hover:bg-[#FDE5E2] md:h-14 md:w-14 md:rounded-2xl">

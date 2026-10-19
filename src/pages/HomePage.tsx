@@ -8,6 +8,12 @@ import DeferredSection from '../components/layout/DeferredSection'
 import type { OrderModalFacility } from '../components/ui/OrderModal'
 import Hero from './home/Hero'
 import type { FacilityCard } from './home/Court'
+import { getSportsFacilities } from '../services/facilityService'
+import type { SportsFacility } from '../services/facilityService'
+import lapangF1 from '../assets/layanan/Lapang F1.png'
+import lapangF2 from '../assets/layanan/Lapang F2.png'
+import mejaBilliard from '../assets/layanan/Meja Billiard.png'
+import pickleballImage from '../assets/layanan/pickleball-mockup.png'
 
 const Court = lazy(() => import('./home/Court'))
 const Information = lazy(() => import('./home/Information'))
@@ -74,7 +80,21 @@ function HomePage() {
   const [selectedFacility, setSelectedFacility] = useState<FacilityCard | null>(null)
   const [previewImage, setPreviewImage] = useState<{ src: string; alt: string } | null>(null)
   const [isImageZoomed, setIsImageZoomed] = useState(false)
+  const [apiFacilities, setApiFacilities] = useState<FacilityCard[]>()
   const navigate = useNavigate()
+
+  useEffect(() => {
+    let active = true
+    getSportsFacilities()
+      .then((resources) => {
+        if (active) setApiFacilities(resources.map(toFacilityCard))
+      })
+      .catch(() => {
+        if (active) setApiFacilities(undefined)
+      })
+
+    return () => { active = false }
+  }, [])
 
   useEffect(() => {
     if (!previewImage) return
@@ -111,7 +131,11 @@ function HomePage() {
         id: selectedFacility.id,
         name: selectedFacility.name,
         image: selectedFacility.image,
-        ...MODAL_DETAIL[selectedFacility.id],
+        sports: selectedFacility.sportTypes?.map(toSportOption).filter((sport) => sport.id !== 'volleyball')
+          ?? MODAL_DETAIL[selectedFacility.id]?.sports
+          ?? [],
+        specification: selectedFacility.description || MODAL_DETAIL[selectedFacility.id]?.specification || '',
+        amenities: MODAL_DETAIL[selectedFacility.id]?.amenities ?? [...AMENITIES],
       }
     : null
 
@@ -143,6 +167,7 @@ function HomePage() {
             submittedSearch={submittedSearch}
             onPreviewImage={setPreviewImage}
             onSelectFacility={setSelectedFacility}
+            facilities={apiFacilities}
           />
         </DeferredSection>
       </main>
@@ -155,9 +180,12 @@ function HomePage() {
           <OrderModal
             facility={modalFacility}
             onClose={() => setSelectedFacility(null)}
-            onOrder={() => {
+            onOrder={(facilityId, sportType) => {
+              const facility = selectedFacility
               setSelectedFacility(null)
-              navigate('/checkout') // TODO: ganti ke halaman checkout sebenarnya
+              navigate('/checkout', {
+                state: { resourceId: facilityId, sportType, facility },
+              })
             }}
           />
         </Suspense>
@@ -202,6 +230,67 @@ function HomePage() {
       )}
     </div>
   )
+}
+
+const SPORT_LABELS: Record<string, string> = {
+  futsal: 'Futsal',
+  badminton: 'Badminton',
+  basketball: 'Basket',
+  volleyball: 'Voli',
+  pickleball: 'Pickleball',
+  tennis: 'Tenis',
+  billiard: 'Biliard',
+  swimming: 'Renang',
+  event: 'Event',
+  other: 'Lainnya',
+}
+
+const SPORT_ICONS = {
+  futsal: 'futsal',
+  badminton: 'badminton',
+  basketball: 'basket',
+  volleyball: 'basket',
+  pickleball: 'pickleball',
+  tennis: 'sepakbola',
+  billiard: 'biliard',
+  swimming: 'sepakbola',
+  event: 'sepakbola',
+  other: 'sepakbola',
+} as const
+
+function toSportOption(sportType: string) {
+  return {
+    id: sportType,
+    label: SPORT_LABELS[sportType] ?? sportType,
+    icon: SPORT_ICONS[sportType as keyof typeof SPORT_ICONS] ?? 'sepakbola',
+  }
+}
+
+function toFacilityCard(resource: SportsFacility): FacilityCard {
+  const sportNames = resource.sportTypes
+    .filter((sport) => sport !== 'volleyball')
+    .map((sport) => SPORT_LABELS[sport] ?? sport)
+  const image = resource.sportTypes.includes('billiard')
+    ? mejaBilliard
+    : resource.sportTypes.includes('pickleball')
+      ? pickleballImage
+      : resource.name.toLowerCase().includes('f2')
+        ? lapangF2
+        : lapangF1
+
+  return {
+    id: resource.id,
+    name: resource.name,
+    description: sportNames.join(', ') || resource.description || resource.resourceType,
+    badge: 'TERSEDIA',
+    buttonLabel: 'Booking Sekarang',
+    image,
+    sportTypes: resource.sportTypes,
+    slotMinutes: resource.slotMinutes,
+    fromPrice: resource.fromPrice,
+    fromPriceFormatted: resource.fromPriceFormatted,
+    location: resource.location,
+  }
 }
 
 export default HomePage

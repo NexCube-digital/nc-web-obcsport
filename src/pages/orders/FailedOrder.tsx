@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { ChevronDown, CircleX } from 'lucide-react'
 import NavbarDashboard from '../../components/layout/Navbar'
@@ -6,11 +6,14 @@ import MobileHeader from '../../components/layout/MobileHeader'
 import DeferredFooter from '../../components/layout/DeferredFooter'
 import ScrollReveal from '../../components/animation/ScrollReveal'
 import { useIsMobile } from '../../hooks/useIsMobile'
+import { getBookingDetails, type BookingDetails } from '../../services/bookingService'
+import lapangF1 from '../../assets/layanan/Lapang F1.png'
 
 /* -------------------------------------------------------------------------
    Tipe data
    ------------------------------------------------------------------------- */
 interface FailedState {
+  bookingId?: string
   bookingCode?: string
   facility?: string
   schedule?: string
@@ -47,12 +50,66 @@ function FailedOrder() {
   const location = useLocation()
   const isMobile = useIsMobile()
   const state = (location.state as FailedState | null) ?? {}
+  const bookingId = state.bookingId ?? new URLSearchParams(location.search).get('bookingId') ?? ''
+  const [booking, setBooking] = useState<BookingDetails | null>(null)
 
-  const bookingCode = state.bookingCode ?? DEFAULT_BOOKING_CODE
-  const facility = state.facility ?? DEFAULT_FACILITY
-  const schedule = state.schedule ?? DEFAULT_SCHEDULE
-  const total = state.total ?? DEFAULT_TOTAL
   const [isOrderDetailsOpen, setIsOrderDetailsOpen] = useState(false)
+
+  useEffect(() => {
+    if (!bookingId) {
+      navigate('/home', { replace: true })
+      return
+    }
+    let active = true
+    getBookingDetails(bookingId)
+      .then((details) => {
+        if (!active) return
+        if (details.status === 'fully_paid' || details.status === 'completed') {
+          navigate('/success-order', { replace: true, state: { bookingId } })
+          return
+        }
+        if (!['cancelled', 'expired', 'refunded'].includes(details.status)) {
+          navigate('/information-order', { replace: true, state: { bookingId } })
+          return
+        }
+        setBooking(details)
+      })
+      .catch(() => {
+        if (active) navigate('/information-order', { replace: true, state: { bookingId } })
+      })
+    return () => { active = false }
+  }, [bookingId, navigate])
+
+  const bookingCode = booking?.id.slice(-8).toUpperCase() ?? state.bookingCode ?? DEFAULT_BOOKING_CODE
+  const facility = booking?.resource.name ?? state.facility ?? DEFAULT_FACILITY
+  const schedule = booking
+    ? `${booking.bookingDate} (${booking.startTime} - ${booking.endTime})`
+    : state.schedule ?? DEFAULT_SCHEDULE
+  const total = booking?.pricing.totalPrice ?? state.total ?? DEFAULT_TOTAL
+
+  const handleRetry = () => {
+    if (!booking) {
+      navigate('/home')
+      return
+    }
+    navigate('/checkout', {
+      state: {
+        resourceId: booking.resource.id,
+        sportType: booking.sportType,
+        facility: {
+          id: booking.resource.id,
+          name: booking.resource.name,
+          description: booking.resource.name,
+          badge: 'TERSEDIA',
+          buttonLabel: 'Booking Sekarang',
+          image: lapangF1,
+          sportTypes: [booking.sportType],
+        },
+      },
+    })
+  }
+
+  if (!booking) return <div role="status" className="px-4 py-8 text-center text-sm text-[#6B6B6B]">Memuat status booking...</div>
 
   return (
     <>
@@ -84,15 +141,14 @@ function FailedOrder() {
         {/* Judul & deskripsi, rata tengah */}
         <div className="mt-3 text-center">
           <span className="inline-block rounded-full bg-[#FDE8E8] px-3 py-1.5 font-heading text-[10px] font-bold leading-none text-[#E02424]">
-            TRANSAKSI DITOLAK / GAGAL BAYAR
+            TRANSAKSI {booking?.status.toUpperCase() ?? 'GAGAL'}
           </span>
           <h1 className={`${FONT_MONTSERRAT} mt-2 text-lg font-bold leading-6 text-[#343133]`}>
-            Pemesanan Gagal Waktu Pembayaran Habis
+            Pembayaran Tidak Berhasil
           </h1>
           <p className="mt-1.5 font-heading text-[11px] leading-4 text-[#343133]">
-            Batas waktu pembayaran 15 menit menggunakan sistem otomatis QRIS atau Transfer
-            Bank Anda telah berakhir. Jangan khawatir, saldo Anda tidak terpotong. Silakan
-            ajukan ulang pemesanan jadwal lapangan Anda.
+            Transaksi tidak berhasil diselesaikan. Silakan pilih jadwal lain untuk membuat
+            booking baru. Jika saldo telah terpotong, hubungi Admin OBC.
           </p>
         </div>
 
@@ -126,7 +182,7 @@ function FailedOrder() {
             <div className="flex items-center justify-between gap-3">
               <dt className="text-[#343133]">Status Transaksi</dt>
               <dd className="rounded bg-[#E53E3E] px-2 py-1 text-[9px] font-bold leading-none text-white">
-                EXPIRED
+                {booking?.status.toUpperCase() ?? 'FAILED'}
               </dd>
             </div>
           </dl>
@@ -173,7 +229,7 @@ function FailedOrder() {
         <div className="mt-auto space-y-2 pt-4">
           <button
             type="button"
-            onClick={() => navigate('/checkout')}
+            onClick={handleRetry}
             className="h-10 w-full cursor-pointer rounded-xl bg-[#CDF178] font-heading text-xs font-bold text-[#404F14] transition-colors active:bg-[#9AAD3E]"
           >
             Coba Bayar Kembali
@@ -204,19 +260,18 @@ function FailedOrder() {
             {/* ================= Kiri: penjelasan ================= */}
             <div>
               <span className="inline-block rounded-full bg-[#FDE8E8] px-3 py-2 font-heading text-[11px] font-bold leading-none text-[#E02424]">
-                TRANSAKSI DITOLAK / GAGAL BAYAR
+                TRANSAKSI {booking?.status.toUpperCase() ?? 'GAGAL'}
               </span>
 
               <h1
                 className={`${FONT_MONTSERRAT} mt-6 text-[38px] font-bold leading-[48px] text-[#343133]`}
               >
-                Pemesanan Gagal Waktu Pembayaran Habis
+                Pembayaran Tidak Berhasil
               </h1>
 
               <p className="mt-6 font-heading text-[15px] leading-6 text-[#343133]">
-                Batas waktu pembayaran 15 menit menggunakan sistem otomatis QRIS atau Transfer
-                Bank Anda telah berakhir. Jangan khawatir, saldo Anda tidak terpotong. Silakan
-                ajukan ulang pemesanan jadwal lapangan Anda.
+                Transaksi tidak berhasil diselesaikan. Silakan pilih jadwal lain untuk membuat
+                booking baru. Jika saldo telah terpotong, hubungi Admin OBC.
               </p>
 
               <h2 className="mt-6 font-heading text-[13px] font-bold text-[#121212]">
@@ -233,7 +288,7 @@ function FailedOrder() {
               <div className="mt-6 flex flex-nowrap items-center gap-3">
                 <button
                   type="button"
-                  onClick={() => navigate('/checkout')}
+                  onClick={handleRetry}
                   className="h-10 w-[220px] shrink-0 cursor-pointer rounded-lg bg-[#CDF178] px-3 font-heading text-xs text-[#404F14] transition-colors hover:bg-[#9AAD3E]"
                 >
                   Coba Bayar Kembali
@@ -263,7 +318,7 @@ function FailedOrder() {
                 <div className="flex items-center justify-between gap-3">
                   <dt className="text-[#343133]">Status Transaksi</dt>
                   <dd className="rounded bg-[#E53E3E] px-2 py-1 text-[9px] font-bold leading-none text-white">
-                    EXPIRED
+                    {booking?.status.toUpperCase() ?? 'FAILED'}
                   </dd>
                 </div>
               </dl>

@@ -1,19 +1,20 @@
-import { memo, useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { Clock, Download } from 'lucide-react'
+import { Clock } from 'lucide-react'
 import NavbarDashboard from '../../components/layout/Navbar'
 import MobileHeader from '../../components/layout/MobileHeader'
 import DeferredFooter from '../../components/layout/DeferredFooter'
 import ScrollReveal from '../../components/animation/ScrollReveal'
 import { useIsMobile } from '../../hooks/useIsMobile'
+import { getBookingDetails, type BookingDetails } from '../../services/bookingService'
+import { getApiErrorMessage } from '../../services/apiService'
 
 /* -------------------------------------------------------------------------
    Tipe data
    ------------------------------------------------------------------------- */
 // Data yang dikirim dari PaymentPage lewat navigate('/pembayaran/qris', { state })
 interface InformationState {
-  total?: number
-  transactionId?: string
+  bookingId?: string
 }
 
 /* -------------------------------------------------------------------------
@@ -24,109 +25,20 @@ const USER_NAME = 'Budiman Santoso'
 
 const FONT_MONTSERRAT = "font-['Montserrat',sans-serif]"
 
-// Fallback bila halaman dibuka tanpa state (sesuai desain)
-const DEFAULT_TOTAL = 227000
-const DEFAULT_TRANSACTION_ID = 'OBC-20260112-985A'
-
-// TODO: hitung sisa waktu dari waktu kedaluwarsa transaksi yang dikirim API
-const DEFAULT_SECONDS = 14 * 60 + 45
-
-// TODO: kode verifikasi unik (3 digit terakhir nominal) sementara hardcode, ambil dari API.
-// Jika total dari API sudah termasuk kode unik, hapus penambahan UNIQUE_CODE di mobileTotal.
-const UNIQUE_CODE = 124
-
-const PAYMENT_STEPS: string[] = [
-  'Buka M-Banking (BCA, Mandiri) atau E-Wallet (GoPay, OVO).',
-  'Pilih Scan QR dan arahkan kamera ke kode QR.',
-  'Pastikan merchant bernama OBC SPORT CENTER dan bayar.',
-]
-
-// Petunjuk scan versi mobile (sesuai desain)
-const MOBILE_STEPS: string[] = [
-  'Buka aplikasi e-wallet Anda (GoPay, OVO, Dana) atau M-Banking.',
-  'Pilih menu "Scan" atau "Bayar" lalu arahkan kamera ke QRIS.',
-  'Pastikan nominal pembayaran sama persis dengan angka di atas.',
-]
-
-/* -------------------------------------------------------------------------
-   Fungsi bantu
-   ------------------------------------------------------------------------- */
 const formatRupiah = (value: number) => `Rp ${value.toLocaleString('id-ID')}`
 
-/**
- * Placeholder kode QR (pola acak tetap + 3 penanda sudut).
- * TODO: ganti dengan gambar / string QRIS asli dari API pembayaran.
- */
-interface QrPlaceholderProps {
-  className?: string
-  svgRef?: React.Ref<SVGSVGElement>
-}
-
-const QR_SIZE = 25
-const QR_CELLS: { x: number; y: number }[] = []
-let qrSeed = 7
-const isQrFinder = (x: number, y: number) =>
-  (x < 8 && y < 8) ||
-  (x >= QR_SIZE - 8 && y < 8) ||
-  (x < 8 && y >= QR_SIZE - 8)
-
-for (let y = 0; y < QR_SIZE; y += 1) {
-  for (let x = 0; x < QR_SIZE; x += 1) {
-    qrSeed = (qrSeed * 9301 + 49297) % 233280
-    if (!isQrFinder(x, y) && qrSeed / 233280 > 0.5) QR_CELLS.push({ x, y })
-  }
-}
-
-const QR_FINDERS = [
-  [0, 0],
-  [QR_SIZE - 7, 0],
-  [0, QR_SIZE - 7],
-]
-
-function QrPlaceholder({
-  className = 'h-[62px] w-[62px]',
-  svgRef,
-}: QrPlaceholderProps) {
-  return (
-    <svg
-      ref={svgRef}
-      xmlns="http://www.w3.org/2000/svg"
-      viewBox={`0 0 ${QR_SIZE} ${QR_SIZE}`}
-      className={className}
-      shapeRendering="crispEdges"
-      role="img"
-      aria-label="Kode QRIS"
-    >
-      <rect width={QR_SIZE} height={QR_SIZE} fill="#fff" />
-      {QR_CELLS.map(({ x, y }) => (
-        <rect key={`${x}-${y}`} x={x} y={y} width="1" height="1" fill="#121212" />
-      ))}
-      {QR_FINDERS.map(([fx, fy]) => (
-        <g key={`${fx}-${fy}`}>
-          <rect x={fx} y={fy} width="7" height="7" fill="#121212" />
-          <rect x={fx + 1} y={fy + 1} width="5" height="5" fill="#fff" />
-          <rect x={fx + 2} y={fy + 2} width="3" height="3" fill="#121212" />
-        </g>
-      ))}
-    </svg>
+function PaymentCountdown({ expiresAt }: { expiresAt?: string }) {
+  const [secondsLeft, setSecondsLeft] = useState(() =>
+    expiresAt ? Math.max(0, Math.floor((new Date(expiresAt).getTime() - Date.now()) / 1000)) : 0,
   )
-}
-
-const MemoQrPlaceholder = memo(QrPlaceholder)
-
-function PaymentCountdown() {
-  const navigate = useNavigate()
-  const [secondsLeft, setSecondsLeft] = useState(DEFAULT_SECONDS)
 
   useEffect(() => {
-    if (secondsLeft <= 0) {
-      navigate('/failed-order', { replace: true })
-      return
-    }
-
-    const timer = window.setTimeout(() => setSecondsLeft((previous) => previous - 1), 1000)
-    return () => window.clearTimeout(timer)
-  }, [secondsLeft, navigate])
+    if (!expiresAt) return
+    const timer = window.setInterval(() => {
+      setSecondsLeft(Math.max(0, Math.floor((new Date(expiresAt).getTime() - Date.now()) / 1000)))
+    }, 1000)
+    return () => window.clearInterval(timer)
+  }, [expiresAt])
 
   const minutes = Math.floor(secondsLeft / 60)
   const seconds = secondsLeft % 60
@@ -151,15 +63,53 @@ function InformationOrder() {
   const location = useLocation()
   const isMobile = useIsMobile()
   const state = (location.state as InformationState | null) ?? {}
-
-  const total = state.total ?? DEFAULT_TOTAL
-  const transactionId = state.transactionId ?? DEFAULT_TRANSACTION_ID
-
+  const bookingId = state.bookingId ?? new URLSearchParams(location.search).get('bookingId') ?? ''
+  const [booking, setBooking] = useState<BookingDetails | null>(null)
+  const [errorMessage, setErrorMessage] = useState('')
+  const [isChecking, setIsChecking] = useState(false)
   const [copied, setCopied] = useState(false)
-  const mobileQrRef = useRef<SVGSVGElement>(null)
+  const payment = booking?.payments[0]
+  const total = payment?.amount ?? booking?.pricing.totalPrice ?? 0
+  const transactionId = payment?.midtransOrderId ?? booking?.id ?? bookingId
+  const expiresAt = payment?.expiredAt ?? booking?.lockedUntil ?? undefined
+  const redirectUrl = payment?.redirectUrl
 
-  // Total versi mobile: nominal + kode verifikasi unik (3 digit terakhir)
-  const mobileTotal = total + UNIQUE_CODE
+  useEffect(() => {
+    if (!bookingId) {
+      navigate('/home', { replace: true })
+      return
+    }
+
+    let active = true
+    let timeout: number | undefined
+    const refresh = async () => {
+      try {
+        const latest = await getBookingDetails(bookingId)
+        if (!active) return
+        setBooking(latest)
+        setErrorMessage('')
+
+        if (latest.status === 'fully_paid' || latest.status === 'completed') {
+          navigate('/success-order', { replace: true, state: { bookingId } })
+          return
+        }
+        if (['cancelled', 'expired', 'refunded'].includes(latest.status)) {
+          navigate('/failed-order', { replace: true, state: { bookingId } })
+          return
+        }
+      } catch (error) {
+        if (active) setErrorMessage(getApiErrorMessage(error, 'Status pembayaran tidak dapat dimuat.'))
+      }
+
+      if (active) timeout = window.setTimeout(() => void refresh(), 4000)
+    }
+
+    void refresh()
+    return () => {
+      active = false
+      if (timeout) window.clearTimeout(timeout)
+    }
+  }, [bookingId, navigate])
 
   /* ---------- Handler ---------- */
   const handleCopy = async () => {
@@ -172,24 +122,23 @@ function InformationOrder() {
     }
   }
 
-  const handleRefresh = () => {
-    // TODO: cek status pembayaran ke API. Sementara langsung ke halaman menunggu konfirmasi.
-    navigate('/pembayaran/menunggu', { state: { transactionId } })
-  }
-
-  const handleDownloadQr = () => {
-    // Unduh QR placeholder sebagai file SVG.
-    // TODO: jika QRIS asli berupa URL gambar dari API, ganti dengan unduh dari URL tersebut
-    const svg = mobileQrRef.current
-    if (!svg) return
-    const source = new XMLSerializer().serializeToString(svg)
-    const blob = new Blob([source], { type: 'image/svg+xml;charset=utf-8' })
-    const url = URL.createObjectURL(blob)
-    const link = document.createElement('a')
-    link.href = url
-    link.download = `QRIS-${transactionId}.svg`
-    link.click()
-    URL.revokeObjectURL(url)
+  const handleRefresh = async () => {
+    if (!bookingId) return
+    setIsChecking(true)
+    try {
+      const latest = await getBookingDetails(bookingId)
+      setBooking(latest)
+      setErrorMessage('')
+      if (latest.status === 'fully_paid' || latest.status === 'completed') {
+        navigate('/success-order', { replace: true, state: { bookingId } })
+      } else if (['cancelled', 'expired', 'refunded'].includes(latest.status)) {
+        navigate('/failed-order', { replace: true, state: { bookingId } })
+      }
+    } catch (error) {
+      setErrorMessage(getApiErrorMessage(error, 'Status pembayaran tidak dapat dimuat.'))
+    } finally {
+      setIsChecking(false)
+    }
   }
 
   return (
@@ -200,7 +149,7 @@ function InformationOrder() {
       {isMobile && (
         <MobileHeader
           variant="title"
-          title="Pembayaran QRIS"
+          title="Status Pembayaran"
           centerTitle
           showBottomNav={false}
         />
@@ -212,48 +161,48 @@ function InformationOrder() {
           className="flex items-center justify-center gap-2 bg-[#FDF2F2] px-3 py-2 font-heading text-xs text-[#E02424]"
         >
           <Clock size={16} aria-hidden="true" />
-          <PaymentCountdown />
+            <PaymentCountdown expiresAt={expiresAt} />
         </div>
 
         <ScrollReveal className="min-h-0 flex-1 overflow-y-auto">
         <div className="min-h-0 px-3 pt-3">
           {/* Kartu QR */}
           <section className="flex flex-col items-center rounded-2xl border border-[#D4D4D4] bg-white px-3 pb-3 pt-4">
-            <MemoQrPlaceholder className="h-[140px] w-[140px]" svgRef={mobileQrRef} />
+            <div className="flex h-[140px] w-[140px] flex-col items-center justify-center rounded-xl bg-[#F1F4EA] text-center">
+              <Clock size={28} className="text-[#404F14]" aria-hidden="true" />
+              <span className="mt-2 font-heading text-xs font-bold text-[#404F14]">
+                {booking?.status ?? 'Memuat status'}
+              </span>
+            </div>
             <button
               type="button"
-              onClick={handleDownloadQr}
+              onClick={() => redirectUrl && window.location.assign(redirectUrl)}
+              disabled={!redirectUrl}
               className="mt-4 inline-flex items-center gap-2 rounded-lg border border-[#404F14] bg-white px-3 py-1.5 font-heading text-[11px] font-bold text-[#404F14] cursor-pointer active:bg-[#F5FAF3]"
             >
-              <Download size={14} aria-hidden="true" />
-              Unduh Kode QR
+              Buka Pembayaran Midtrans
             </button>
           </section>
 
           {/* Total nominal transfer */}
           <section className="mt-3 rounded-xl border border-[#D4D4D4] bg-white px-3 py-2.5">
             <div className="flex items-center justify-between gap-3">
-              <span className="font-heading text-xs text-[#6F6B6E]">Total Nominal Transfer</span>
+                            <span className="font-heading text-xs text-[#6F6B6E]">Total Pembayaran</span>
               <span className={`${FONT_MONTSERRAT} text-lg font-bold text-[#121212]`}>
                 {formatRupiah(mobileTotal)}
               </span>
             </div>
             <p className="mt-1 text-right font-heading text-[9px] leading-3 text-[#6F6B6E]">
-              *Tiga digit terakhir{' '}
-              <span className="font-bold">{String(UNIQUE_CODE).padStart(3, '0')}</span> adalah
-              kode verifikasi unik order Anda.
+              Status diperbarui otomatis dari notifikasi pembayaran Midtrans.
             </p>
           </section>
 
           {/* Petunjuk scan */}
-          <h2 className="mt-3 font-heading text-xs font-bold text-[#121212]">Petunjuk Scan QRIS:</h2>
-          <ol className="mt-1 space-y-1 font-heading text-[11px] leading-4 text-[#6F6B6E]">
-            {MOBILE_STEPS.map((step, index) => (
-              <li key={step}>
-                {index + 1}. {step}
-              </li>
-            ))}
-          </ol>
+          <h2 className="mt-3 font-heading text-xs font-bold text-[#121212]">Status Pembayaran</h2>
+          {errorMessage && <p role="alert" className="mt-1 text-xs text-red-700">{errorMessage}</p>}
+          <p className="mt-1 font-heading text-[11px] leading-4 text-[#6F6B6E]">
+            {isChecking ? 'Memeriksa status...' : 'Halaman ini akan berpindah otomatis setelah Midtrans mengonfirmasi pembayaran.'}
+          </p>
         </div>
           </ScrollReveal>
 
@@ -262,9 +211,10 @@ function InformationOrder() {
           <button
             type="button"
             onClick={handleRefresh}
+            disabled={isChecking}
             className="h-10 w-full rounded-xl bg-[#CDF178] font-heading text-xs font-bold text-[#404F14] transition-colors active:bg-[#9AAD3E] cursor-pointer"
           >
-            Cek Status Pembayaran
+            {isChecking ? 'Memeriksa...' : 'Cek Status Pembayaran'}
           </button>
         </div>
       </div>}
@@ -279,31 +229,36 @@ function InformationOrder() {
           <ScrollReveal className="w-full">
           <div className="text-center">
             <h1 className={`${FONT_MONTSERRAT} text-[26px] font-bold leading-9 text-[#343133]`}>
-              Selesaikan Pembayaran QRIS
+              Status Pembayaran
             </h1>
             <span
               className="mt-0.5 inline-block rounded-full border border-[#E02424] bg-[#FDF2F2] px-3 py-0.5 font-heading text-xs font-bold text-[#E02424]"
               role="timer"
             >
-              <PaymentCountdown />
+              <PaymentCountdown expiresAt={expiresAt} />
             </span>
           </div>
 
           {/* Kartu pembayaran: lebar 800px sesuai desain */}
           <section className="mx-auto mt-6 flex w-full max-w-[800px] flex-col gap-6 rounded-2xl border border-[#D4D4D4] bg-white p-8 sm:flex-row sm:items-start">
-            {/* Kiri: QR */}
+            {/* Kiri: status Midtrans */}
             <div className="flex shrink-0 flex-col items-center sm:w-[180px]">
               <div className="flex h-[180px] w-[180px] flex-col items-center justify-center rounded-2xl border border-[#D4D4D4] bg-white">
-                <p className="font-heading text-[11px] font-bold text-[#265021]">[Scan QRIS]</p>
-                <div className="mt-1 flex h-[100px] w-[100px] items-center justify-center bg-[#EEF0F3]">
-                  <div className="bg-white p-1 shadow-sm">
-                    <MemoQrPlaceholder />
-                  </div>
-                </div>
-                <p className="mt-2 font-heading text-[8px] text-[#343133]">GPN - QRIS STANDAR</p>
+                <Clock size={38} className="text-[#404F14]" aria-hidden="true" />
+                <p className="mt-3 max-w-[150px] text-center font-heading text-xs font-bold text-[#404F14]">
+                  {booking?.status ?? 'Memuat status'}
+                </p>
               </div>
-              <p className="mt-4 whitespace-nowrap font-heading text-xs text-[#343133]">
-                Scan dengan M-Banking / E-Wallet
+              <button
+                type="button"
+                onClick={() => redirectUrl && window.location.assign(redirectUrl)}
+                disabled={!redirectUrl}
+                className="mt-4 cursor-pointer font-heading text-xs font-bold text-[#265021] underline underline-offset-2 disabled:opacity-50"
+              >
+                Lanjutkan di Midtrans
+              </button>
+              <p className="mt-2 text-center font-heading text-[10px] text-[#6F6B6E]">
+                Pembayaran diproses oleh Midtrans
               </p>
             </div>
 
@@ -328,23 +283,20 @@ function InformationOrder() {
                 </button>
               </div>
 
-              <h2 className="mt-4 font-heading text-xs font-bold text-[#121212]">Cara Bayar:</h2>
-              <ol className="mt-1.5 space-y-1.5 font-heading text-[11px] leading-[14px] text-[#343133]">
-                {PAYMENT_STEPS.map((step, index) => (
-                  <li key={step}>
-                    {index + 1}. {step}
-                  </li>
-                ))}
-              </ol>
+              <h2 className="mt-4 font-heading text-xs font-bold text-[#121212]">Status Transaksi</h2>
+              <p className="mt-1.5 font-heading text-[11px] leading-[14px] text-[#343133]">
+                {errorMessage || (isChecking ? 'Memeriksa status pembayaran...' : 'Status diperbarui otomatis setelah notifikasi Midtrans diterima.')}
+              </p>
             </div>
           </section>
 
           <button
             type="button"
             onClick={handleRefresh}
+            disabled={isChecking}
             className="mx-auto mt-6 block h-10 w-full max-w-[320px] cursor-pointer rounded-lg bg-[#CDF178] font-heading text-xs text-[#404F14] transition-colors hover:bg-[#9AAD3E]"
           >
-            Cek Status Pembayaran
+            {isChecking ? 'Memeriksa...' : 'Cek Status Pembayaran'}
           </button>
           </ScrollReveal>
         </main>

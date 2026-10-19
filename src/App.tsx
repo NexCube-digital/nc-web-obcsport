@@ -1,6 +1,7 @@
 import { Suspense } from 'react'
 import { Navigate, Route, Routes } from 'react-router-dom'
 import AppRoutes from './routes/AppRoutes'
+import { Toaster } from 'sonner'
 
 function App() {
   return (
@@ -13,9 +14,10 @@ function App() {
     >
       <Routes>
         {AppRoutes}
-        <Route path="*" element={<Navigate to="/" replace />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Suspense>
+    <Toaster position="top-right" richColors duration={3000} closeButton />
   )
 }
 

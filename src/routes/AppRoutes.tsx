@@ -1,5 +1,6 @@
 import { lazy } from 'react'
-import { Route } from 'react-router-dom'
+import { Navigate, Outlet, Route, useLocation } from 'react-router-dom'
+import { useAuth } from '../hooks/useAuth'
 
 const LandingPage = lazy(() => import('../pages/auth/LandingPage'))
 const Login = lazy(() => import('../pages/auth/Login'))
@@ -20,6 +21,16 @@ const SuccesOrder = lazy(() => import('../pages/orders/SuccessOrder'))
 const InformationOrder = lazy(() => import('../pages/orders/InformationOrder'))
 const Profil = lazy(() => import('../pages/ProfilPage'))
 
+function RequireAuth() {
+	const { isLoggedIn } = useAuth()
+	const location = useLocation()
+
+	if (!isLoggedIn) {
+		return <Navigate to="/login" state={{ from: location }} replace />
+	}
+
+	return <Outlet />
+}
 
 const AppRoutes = (
 	<>
@@ -27,25 +38,27 @@ const AppRoutes = (
 		<Route path="/login" element={<Login />} />
 		<Route path="/forgot-password" element={<ForgetPassword />} />
 		<Route path="/" element={<LandingPage />} />
-		<Route path="/pengaturan" element={<SettingPage />} />
-		<Route path="/profil-mobile" element={<ProfileMobile />} />
 
-		{/* main page */}
-		<Route path="/home" element={<HomePage />} />
-		<Route path="/notifikasi" element={<NotificationPage />} />
-		<Route path="/event" element={<EventPage />} />
-		<Route path="/membership" element={<MembershipPage />} />
-		<Route path="/history" element={<HistoryPage />} />
-		<Route path="/bantuan" element={<HelpPage />} />
-		
-		<Route path="/checkout" element={<CheckoutPage />} />
-		<Route path="/payment" element={<PaymentPage />} />
+		<Route element={<RequireAuth />}>
+			{/* main page */}
+			<Route path="/profil-mobile" element={<ProfileMobile />} />
+			<Route path="/pengaturan" element={<SettingPage />} />
+			<Route path="/home" element={<HomePage />} />
+			<Route path="/notifikasi" element={<NotificationPage />} />
+			<Route path="/event" element={<EventPage />} />
+			<Route path="/membership" element={<MembershipPage />} />
+			<Route path="/history" element={<HistoryPage />} />
+			<Route path="/bantuan" element={<HelpPage />} />
 
-		{/* cek notification */}
-		<Route path="/failed-order" element={<FailedOrder />} />
-		<Route path="/success-order" element={<SuccesOrder />} />
-		<Route path="/information-order" element={<InformationOrder />} />
-		<Route path="/profil" element={<Profil />} />
+			<Route path="/checkout" element={<CheckoutPage />} />
+			<Route path="/payment" element={<PaymentPage />} />
+
+			{/* cek notification */}
+			<Route path="/failed-order" element={<FailedOrder />} />
+			<Route path="/success-order" element={<SuccesOrder />} />
+			<Route path="/information-order" element={<InformationOrder />} />
+			<Route path="/profil" element={<Profil />} />
+		</Route>
 	</>
 )
 

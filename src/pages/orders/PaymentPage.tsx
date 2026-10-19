@@ -1,29 +1,30 @@
-import { lazy, Suspense, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { CalendarDays, Check } from 'lucide-react'
+import { toast } from 'sonner'
 import NavbarDashboard from '../../components/layout/Navbar'
 import MobileHeader from '../../components/layout/MobileHeader'
 import DeferredSection from '../../components/layout/DeferredSection'
 import DeferredFooter from '../../components/layout/DeferredFooter'
 import ScrollReveal from '../../components/animation/ScrollReveal'
+import PaymentInstructionCard from './payment/PaymentInstructionCard'
 import { useIsMobile } from '../../hooks/useIsMobile'
-
-const PendingOrderModal = lazy(() => import('../../components/ui/PendingOrderModal'))
+import { createBooking, previewBookingPrice, type BookingPrice, type PaymentChannel } from '../../services/bookingService'
+import { getApiErrorMessage } from '../../services/apiService'
+import {
+  isDirectChannel,
+  openMidtransCheckout,
+  parseMidtransCharge,
+  type DirectPaymentInfo,
+} from '../../services/paymentService'
 
 /* -------------------------------------------------------------------------
    Tipe data
    ------------------------------------------------------------------------- */
-type PaymentMethodId = 'qris' | 'bca-va'
+type PaymentMethodId = PaymentChannel | 'all'
 
 // Metode pembayaran khusus tampilan mobile (lebih lengkap sesuai desain)
-type MobileMethodId =
-  | 'qris'
-  | 'gopay'
-  | 'ovo'
-  | 'dana'
-  | 'bca-va'
-  | 'mandiri'
-  | 'bri'
+type MobileMethodId = PaymentChannel | 'all'
 
 interface PaymentMethod {
   id: PaymentMethodId
@@ -56,17 +57,18 @@ interface ExtraItem {
   price: number
 }
 
-interface PendingPayment {
-  method: string
-  total: number
-}
-
 // Data yang dikirim dari halaman DetailOrder lewat navigate('/checkout', { state })
 interface CheckoutState {
+  resourceId?: string
+  sportType?: string
+  bookingDate?: string
+  facility?: { id: string; name: string; location?: { name: string; city: string; address: string } | null }
   date?: string
   time?: string
   endTime?: string
   total?: number
+  durationMinutes?: number
+  price?: { basePrice: number; discountAmount: number; adminFee: number; totalPrice: number }
 }
 
 /* -------------------------------------------------------------------------
@@ -75,16 +77,7 @@ interface CheckoutState {
 // TODO: nama user sementara hardcode, ganti dari auth context / API
 const USER_NAME = 'Budiman Santoso'
 
-// TODO: nama fasilitas sementara statis, ambil dari data lapangan yang dipilih
-const FACILITY_NAME = 'Lapangan Futsal Premium'
-
-// TODO: lokasi sementara hardcode (tampilan mobile), ambil dari data lapangan
-const FACILITY_LOCATION = 'OBC Sport Center, Bandung'
-
-// TODO: kode promo & biaya layanan sementara hardcode, ambil dari API
-const PROMO_CODE = 'OBCMABAR'
-const PROMO_PERCENT = 0.1
-const SERVICE_FEE = 2000
+const PROMO_CODE = 'Diskon'
 
 // Fallback bila halaman dibuka tanpa state (sesuai desain)
 const DEFAULT_DATE = 'Senin, 12 Januari 2026'
@@ -96,15 +89,34 @@ const FONT_MONTSERRAT = "font-['Montserrat',sans-serif]"
 
 const PAYMENT_GROUPS: PaymentGroup[] = [
   {
-    id: 'instant',
-    label: 'INSTANT QRIS (REKOMENDASI)',
+    id: 'all',
+    label: 'PILIH DI MIDTRANS',
     methods: [
       {
-        id: 'qris',
-        badge: 'QRIS',
-        name: 'QRIS',
-        description: 'Konfirmasi instan otomatis tanpa ribet',
+        id: 'all',
+        badge: 'ALL',
+        name: 'Semua metode pembayaran',
+        description: 'Lihat semua metode yang aktif di Midtrans',
       },
+    ],
+  },
+  {
+    id: 'instant',
+    label: 'QRIS & E-WALLET',
+    methods: [
+      { id: 'qris', badge: 'QRIS', name: 'QRIS', description: 'Pembayaran dengan scan QR' },
+      { id: 'gopay', badge: 'GOPAY', name: 'GoPay', description: 'Pembayaran instan' },
+      { id: 'shopeepay', badge: 'SPAY', name: 'ShopeePay', description: 'Pembayaran instan' },
+      // CATATAN: Core API Midtrans tidak mendukung OVO, jadi OVO tetap lewat Snap (modal)
+      { id: 'ovo', badge: 'OVO', name: 'OVO', description: 'Pembayaran instan' },
+      { id: 'dana', badge: 'DANA', name: 'DANA', description: 'Pembayaran instan' },
+    ],
+  },
+  {
+    id: 'card',
+    label: 'KARTU',
+    methods: [
+      { id: 'credit_card', badge: 'CARD', name: 'Kartu kredit / debit', description: 'Pembayaran dengan kartu' },
     ],
   },
   {
@@ -112,11 +124,23 @@ const PAYMENT_GROUPS: PaymentGroup[] = [
     label: 'VIRTUAL ACCOUNT',
     methods: [
       {
-        id: 'bca-va',
+        id: 'bca_va',
         badge: 'BCA VA',
         name: 'BCA Virtual Account',
         description: 'Verifikasi otomatis 24 Jam',
       },
+      { id: 'bni_va', badge: 'BNI VA', name: 'BNI Virtual Account', description: 'Verifikasi otomatis' },
+      { id: 'bri_va', badge: 'BRI VA', name: 'BRI Virtual Account', description: 'Verifikasi otomatis' },
+      { id: 'mandiri_va', badge: 'MANDIRI', name: 'Mandiri Virtual Account', description: 'Verifikasi otomatis' },
+      { id: 'permata_va', badge: 'PERMATA', name: 'Permata Virtual Account', description: 'Verifikasi otomatis' },
+    ],
+  },
+  {
+    id: 'retail',
+    label: 'GERAI RETAIL',
+    methods: [
+      { id: 'alfamart', badge: 'ALFA', name: 'Alfamart', description: 'Bayar melalui gerai Alfamart' },
+      { id: 'indomaret', badge: 'INDO', name: 'Indomaret', description: 'Bayar melalui gerai Indomaret' },
     ],
   },
 ]
@@ -129,22 +153,45 @@ const EXTRA_ITEMS: ExtraItem[] = [
 
 const MOBILE_METHOD_GROUPS: MobileMethodGroup[] = [
   {
-    id: 'ewallet',
-    label: 'E-WALLET (INSTAN)',
+    id: 'all',
+    label: 'SEMUA METODE MIDTRANS',
     methods: [
-      { id: 'qris', badge: 'QRIS', name: 'QRIS (Gopay/OVO/Dana)' },
+      { id: 'all', badge: 'ALL', name: 'Pilih metode di Midtrans' },
+    ],
+  },
+  {
+    id: 'ewallet',
+    label: 'QRIS & E-WALLET',
+    methods: [
+      { id: 'qris', badge: 'QRIS', name: 'QRIS' },
       { id: 'gopay', badge: 'GOPAY', name: 'GoPay' },
+      { id: 'shopeepay', badge: 'SPAY', name: 'ShopeePay' },
       { id: 'ovo', badge: 'OVO', name: 'OVO' },
       { id: 'dana', badge: 'DANA', name: 'DANA' },
     ],
   },
   {
+    id: 'card',
+    label: 'KARTU',
+    methods: [{ id: 'credit_card', badge: 'CARD', name: 'Kartu kredit / debit' }],
+  },
+  {
     id: 'bank',
-    label: 'TRANSFER BANK (VERIFIKASI MANUAL)',
+    label: 'VIRTUAL ACCOUNT',
     methods: [
-      { id: 'bca-va', badge: 'BCA', name: 'BCA Virtual Account' },
-      { id: 'mandiri', badge: 'MANDIRI', name: 'Mandiri Transfer' },
-      { id: 'bri', badge: 'BRI', name: 'BRI Transfer' },
+      { id: 'bca_va', badge: 'BCA', name: 'BCA Virtual Account' },
+      { id: 'bni_va', badge: 'BNI', name: 'BNI Virtual Account' },
+      { id: 'bri_va', badge: 'BRI', name: 'BRI Virtual Account' },
+      { id: 'mandiri_va', badge: 'MANDIRI', name: 'Mandiri Virtual Account' },
+      { id: 'permata_va', badge: 'PERMATA', name: 'Permata Virtual Account' },
+    ],
+  },
+  {
+    id: 'retail',
+    label: 'GERAI RETAIL',
+    methods: [
+      { id: 'alfamart', badge: 'ALFA', name: 'Alfamart' },
+      { id: 'indomaret', badge: 'INDO', name: 'Indomaret' },
     ],
   },
 ]
@@ -154,7 +201,10 @@ const MOBILE_METHOD_GROUPS: MobileMethodGroup[] = [
    ------------------------------------------------------------------------- */
 const formatRupiah = (value: number) => `Rp ${value.toLocaleString('id-ID')}`
 
-const hourOf = (time: string) => Number(time.split(':')[0])
+const hourOf = (time: string) => {
+  const [hour, minute] = time.split(':').map(Number)
+  return hour + minute / 60
+}
 
 function PaymentPage() {
   const navigate = useNavigate()
@@ -162,66 +212,150 @@ function PaymentPage() {
   const isMobile = useIsMobile()
   const state = (location.state as CheckoutState | null) ?? {}
 
-  const [method, setMethod] = useState<PaymentMethodId>('qris')
+  const [method, setMethod] = useState<PaymentMethodId>('all')
 
   // State khusus mobile: metode pembayaran & alat tambahan yang dicentang
-  const [mobileMethod, setMobileMethod] = useState<MobileMethodId>('qris')
+  const [mobileMethod, setMobileMethod] = useState<MobileMethodId>('all')
   const [selectedExtras, setSelectedExtras] = useState<string[]>(['raket'])
-  const [pendingPayment, setPendingPayment] = useState<PendingPayment | null>(null)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [pricePreview, setPricePreview] = useState<Pick<BookingPrice, 'basePrice' | 'discountAmount' | 'adminFee' | 'totalPrice'> | null>(state.price ?? null)
+
+  // Instruksi pembayaran langsung (Core API Midtrans) yang ditampilkan di halaman ini, tanpa modal Snap
+  const [directPayment, setDirectPayment] = useState<{ bookingId: string; info: DirectPaymentInfo } | null>(null)
+
+  useEffect(() => {
+    if (!state.resourceId || !state.bookingDate) navigate('/home', { replace: true })
+  }, [navigate, state.bookingDate, state.resourceId])
+
+  const selectedChannel: PaymentChannel | 'all' = isMobile ? mobileMethod : method
+  const paymentMethod = selectedChannel === 'all'
+    ? undefined
+    : selectedChannel === 'qris'
+      ? 'qris'
+      : selectedChannel === 'credit_card'
+        ? 'credit_card'
+        : ['gopay', 'shopeepay', 'ovo', 'dana'].includes(selectedChannel)
+          ? 'ewallet'
+          : ['alfamart', 'indomaret'].includes(selectedChannel)
+            ? 'convenience_store'
+            : 'bank_transfer'
+
+  useEffect(() => {
+    if (!state.resourceId || !state.bookingDate || !state.sportType || !state.time || !state.endTime) return
+    let active = true
+    previewBookingPrice({
+      resourceId: state.resourceId,
+      bookingDate: state.bookingDate,
+      startTime: state.time,
+      endTime: state.endTime,
+      sportType: state.sportType,
+      ...(paymentMethod ? { paymentMethod } : {}),
+      bookingType: 'regular',
+    })
+      .then((price) => {
+        if (!active) return
+        setPricePreview(price)
+      })
+      .catch((error: unknown) => {
+        if (active) toast.error(getApiErrorMessage(error, 'Rincian harga tidak dapat diperbarui.'))
+      })
+    return () => { active = false }
+  }, [state.bookingDate, state.endTime, state.resourceId, state.sportType, state.time, paymentMethod])
 
   /* ---------- Turunan data pesanan ---------- */
   const date = state.date ?? DEFAULT_DATE
   const startTime = state.time ?? DEFAULT_START
   const endTime = state.endTime ?? DEFAULT_END
-  const subtotal = state.total ?? DEFAULT_SUBTOTAL
+  const facilityName = state.facility?.name ?? 'Lapangan Futsal Premium'
+  const facilityLocation = state.facility?.location?.name ?? 'OBC Sport Center'
+  const subtotal = pricePreview?.basePrice ?? state.total ?? DEFAULT_SUBTOTAL
 
-  const hours = Math.max(hourOf(endTime) - hourOf(startTime), 1)
+  const hours = Math.max((state.durationMinutes ?? (hourOf(endTime) - hourOf(startTime)) * 60) / 60, 1)
   const pricePerHour = Math.round(subtotal / hours / 1000)
-  const promo = Math.round(subtotal * PROMO_PERCENT)
-  const total = subtotal - promo + SERVICE_FEE
+  const promo = pricePreview?.discountAmount ?? 0
+  const serviceFee = pricePreview?.adminFee ?? 0
+  const total = pricePreview?.totalPrice ?? state.total ?? DEFAULT_SUBTOTAL
 
   /* ---------- Turunan data mobile ---------- */
   const extrasTotal = EXTRA_ITEMS.filter((item) => selectedExtras.includes(item.id)).reduce(
     (sum, item) => sum + item.price,
     0,
   )
-  // Catatan: desain mobile tidak menampilkan promo, jadi tidak dihitung di total mobile.
-  // Biaya Admin memakai SERVICE_FEE yang sama dengan versi PC.
-  const mobileTotal = subtotal + SERVICE_FEE + extrasTotal
+  const mobileTotal = total
 
   /* ---------- Handler ---------- */
-  const handlePay = () => {
-    setPendingPayment({
-      method: method === 'qris' ? 'QRIS' : 'BCA Virtual Account',
-      total,
-    })
-  }
+  const handlePay = async () => {
+    if (!state.resourceId || !state.bookingDate || !state.sportType) {
+      toast.error('Data fasilitas atau jadwal tidak ditemukan. Silakan pilih jadwal kembali.')
+      return
+    }
 
-  const handleOpenOrderStatus = (
-    path: '/information-order' | '/failed-order' | '/success-order',
-  ) => {
-    const transactionId = 'OBC-20260112-985A'
-    const paymentMethod = pendingPayment?.method ?? 'QRIS'
-    const schedule = `${date} (${startTime} - ${endTime})`
+    setIsSubmitting(true)
+    try {
+      const booking = await createBooking({
+        resourceId: state.resourceId,
+        bookingDate: state.bookingDate,
+        startTime,
+        endTime,
+        sportType: state.sportType,
+        bookingType: 'regular',
+        ...(selectedChannel !== 'all' ? { paymentChannel: selectedChannel } : {}),
+        notes: selectedExtras.length > 0
+          ? `Tambahan yang dipilih: ${EXTRA_ITEMS.filter((item) => selectedExtras.includes(item.id)).map((item) => item.name).join(', ')}`
+          : undefined,
+      })
 
-    setPendingPayment(null)
-    navigate(path, {
-      state: {
-        total: pendingPayment?.total ?? total,
-        transactionId,
-        transactionNumber: transactionId,
-        bookingCode: transactionId,
-        facility: FACILITY_NAME,
-        schedule,
-        paidAt: new Date().toLocaleString('id-ID'),
-        method: paymentMethod,
-        duration: `${hours} Jam`,
-        subtotal,
-        serviceFee: SERVICE_FEE,
-        promoLabel: PROMO_CODE,
-        promo,
-      },
-    })
+      // Pembayaran langsung (Core API Midtrans): tampilkan instruksi di halaman ini, tanpa modal Snap
+      const payment = booking.payment
+      if (payment && 'unavailable' in payment) {
+        toast.error(payment.message)
+        setIsSubmitting(false)
+        return
+      }
+
+      if (payment && 'chargeResponse' in payment && selectedChannel !== 'all' && isDirectChannel(selectedChannel)) {
+        setDirectPayment({
+          bookingId: booking.bookingId,
+          info: parseMidtransCharge(payment.chargeResponse, selectedChannel),
+        })
+        toast.success('Instruksi pembayaran berhasil dibuat.')
+        setIsSubmitting(false)
+        window.scrollTo({ top: 0 })
+        return
+      }
+
+      // Channel langsung wajib memakai chargeResponse. Jangan jatuh ke halaman template Snap
+      // (app.sandbox.midtrans.com/snap/...), tampilkan pesan agar mudah ditelusuri.
+      // CATATAN BACKEND: bila pesan ini muncul, endpoint booking belum memanggil Core API (/v2/charge).
+      if (selectedChannel !== 'all' && isDirectChannel(selectedChannel)) {
+        toast.error('Server belum mengembalikan data pembayaran langsung (chargeResponse). Periksa endpoint booking.')
+        setIsSubmitting(false)
+        return
+      }
+
+      // Cadangan: Snap (modal) hanya untuk "Semua metode", kartu kredit, dan OVO
+      if (booking.payment && 'redirectUrl' in booking.payment) {
+        const bookingId = booking.bookingId
+        try {
+          await openMidtransCheckout(booking.payment.token, {
+            onSuccess: () => navigate('/information-order', { replace: true, state: { bookingId } }),
+            onPending: () => navigate('/information-order', { replace: true, state: { bookingId } }),
+            onError: () => navigate('/information-order', { replace: true, state: { bookingId } }),
+            onClose: () => navigate('/information-order', { replace: true, state: { bookingId } }),
+          })
+        } catch {
+          window.location.assign(booking.payment.redirectUrl)
+        }
+        return
+      }
+      navigate('/success-order', {
+        replace: true,
+        state: { bookingId: booking.bookingId },
+      })
+    } catch (error) {
+      toast.error(getApiErrorMessage(error, 'Booking gagal dibuat. Periksa jadwal dan coba lagi.'))
+      setIsSubmitting(false)
+    }
   }
 
   const handleToggleExtra = (id: string) => {
@@ -230,15 +364,30 @@ function PaymentPage() {
     )
   }
 
-  const handlePayMobile = () => {
-    const selectedMethod = MOBILE_METHOD_GROUPS
-      .flatMap((group) => group.methods)
-      .find((item) => item.id === mobileMethod)
+  const handlePayMobile = () => { void handlePay() }
 
-    setPendingPayment({
-      method: selectedMethod?.name ?? mobileMethod,
-      total: mobileTotal,
-    })
+  /* ---------- Tampilan instruksi pembayaran langsung ---------- */
+  // Diletakkan setelah semua hook agar urutan hook tetap konsisten
+  if (directPayment) {
+    const goToStatus = () =>
+      navigate('/information-order', { replace: true, state: { bookingId: directPayment.bookingId } })
+
+    return (
+      <div className="min-h-screen bg-white font-body text-[#343133]">
+        {isMobile ? (
+          <MobileHeader variant="title" title="Pembayaran" showShare={false} showBottomNav={false} />
+        ) : (
+          <NavbarDashboard userName={USER_NAME} showDesktopNavigation={false} showMobileHeader={false} />
+        )}
+        <main className="mx-auto max-w-[560px] px-4 pt-6 pb-16">
+          <PaymentInstructionCard
+            info={directPayment.info}
+            totalLabel={formatRupiah(directPayment.info.grossAmount ?? total)}
+            onCheckStatus={goToStatus}
+          />
+        </main>
+      </div>
+    )
   }
 
   return (
@@ -264,9 +413,9 @@ function PaymentPage() {
               </span>
               <div className="min-w-0 font-heading">
                 <h2 className={`${FONT_MONTSERRAT} font-bold text-base leading-snug text-[#343133]`}>
-                  {FACILITY_NAME}
+                  {facilityName}
                 </h2>
-                <p className="mt-0.5 text-xs text-[#6F6B6E]">{FACILITY_LOCATION}</p>
+                <p className="mt-0.5 text-xs text-[#6F6B6E]">{facilityLocation}</p>
                 <p className="mt-0.5 text-xs text-[#6F6B6E]">{date}</p>
                 <p className="mt-0.5 text-xs text-[#6F6B6E]">
                   {startTime} - {endTime}
@@ -283,7 +432,7 @@ function PaymentPage() {
               </div>
               <div className="flex items-center justify-between gap-3">
                 <dt className="text-[#6F6B6E]">Biaya Admin</dt>
-                <dd className="text-[#343133]">{formatRupiah(SERVICE_FEE)}</dd>
+                <dd className="text-[#343133]">{formatRupiah(serviceFee)}</dd>
               </div>
               <div className="flex items-center justify-between gap-3">
                 <dt className="text-[#6F6B6E]">Sewa Tambahan</dt>
@@ -419,9 +568,10 @@ function PaymentPage() {
           <button
             type="button"
             onClick={handlePayMobile}
+            disabled={isSubmitting}
             className="h-12 w-full rounded-xl bg-[#CDF178] font-heading text-sm font-bold text-[#404F14] transition-colors active:bg-[#9AAD3E] cursor-pointer"
           >
-            Bayar Sekarang
+            {isSubmitting ? 'Memproses booking...' : 'Bayar Sekarang'}
           </button>
         </div>
         </div>
@@ -522,7 +672,7 @@ function PaymentPage() {
                 <dl className="mt-3 space-y-2 font-heading text-xs">
                   <div className="flex items-center justify-between gap-3">
                     <dt className="text-[#6F6B6E]">Fasilitas</dt>
-                    <dd className="font-bold text-[#121212]">{FACILITY_NAME}</dd>
+                    <dd className="font-bold text-[#121212]">{facilityName}</dd>
                   </div>
                   <div className="flex items-center justify-between gap-3">
                     <dt className="text-[#6F6B6E]">Tanggal</dt>
@@ -555,7 +705,7 @@ function PaymentPage() {
                   </div>
                   <div className="flex items-center justify-between gap-3">
                     <dt className="text-[#6F6B6E]">Biaya Layanan</dt>
-                    <dd className="text-[#343133]">{formatRupiah(SERVICE_FEE)}</dd>
+                    <dd className="text-[#343133]">{formatRupiah(serviceFee)}</dd>
                   </div>
                 </dl>
 
@@ -574,9 +724,10 @@ function PaymentPage() {
               <button
                 type="button"
                 onClick={handlePay}
+                disabled={isSubmitting}
                 className="mt-4 h-10 w-full rounded-lg bg-[#CDF178] font-heading text-xs font-bold text-[#404F14] transition-colors hover:bg-[#9AAD3E] cursor-pointer"
               >
-                Konfirmasi &amp; Bayar
+                {isSubmitting ? 'Memproses booking...' : 'Konfirmasi & Bayar'}
               </button>
             </div>
           </div>
@@ -586,23 +737,6 @@ function PaymentPage() {
         <DeferredFooter />
       </div>}
 
-      {pendingPayment !== null && (
-        <Suspense fallback={null}>
-          <PendingOrderModal
-            isOpen
-            date={date}
-            time={`${startTime} - ${endTime}`}
-            paymentMethod={pendingPayment.method}
-            amount={pendingPayment.total}
-            onClose={() => setPendingPayment(null)}
-            onReturnHome={() => {
-              setPendingPayment(null)
-              navigate('/home')
-            }}
-            onOpenOrderStatus={handleOpenOrderStatus}
-          />
-        </Suspense>
-      )}
     </>
   )
 }

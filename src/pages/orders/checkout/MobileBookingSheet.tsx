@@ -18,9 +18,12 @@ interface MobileBookingSheetProps {
   selectedDateLabel: string
   bookedDates: string[]
   bookedSlotsToday: string[]
+  availableTimeSlots?: string[]
+  isAvailabilityLoading?: boolean
   selectedTimes: string[]
   isDateBooked: boolean
   sessionCount: number
+  durationLabel?: string
   startTime: string
   endTime: string
   totalPrice: number
@@ -45,9 +48,12 @@ function MobileBookingSheet({
   selectedDateLabel,
   bookedDates,
   bookedSlotsToday,
+  availableTimeSlots,
+  isAvailabilityLoading,
   selectedTimes,
   isDateBooked,
   sessionCount,
+  durationLabel,
   startTime,
   endTime,
   totalPrice,
@@ -83,8 +89,11 @@ function MobileBookingSheet({
                   variant="mobile"
                   isDateBooked={isDateBooked}
                   bookedSlotsToday={bookedSlotsToday}
+                  availableTimeSlots={availableTimeSlots}
+                  isLoading={isAvailabilityLoading}
                   selectedTimes={selectedTimes}
                   sessionCount={sessionCount}
+                  durationLabel={durationLabel}
                   selectedDateLabel={selectedDateLabel}
                   startTime={startTime}
                   endTime={endTime}
@@ -120,7 +129,7 @@ function MobileBookingSheet({
               <Clock size={16} />
             </span>
             <span className="font-heading text-xs font-medium text-[#343133]">
-              Pilih Tanggal &amp; Jam Sewa
+              Pilih Tanggal &amp; Waktu Booking
             </span>
             <ChevronDown
               size={16}
@@ -147,7 +156,7 @@ function MobileBookingSheet({
           ) : (
             <>
               <div>
-                <p className="text-[11px] text-[#6F6B6E]">Total Terpilih ({sessionCount} jam)</p>
+                <p className="text-[11px] text-[#6F6B6E]">Total Terpilih ({durationLabel ?? `${sessionCount} jam`})</p>
                 <p className="font-heading text-base font-bold text-[#121212]">
                   {formatRupiah(totalPrice)}
                 </p>

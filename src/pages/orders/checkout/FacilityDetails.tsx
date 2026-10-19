@@ -39,15 +39,18 @@ const MOBILE_RATING_DETAILS = [
 
 interface FacilityDetailsProps {
   variant: 'mobile' | 'desktop'
+  facilityName?: string
+  image?: string
+  locationName?: string
 }
 
-function FacilityDetails({ variant }: FacilityDetailsProps) {
+function FacilityDetails({ variant, facilityName = COURT_NAME, image = lapangF1, locationName = 'OBC Sport Center' }: FacilityDetailsProps) {
   return (
     variant === 'mobile' ? (
       <div>
-        <img src={lapangF1} alt={COURT_NAME} className="h-[205px] w-full rounded-2xl object-cover" />
-        <h1 className="mt-5 font-heading text-xl font-bold text-[#121212]">OBC Futsal</h1>
-        <p className="mt-1 text-xs text-[#6F6B6E]">OBC Sport Center - {COURT_NAME}</p>
+        <img src={image} alt={facilityName} className="h-[205px] w-full rounded-2xl object-cover" />
+        <h1 className="mt-5 font-heading text-xl font-bold text-[#121212]">{facilityName}</h1>
+        <p className="mt-1 text-xs text-[#6F6B6E]">{locationName} - {facilityName}</p>
 
         <div className="mt-4 grid grid-cols-3 gap-2">
           {PRICE_TIERS.map((tier) => (
@@ -91,8 +94,8 @@ function FacilityDetails({ variant }: FacilityDetailsProps) {
       </div>
     ) : (
       <div>
-        <img src={lapangF1} alt={COURT_NAME} className="h-[364px] w-full rounded-xl object-cover" />
-        <h1 className="mt-6 font-heading text-2xl font-bold text-[#343133]">{COURT_NAME}</h1>
+        <img src={image} alt={facilityName} className="h-[364px] w-full rounded-xl object-cover" />
+        <h1 className="mt-6 font-heading text-2xl font-bold text-[#343133]">{facilityName}</h1>
         <div className="mt-1 flex items-center gap-2">
           <div className="flex gap-0.5" aria-hidden="true">
             {[0, 1, 2, 3, 4].map((index) => (
