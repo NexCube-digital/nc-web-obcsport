@@ -1,31 +1,29 @@
 import { lazy, Suspense, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { X, ZoomIn, ZoomOut } from 'lucide-react'
-import NavbarDashboard from '../components/layout/Navbar'
-import DeferredFooter from '../components/layout/DeferredFooter'
-import ScrollReveal from '../components/animation/ScrollReveal'
-import DeferredSection from '../components/layout/DeferredSection'
-import type { OrderModalFacility } from '../components/ui/OrderModal'
+import NavbarDashboard from '../../components/layout/Navbar'
+import DeferredFooter from '../../components/layout/DeferredFooter'
+import ScrollReveal from '../../components/animation/ScrollReveal'
+import DeferredSection from '../../components/layout/DeferredSection'
+import type { OrderModalFacility } from '../../components/ui/OrderModal'
 import Hero from './home/Hero'
 import type { FacilityCard } from './home/Court'
-import { getSportsFacilities } from '../services/facilityService'
-import type { SportsFacility } from '../services/facilityService'
-import lapangF1 from '../assets/layanan/Lapang F1.png'
-import lapangF2 from '../assets/layanan/Lapang F2.png'
-import mejaBilliard from '../assets/layanan/Meja Billiard.png'
-import pickleballImage from '../assets/layanan/pickleball-mockup.png'
+import { getSportsFacilities } from '../../services/facilityService'
+import { useAuth } from '../../hooks/useAuth'
+import type { SportsFacility } from '../../services/facilityService'
+import lapangF1 from '../../assets/layanan/Lapang F1.png'
+import lapangF2 from '../../assets/layanan/Lapang F2.png'
+import mejaBilliard from '../../assets/layanan/Meja Billiard.png'
+import pickleballImage from '../../assets/layanan/pickleball-mockup.png'
 
 const Court = lazy(() => import('./home/Court'))
 const Information = lazy(() => import('./home/Information'))
 const Event = lazy(() => import('./home/Event'))
-const OrderModal = lazy(() => import('../components/ui/OrderModal'))
+const OrderModal = lazy(() => import('../../components/ui/OrderModal'))
 
 /* -------------------------------------------------------------------------
    Tipe data
    ------------------------------------------------------------------------- */
-// TODO: nama user sementara hardcode, ganti dari auth context / API
-const USER_NAME = 'Budiman Santoso'
-
 // Fasilitas pendukung yang tampil di modal
 const AMENITIES = [
   { id: 'toilet', label: 'Toilet T3-T5', icon: 'toilet' },
@@ -75,6 +73,8 @@ const MODAL_DETAIL: Record<string, Omit<OrderModalFacility, 'id' | 'name' | 'ima
 }
 
 function HomePage() {
+  const { user } = useAuth()
+  const userName = user?.name ?? 'Akun OBC'
   const [searchQuery, setSearchQuery] = useState('')
   const [submittedSearch, setSubmittedSearch] = useState('')
   const [selectedFacility, setSelectedFacility] = useState<FacilityCard | null>(null)
@@ -141,13 +141,13 @@ function HomePage() {
 
   return (
     <div className="flex min-h-screen flex-col overflow-x-clip bg-white font-body text-[#343133]">
-      <NavbarDashboard userName={USER_NAME} />
+      <NavbarDashboard userName={userName} />
 
       {/* Lebar konten 1200px sesuai desain; padding mengecil di layar kecil */}
       <main className="mx-auto w-full max-w-[1248px] flex-1 px-3 pt-4 pb-10 min-[360px]:px-4 sm:px-6 sm:pt-6 sm:pb-16">
         <ScrollReveal>
           <Hero
-            userName={USER_NAME}
+            userName={userName}
             searchQuery={searchQuery}
             onSearchQueryChange={setSearchQuery}
             onSearch={handleSearch}

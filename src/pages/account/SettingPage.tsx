@@ -4,6 +4,7 @@ import { ArrowRight, Check } from 'lucide-react'
 import NavbarDashboard from '../../components/layout/Navbar'
 import DeferredFooter from '../../components/layout/DeferredFooter'
 import DeferredSection from '../../components/layout/DeferredSection'
+import { useAuth } from '../../hooks/useAuth'
 
 const PhotoCropModal = lazy(() => import('./Photocropmodal'))
 
@@ -20,11 +21,7 @@ interface HelpLink {
 /* -------------------------------------------------------------------------
    Data (ganti dengan data dari auth context / services/profileService.js)
    ------------------------------------------------------------------------- */
-// TODO: data profil sementara hardcode, ganti dari auth context / API
-const USER_NAME = 'Budiman Santoso'
-const INITIAL_USERNAME = 'budimansantoso'
 const INITIAL_BIO = 'Kapten tim futsal rutin setiap hari Selasa & Kamis.'
-const USER_EMAIL = 'budiman.santoso@email.com'
 
 // TODO: ganti dengan nomor WhatsApp customer support yang sebenarnya
 const CS_WHATSAPP_URL = 'https://wa.me/628123456789'
@@ -59,10 +56,13 @@ function getInitials(name: string): string {
 
 function SettingsPage() {
   const navigate = useNavigate()
+  const { user } = useAuth()
+  const userName = user?.name ?? ''
+  const username = user?.email?.split('@')[0] ?? ''
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   // State profil
-  const [fullName, setFullName] = useState(USER_NAME)
+  const [fullName, setFullName] = useState(userName)
   const [photoPreview, setPhotoPreview] = useState<string | null>(null)
   const [cropSource, setCropSource] = useState<File | null>(null) // file yang sedang diatur di modal
   const [photoError, setPhotoError] = useState('')
@@ -76,6 +76,10 @@ function SettingsPage() {
   const oldPasswordRef = useRef<HTMLInputElement>(null)
   const newPasswordRef = useRef<HTMLInputElement>(null)
   const confirmPasswordRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    setFullName(userName)
+  }, [userName])
 
   useEffect(() => {
     return () => {
@@ -159,7 +163,7 @@ function SettingsPage() {
 
   return (
     <div className="min-h-screen bg-white font-body text-[#343133]">
-      <NavbarDashboard userName={USER_NAME} />
+      <NavbarDashboard />
 
       {/* Lebar konten 1200px sesuai desain */}
       <main className="max-w-[1248px] mx-auto px-6 pt-8 pb-16">
@@ -232,7 +236,7 @@ function SettingsPage() {
                   id="username"
                   type="text"
                   ref={usernameRef}
-                  defaultValue={INITIAL_USERNAME}
+                  defaultValue={username}
                   className={INPUT_CLASS}
                 />
               </div>
@@ -266,7 +270,7 @@ function SettingsPage() {
                 <input
                   id="email"
                   type="email"
-                  value={USER_EMAIL}
+                  value={user?.email ?? ''}
                   readOnly
                   className={`${INPUT_CLASS} flex-1`}
                 />

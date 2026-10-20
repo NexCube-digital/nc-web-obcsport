@@ -32,9 +32,6 @@ interface SuccessState {
 /* -------------------------------------------------------------------------
    Data (ganti dengan data dari API / services/paymentService.js)
    ------------------------------------------------------------------------- */
-// TODO: nama user sementara hardcode, ganti dari auth context / API
-const USER_NAME = 'Budiman Santoso'
-
 const FONT_MONTSERRAT = "font-['Montserrat',sans-serif]"
 
 // Fallback bila halaman dibuka tanpa state (sesuai desain)
@@ -317,7 +314,7 @@ function SuccesOrder() {
 
       {!isMobile && (
         <div className="min-h-screen flex flex-col bg-white font-body text-[#343133]">
-        <NavbarDashboard userName={USER_NAME} showDesktopNavigation={false} showMobileHeader={false} />
+        <NavbarDashboard showDesktopNavigation={false} showMobileHeader={false} />
 
         <main className="mx-auto flex w-full max-w-[1068px] flex-1 items-center px-6 py-12">
           <ScrollReveal className="w-full">

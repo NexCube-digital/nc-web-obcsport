@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
+import { LayoutDashboard, LogIn, UserPlus } from 'lucide-react'
 import logo from '../../assets/logo/unit bisnis/LOGO OBC SPORT CENTER.png'
+import { useAuth } from '../../hooks/useAuth'
 
 /* -------------------------------------------------------------------------
    Tipe data
@@ -19,6 +21,7 @@ const LANGUAGES: Language[] = [
 ]
 
 function NavbarLanding() {
+  const { isLoggedIn } = useAuth()
   // State bahasa aktif dan dropdown
   const [activeLang, setActiveLang] = useState<Language>(LANGUAGES[0])
   const [isLangOpen, setIsLangOpen] = useState(false)
@@ -118,20 +121,24 @@ function NavbarLanding() {
           )}
           </div>
 
-          {/* Tombol Masuk dan Daftar */}
+          {/* Aksi autentikasi */}
           <div className="flex items-center gap-1.5 min-[360px]:gap-2 sm:gap-4 shrink-0">
             <Link
-              to="/login"
-              className="inline-flex h-8 items-center rounded-lg border border-[#CDF178] bg-[#CDF178] px-2.5 font-heading text-[11px] font-semibold text-[#343133] transition-colors hover:border-[#9AAD3E] hover:bg-[#9AAD3E] min-[360px]:h-9 min-[360px]:px-4 min-[360px]:text-sm sm:h-10 sm:border-[#404F14] sm:bg-white sm:px-6 sm:text-[#404F14] sm:hover:border-[#404F14] sm:hover:bg-[#FDFCF7]"
+              to={isLoggedIn ? '/home' : '/login'}
+              className="inline-flex h-8 items-center justify-center gap-1.5 rounded-lg border border-[#CDF178] bg-[#CDF178] px-2.5 font-heading text-[11px] font-semibold text-[#343133] transition-colors hover:border-[#9AAD3E] hover:bg-[#9AAD3E] min-[360px]:h-9 min-[360px]:px-4 min-[360px]:text-sm sm:h-10 sm:border-[#404F14] sm:bg-white sm:px-6 sm:text-[#404F14] sm:hover:border-[#404F14] sm:hover:bg-[#FDFCF7]"
             >
-              Masuk
+              {isLoggedIn ? <LayoutDashboard size={15} aria-hidden="true" /> : <LogIn size={15} aria-hidden="true" />}
+              {isLoggedIn ? 'Dashboard' : 'Masuk'}
             </Link>
-            <Link
-              to="/register"
-              className="inline-flex h-8 items-center rounded-lg border border-[#404F14] bg-transparent px-2.5 font-heading text-[11px] font-semibold text-[#404F14] transition-colors hover:bg-[#FDFCF7] min-[360px]:h-9 min-[360px]:px-4 min-[360px]:text-sm sm:h-10 sm:border-transparent sm:bg-[#CDF178] sm:px-6 sm:text-[#343133] sm:hover:bg-[#9AAD3E]"
-            >
-              Daftar
-            </Link>
+            {!isLoggedIn && (
+              <Link
+                to="/register"
+                className="inline-flex h-8 items-center justify-center gap-1.5 rounded-lg border border-[#404F14] bg-transparent px-2.5 font-heading text-[11px] font-semibold text-[#404F14] transition-colors hover:bg-[#FDFCF7] min-[360px]:h-9 min-[360px]:px-4 min-[360px]:text-sm sm:h-10 sm:border-transparent sm:bg-[#CDF178] sm:px-6 sm:text-[#343133] sm:hover:bg-[#9AAD3E]"
+              >
+                <UserPlus size={15} aria-hidden="true" />
+                Daftar
+              </Link>
+            )}
           </div>
         </div>
       </div>

@@ -6,8 +6,10 @@ import MobileHeader from '../../components/layout/MobileHeader'
 import DeferredFooter from '../../components/layout/DeferredFooter'
 import ScrollReveal from '../../components/animation/ScrollReveal'
 import { useIsMobile } from '../../hooks/useIsMobile'
+import PaymentInstructionCard from './payment/PaymentInstructionCard'
 import { getBookingDetails, type BookingDetails } from '../../services/bookingService'
 import { getApiErrorMessage } from '../../services/apiService'
+import { parsePersistedDirectPayment } from '../../services/paymentService'
 
 /* -------------------------------------------------------------------------
    Tipe data
@@ -20,9 +22,6 @@ interface InformationState {
 /* -------------------------------------------------------------------------
    Data (ganti dengan data dari API / services/paymentService.js)
    ------------------------------------------------------------------------- */
-// TODO: nama user sementara hardcode, ganti dari auth context / API
-const USER_NAME = 'Budiman Santoso'
-
 const FONT_MONTSERRAT = "font-['Montserrat',sans-serif]"
 
 const formatRupiah = (value: number) => `Rp ${value.toLocaleString('id-ID')}`
@@ -69,6 +68,13 @@ function InformationOrder() {
   const [isChecking, setIsChecking] = useState(false)
   const [copied, setCopied] = useState(false)
   const payment = booking?.payments[0]
+  const directPayment = parsePersistedDirectPayment(payment?.paymentDetails)
+  const paymentChannel = payment?.paymentDetails?.obc_payment_channel
+  const canPayByCreditCard = Boolean(
+    booking?.status === 'unpaid'
+    && paymentChannel === 'credit_card'
+    && ['pending', 'failed'].includes(payment?.status ?? ''),
+  )
   const total = payment?.amount ?? booking?.pricing.totalPrice ?? 0
   const transactionId = payment?.midtransOrderId ?? booking?.id ?? bookingId
   const expiresAt = payment?.expiredAt ?? booking?.lockedUntil ?? undefined
@@ -90,11 +96,17 @@ function InformationOrder() {
         setErrorMessage('')
 
         if (latest.status === 'fully_paid' || latest.status === 'completed') {
-          navigate('/success-order', { replace: true, state: { bookingId } })
+          navigate(`/success-order?bookingId=${encodeURIComponent(bookingId)}`, {
+            replace: true,
+            state: { bookingId },
+          })
           return
         }
         if (['cancelled', 'expired', 'refunded'].includes(latest.status)) {
-          navigate('/failed-order', { replace: true, state: { bookingId } })
+          navigate(`/failed-order?bookingId=${encodeURIComponent(bookingId)}`, {
+            replace: true,
+            state: { bookingId },
+          })
           return
         }
       } catch (error) {
@@ -112,6 +124,13 @@ function InformationOrder() {
   }, [bookingId, navigate])
 
   /* ---------- Handler ---------- */
+  const handleCreditCardPayment = () => {
+    if (!booking) return
+    navigate(`/credit-card-payment?bookingId=${encodeURIComponent(booking.id)}`, {
+      state: { bookingId: booking.id },
+    })
+  }
+
   const handleCopy = async () => {
     try {
       await navigator.clipboard.writeText(transactionId)
@@ -130,15 +149,41 @@ function InformationOrder() {
       setBooking(latest)
       setErrorMessage('')
       if (latest.status === 'fully_paid' || latest.status === 'completed') {
-        navigate('/success-order', { replace: true, state: { bookingId } })
+        navigate(`/success-order?bookingId=${encodeURIComponent(bookingId)}`, {
+          replace: true,
+          state: { bookingId },
+        })
       } else if (['cancelled', 'expired', 'refunded'].includes(latest.status)) {
-        navigate('/failed-order', { replace: true, state: { bookingId } })
+        navigate(`/failed-order?bookingId=${encodeURIComponent(bookingId)}`, {
+          replace: true,
+          state: { bookingId },
+        })
       }
     } catch (error) {
       setErrorMessage(getApiErrorMessage(error, 'Status pembayaran tidak dapat dimuat.'))
     } finally {
       setIsChecking(false)
     }
+  }
+
+  if (directPayment) {
+    return (
+      <div className="flex min-h-screen flex-col bg-white font-body text-[#343133]">
+        {isMobile ? (
+          <MobileHeader variant="title" title="Selesaikan Pembayaran" showBottomNav={false} />
+        ) : (
+          <NavbarDashboard showDesktopNavigation={false} showMobileHeader={false} />
+        )}
+        <main className="mx-auto w-full max-w-[560px] flex-1 px-4 pt-6 pb-16">
+          <PaymentInstructionCard
+            info={directPayment}
+            totalLabel={formatRupiah(directPayment.grossAmount ?? total)}
+            onCheckStatus={() => { void handleRefresh() }}
+          />
+        </main>
+        {!isMobile && <DeferredFooter />}
+      </div>
+    )
   }
 
   return (
@@ -174,14 +219,16 @@ function InformationOrder() {
                 {booking?.status ?? 'Memuat status'}
               </span>
             </div>
-            <button
-              type="button"
-              onClick={() => redirectUrl && window.location.assign(redirectUrl)}
-              disabled={!redirectUrl}
-              className="mt-4 inline-flex items-center gap-2 rounded-lg border border-[#404F14] bg-white px-3 py-1.5 font-heading text-[11px] font-bold text-[#404F14] cursor-pointer active:bg-[#F5FAF3]"
-            >
-              Buka Pembayaran Midtrans
-            </button>
+            {paymentChannel !== 'credit_card' && (
+              <button
+                type="button"
+                onClick={() => redirectUrl && window.location.assign(redirectUrl)}
+                disabled={!redirectUrl}
+                className="mt-4 inline-flex items-center gap-2 rounded-lg border border-[#404F14] bg-white px-3 py-1.5 font-heading text-[11px] font-bold text-[#404F14] cursor-pointer active:bg-[#F5FAF3]"
+              >
+                {paymentChannel === 'ovo' ? 'Lanjutkan Pembayaran OVO' : 'Buka Pembayaran Midtrans'}
+              </button>
+            )}
           </section>
 
           {/* Total nominal transfer */}
@@ -189,13 +236,23 @@ function InformationOrder() {
             <div className="flex items-center justify-between gap-3">
                             <span className="font-heading text-xs text-[#6F6B6E]">Total Pembayaran</span>
               <span className={`${FONT_MONTSERRAT} text-lg font-bold text-[#121212]`}>
-                {formatRupiah(mobileTotal)}
+                {formatRupiah(total)}
               </span>
             </div>
             <p className="mt-1 text-right font-heading text-[9px] leading-3 text-[#6F6B6E]">
               Status diperbarui otomatis dari notifikasi pembayaran Midtrans.
             </p>
           </section>
+
+          {canPayByCreditCard && booking && (
+            <button
+              type="button"
+              onClick={handleCreditCardPayment}
+              className="mt-3 h-11 w-full rounded-xl bg-[#CDF178] font-heading text-xs font-bold text-[#404F14]"
+            >
+              Masukkan Detail Kartu
+            </button>
+          )}
 
           {/* Petunjuk scan */}
           <h2 className="mt-3 font-heading text-xs font-bold text-[#121212]">Status Pembayaran</h2>
@@ -223,7 +280,7 @@ function InformationOrder() {
           TAMPILAN DESKTOP (>= md): tampilan asli
           =================================================================== */}
       {!isMobile && <div className="min-h-screen flex flex-col bg-white font-body text-[#343133]">
-        <NavbarDashboard userName={USER_NAME} showDesktopNavigation={false} showMobileHeader={false} />
+        <NavbarDashboard showDesktopNavigation={false} showMobileHeader={false} />
 
         <main className="mx-auto w-full max-w-[1248px] flex-1 px-6 pb-16 pt-6">
           <ScrollReveal className="w-full">
@@ -249,16 +306,18 @@ function InformationOrder() {
                   {booking?.status ?? 'Memuat status'}
                 </p>
               </div>
-              <button
-                type="button"
-                onClick={() => redirectUrl && window.location.assign(redirectUrl)}
-                disabled={!redirectUrl}
-                className="mt-4 cursor-pointer font-heading text-xs font-bold text-[#265021] underline underline-offset-2 disabled:opacity-50"
-              >
-                Lanjutkan di Midtrans
-              </button>
+              {paymentChannel !== 'credit_card' && (
+                <button
+                  type="button"
+                  onClick={() => redirectUrl && window.location.assign(redirectUrl)}
+                  disabled={!redirectUrl}
+                  className="mt-4 cursor-pointer font-heading text-xs font-bold text-[#265021] underline underline-offset-2 disabled:opacity-50"
+                >
+                  {paymentChannel === 'ovo' ? 'Lanjutkan Pembayaran OVO' : 'Ganti Metode Pembayaran'}
+                </button>
+              )}
               <p className="mt-2 text-center font-heading text-[10px] text-[#6F6B6E]">
-                Pembayaran diproses oleh Midtrans
+                Pembayaran diproses oleh Sistem
               </p>
             </div>
 
@@ -283,9 +342,19 @@ function InformationOrder() {
                 </button>
               </div>
 
+              {canPayByCreditCard && booking && (
+                <button
+                  type="button"
+                  onClick={handleCreditCardPayment}
+                  className="mt-4 h-11 w-full rounded-lg bg-[#CDF178] font-heading text-sm font-bold text-[#404F14]"
+                >
+                  Masukkan Detail Kartu
+                </button>
+              )}
+
               <h2 className="mt-4 font-heading text-xs font-bold text-[#121212]">Status Transaksi</h2>
               <p className="mt-1.5 font-heading text-[11px] leading-[14px] text-[#343133]">
-                {errorMessage || (isChecking ? 'Memeriksa status pembayaran...' : 'Status diperbarui otomatis setelah notifikasi Midtrans diterima.')}
+                {errorMessage || (isChecking ? 'Memeriksa status pembayaran...' : 'Status diperbarui otomatis setelah pembayaran diterima.')}
               </p>
             </div>
           </section>

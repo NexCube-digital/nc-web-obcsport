@@ -1,7 +1,7 @@
-import lapangF1 from '../../assets/layanan/Lapang F1.png'
-import lapangF2 from '../../assets/layanan/Lapang F2.png'
-import futsalF2 from '../../assets/layanan/Futsal F2.png'
-import mejaBilliard from '../../assets/layanan/Meja Billiard.png'
+import lapangF1 from '../../../assets/layanan/Lapang F1.png'
+import lapangF2 from '../../../assets/layanan/Lapang F2.png'
+import futsalF2 from '../../../assets/layanan/Futsal F2.png'
+import mejaBilliard from '../../../assets/layanan/Meja Billiard.png'
 
 export interface FacilityCard {
 	id: string

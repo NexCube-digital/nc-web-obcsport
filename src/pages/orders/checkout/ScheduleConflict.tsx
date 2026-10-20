@@ -24,7 +24,7 @@ function ScheduleConflict({ message, onDismiss, onReturnHome }: ScheduleConflict
 					id="schedule-conflict-title"
 					className="mt-5 text-center font-heading text-base font-bold text-[#121212]"
 				>
-					Jadwal Bentrok!
+					Jadwal Tidak Tersedia
 				</h2>
 				<p className="mt-1 text-center text-sm text-[#6F6B6E]">{message}</p>
 

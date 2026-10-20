@@ -1,6 +1,7 @@
 import { lazy, Suspense, useEffect, useRef, useState } from 'react'
 import { ChevronDown, Globe, ShoppingCart, UserRound } from 'lucide-react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { useAuth } from '../../hooks/useAuth'
 import NotificationDropdown from './NotificationDropdown'
 
 const CartModal = lazy(() => import('../ui/CartModal'))
@@ -19,7 +20,7 @@ type MobileHeaderVariant = 'greeting' | 'title' | 'back'
 
 interface MobileHeaderProps {
   variant?: MobileHeaderVariant
-  userName?: string // TODO: ganti default ini dengan nama user dari auth context / API
+  userName?: string
   profileImage?: string
   title?: string // dipakai oleh variant 'title'
   backLabel?: string // dipakai oleh variant 'back'
@@ -125,7 +126,7 @@ const BOTTOM_NAV_ITEMS: BottomNavItem[] = [
 
 function MobileHeader({
   variant = 'greeting',
-  userName = 'Budiman Santoso',
+  userName,
   profileImage,
   title = '',
   backLabel = 'Kembali',
@@ -137,6 +138,8 @@ function MobileHeader({
 }: MobileHeaderProps) {
   const location = useLocation()
   const navigate = useNavigate()
+  const { user } = useAuth()
+  const displayName = user?.name ?? userName ?? 'Akun OBC'
   const [activeLanguage, setActiveLanguage] = useState(LANGUAGES[0])
   const [isLanguageMenuOpen, setIsLanguageMenuOpen] = useState(false)
   const [isCartOpen, setIsCartOpen] = useState(false)
@@ -188,18 +191,18 @@ function MobileHeader({
           <div className="flex h-[72px] items-center justify-between gap-2">
             <Link
               to="/pengaturan"
-              aria-label={`Buka pengaturan profil ${userName}`}
+              aria-label={`Buka pengaturan profil ${displayName}`}
               className="flex min-w-0 items-center gap-2 rounded-md text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#004000]"
             >
               <div
                 role="img"
-                aria-label={`Foto profil ${userName}`}
+                aria-label={`Foto profil ${displayName}`}
                 className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#404F14] font-heading text-xs font-bold text-white"
               >
                 {profileImage ? (
                   <img src={profileImage} alt="" className="h-full w-full object-cover" />
                 ) : (
-                  <span aria-hidden="true">{getUserInitials(userName)}</span>
+                  <span aria-hidden="true">{getUserInitials(displayName)}</span>
                 )}
               </div>
               <div className="flex min-w-0 flex-col leading-tight">
@@ -207,7 +210,7 @@ function MobileHeader({
                   Selamat Datang,
                 </span>
                 <span className="truncate text-sm font-heading font-semibold text-[#121212] min-[360px]:text-base">
-                  {userName}
+                  {displayName}
                 </span>
               </div>
             </Link>

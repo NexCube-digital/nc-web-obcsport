@@ -1,12 +1,13 @@
 import { lazy, Suspense, useEffect, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
+import { toast } from 'sonner'
 import NavbarDashboard from '../../components/layout/Navbar'
 import MobileHeader from '../../components/layout/MobileHeader'
 import DeferredFooter from '../../components/layout/DeferredFooter'
 import DeferredSection from '../../components/layout/DeferredSection'
 import type { CartItem } from '../../components/ui/CartModal'
 import { COURT_FACILITIES } from '../../data/facilitiesData'
-import type { FacilityCard } from '../home/Court'
+import type { FacilityCard } from '../main/home/Court'
 import { getFacilityAvailability, type FacilityAvailability } from '../../services/facilityService'
 import { previewBookingPrice, type BookingPrice } from '../../services/bookingService'
 import { getApiErrorMessage } from '../../services/apiService'
@@ -27,9 +28,6 @@ const MobileBookingSheet = lazy(() => import('./checkout/MobileBookingSheet'))
 /* -------------------------------------------------------------------------
    Data (ganti dengan data dari API / services/bookingService.js)
    ------------------------------------------------------------------------- */
-// TODO: nama user sementara hardcode, ganti dari auth context / API
-const USER_NAME = 'Budiman Santoso'
-
 const MAX_SESSION_HOURS = 8
 
 const BOOKED_DATES: string[] = []
@@ -51,20 +49,44 @@ const timeToMinutes = (time: string) => {
   return hour * 60 + minute
 }
 
+const minutesToTime = (minutes: number) =>
+  `${String(Math.floor(minutes / 60)).padStart(2, '0')}:${String(minutes % 60).padStart(2, '0')}`
+
+const getZonedParts = (date: Date) =>
+  Object.fromEntries(
+    new Intl.DateTimeFormat('en-GB', {
+      timeZone: 'Asia/Jakarta',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hourCycle: 'h23',
+    })
+      .formatToParts(date)
+      .map(({ type, value }) => [type, value]),
+  )
+
 const getTodayKey = (date = new Date()) => {
-  const today = date
-  return toDateKey(today.getFullYear(), today.getMonth(), today.getDate())
+  const parts = getZonedParts(date)
+  return `${parts.year}-${parts.month}-${parts.day}`
 }
 
 const isPastSlot = (date: string, time: string, now: Date) => {
   if (date < getTodayKey(now)) return true
   if (date > getTodayKey(now)) return false
-  return timeToMinutes(time) <= now.getHours() * 60 + now.getMinutes()
+  const parts = getZonedParts(now)
+  const nowSeconds = Number(parts.hour) * 3600 + Number(parts.minute) * 60 + Number(parts.second)
+  return timeToMinutes(time) * 60 <= nowSeconds
 }
 
 const formatDuration = (minutes: number) => {
-  const hours = minutes / 60
-  return `${Number.isInteger(hours) ? hours : hours.toLocaleString('id-ID')} Jam`
+  const hours = Math.floor(minutes / 60)
+  const remainingMinutes = minutes % 60
+  return remainingMinutes === 0
+    ? `${hours} Jam`
+    : `${hours > 0 ? `${hours} Jam ` : ''}${remainingMinutes} Menit`
 }
 
 type CheckoutState = {
@@ -87,12 +109,15 @@ function DetailOrder() {
     buttonLabel: 'Booking Sekarang',
   }
 
-  const [viewYear, setViewYear] = useState(() => new Date().getFullYear())
-  const [viewMonth, setViewMonth] = useState(() => new Date().getMonth())
+  const [viewYear, setViewYear] = useState(() => Number(getZonedParts(new Date()).year))
+  const [viewMonth, setViewMonth] = useState(() => Number(getZonedParts(new Date()).month) - 1)
   const [currentTime, setCurrentTime] = useState(() => new Date())
 
-  const [selectedDate, setSelectedDate] = useState<string | null>(() => getTodayKey())
-  const [selectedTimes, setSelectedTimes] = useState<string[]>([])
+  const [selectedDate, setSelectedDate] = useState<string | null>(() =>
+    isMobile ? getTodayKey() : null,
+  )
+  const [selectedStartTime, setSelectedStartTime] = useState<string | null>(null)
+  const [selectedDurationMinutes, setSelectedDurationMinutes] = useState(60)
   const [isConfirmed, setIsConfirmed] = useState(false)
   const [isCheckoutModalOpen, setIsCheckoutModalOpen] = useState(false)
   const [isCartOpen, setIsCartOpen] = useState(false)
@@ -118,7 +143,7 @@ function DetailOrder() {
     getFacilityAvailability(resourceId, selectedDate, sportType)
       .then((result) => { if (active) setAvailability(result) })
       .catch((error: unknown) => {
-        if (active) setConflictMessage(getApiErrorMessage(error, 'Jadwal tidak dapat dimuat.'))
+        if (active) toast.error(getApiErrorMessage(error, 'Jadwal tidak dapat dimuat.'))
       })
       .finally(() => { if (active) setIsAvailabilityLoading(false) })
 
@@ -130,7 +155,7 @@ function DetailOrder() {
 
     const openMobileSheetForSelection = () => {
       setSelectedDate(null)
-      setSelectedTimes([])
+      setSelectedStartTime(null)
       setAvailability(null)
       setIsAvailabilityLoading(false)
       setPricePreview(null)
@@ -148,33 +173,46 @@ function DetailOrder() {
   }
 
   /* ---------- Turunan data kalender ---------- */
-  const isDateBooked = Boolean(
-    availability && (availability.isClosed || availability.slots.length === 0 || availability.counts.available === 0),
-  )
-  const bookedSlotsToday = availability?.slots
-    .filter((slot) => !slot.available || isPastSlot(selectedDate ?? '', slot.startTime, currentTime))
-    .map((slot) => slot.startTime) ?? []
   const availableTimeSlots = availability?.slots.map((slot) => slot.startTime) ?? []
+  const canBookWindow = (startMinute: number, durationMinutes: number) => {
+    if (!availability || !selectedDate) return false
+    const intervalMinutes = availability.startIntervalMinutes ?? 15
+    const startTime = minutesToTime(startMinute)
+    if (isPastSlot(selectedDate, startTime, currentTime)) return false
+
+    const endMinute = startMinute + durationMinutes
+    const coveredSlots = availability.slots.filter(
+      (slot) => slot.startMinute >= startMinute && slot.endMinute <= endMinute,
+    )
+    return (
+      coveredSlots.length === durationMinutes / intervalMinutes &&
+      coveredSlots.every((slot) => slot.available) &&
+      coveredSlots[0]?.startMinute === startMinute &&
+      coveredSlots.at(-1)?.endMinute === endMinute
+    )
+  }
+  const bookedSlotsToday = availableTimeSlots.filter(
+    (time) => !canBookWindow(timeToMinutes(time), selectedDurationMinutes),
+  )
+  const isDateBooked = Boolean(
+    availability &&
+      (availability.isClosed ||
+        availableTimeSlots.length === 0 ||
+        bookedSlotsToday.length === availableTimeSlots.length),
+  )
 
   /* ---------- Turunan ringkasan pesanan ---------- */
-  const sortedTimes = [...selectedTimes].sort((left, right) => timeToMinutes(left) - timeToMinutes(right))
-  const sessionCount = sortedTimes.length
-  const slotMinutes = availability?.slotMinutes ?? facility.slotMinutes ?? 60
-  const selectedSlots = sortedTimes
-    .map((time) => availability?.slots.find((slot) => slot.startTime === time))
-    .filter((slot) => slot !== undefined)
-  const startTime = sortedTimes[0] ?? ''
-  const endTime = selectedSlots.at(-1)?.endTime ?? ''
-  const durationMinutes = sessionCount * slotMinutes
+  const durationMinutes = selectedDurationMinutes
+  const sessionCount = selectedStartTime ? durationMinutes / 60 : 0
+  const startTime = selectedStartTime ?? ''
+  const endTime = selectedStartTime
+    ? minutesToTime(timeToMinutes(selectedStartTime) + durationMinutes)
+    : ''
   const durationLabel = formatDuration(durationMinutes)
-  const isConsecutive = sortedTimes.every(
-    (time, index) => index === 0 || timeToMinutes(time) - timeToMinutes(sortedTimes[index - 1]) === slotMinutes,
-  )
   const totalPrice = pricePreview?.totalPrice ?? 0
-  const selectedTimesKey = sortedTimes.join(',')
 
   useEffect(() => {
-    if (!resourceId || !selectedDate || !startTime || !endTime || !isConsecutive || !sessionCount) {
+    if (!resourceId || !selectedDate || !startTime || !endTime) {
       return
     }
 
@@ -189,12 +227,12 @@ function DetailOrder() {
     })
       .then((price) => { if (active) setPricePreview(price) })
       .catch((error: unknown) => {
-        if (active) setConflictMessage(getApiErrorMessage(error, 'Harga booking tidak dapat dihitung.'))
+        if (active) toast.error(getApiErrorMessage(error, 'Harga booking tidak dapat dihitung.'))
       })
       .finally(() => { if (active) setIsPriceLoading(false) })
 
     return () => { active = false }
-  }, [resourceId, selectedDate, startTime, endTime, sportType, isConsecutive, sessionCount, selectedTimesKey])
+  }, [resourceId, selectedDate, startTime, endTime, sportType])
 
   let selectedDateLabel = '-'
   let selectedDayAndDate = '-'
@@ -208,7 +246,8 @@ function DetailOrder() {
   /* ---------- Handler ---------- */
   const handleChangeMonth = (step: number) => {
     const next = new Date(viewYear, viewMonth + step, 1)
-    const currentMonth = new Date(currentTime.getFullYear(), currentTime.getMonth(), 1)
+    const todayParts = getZonedParts(currentTime)
+    const currentMonth = new Date(Number(todayParts.year), Number(todayParts.month) - 1, 1)
     if (next < currentMonth) return
     setViewYear(next.getFullYear())
     setViewMonth(next.getMonth())
@@ -219,7 +258,7 @@ function DetailOrder() {
     if (dateKey < getTodayKey(currentTime)) return
     if (dateKey === selectedDate) return
     setSelectedDate(dateKey)
-    setSelectedTimes([])
+    setSelectedStartTime(null)
     setAvailability(null)
     setIsAvailabilityLoading(true)
     setPricePreview(null)
@@ -227,29 +266,29 @@ function DetailOrder() {
     setIsConfirmed(false)
   }
 
-  const handleToggleTime = (time: string) => {
+  const handleSelectStartTime = (time: string) => {
     if (bookedSlotsToday.includes(time) || isPastSlot(selectedDate ?? '', time, new Date())) return
-    const nextTimes = selectedTimes.includes(time)
-      ? selectedTimes.filter((item) => item !== time)
-      : [...selectedTimes, time]
-    if (nextTimes.length * slotMinutes > MAX_SESSION_HOURS * 60) {
-      setConflictMessage(`Maksimal ${MAX_SESSION_HOURS} jam per pesanan.`)
-      return
-    }
-    const nextSorted = [...nextTimes].sort((left, right) => timeToMinutes(left) - timeToMinutes(right))
-    const nextIsConsecutive = nextSorted.every(
-      (item, index) => index === 0 || timeToMinutes(item) - timeToMinutes(nextSorted[index - 1]) === slotMinutes,
-    )
-    setSelectedTimes(nextTimes)
+    setSelectedStartTime((current) => (current === time ? null : time))
     setPricePreview(null)
-    setIsPriceLoading(nextSorted.length > 0 && nextIsConsecutive)
+    setIsPriceLoading(selectedStartTime !== time)
+    setIsConfirmed(false)
+  }
+
+  const handleChangeDuration = (durationMinutes: number) => {
+    if (durationMinutes < 60 || durationMinutes > MAX_SESSION_HOURS * 60 || durationMinutes % 15 !== 0) return
+    setSelectedDurationMinutes(durationMinutes)
+    setSelectedStartTime((current) =>
+      current && canBookWindow(timeToMinutes(current), durationMinutes) ? current : null,
+    )
+    setPricePreview(null)
+    setIsPriceLoading(Boolean(selectedStartTime && canBookWindow(timeToMinutes(selectedStartTime), durationMinutes)))
     setIsConfirmed(false)
   }
 
   const handleResetSearch = () => {
     // Tombol "Cari Lain": kosongkan pilihan supaya user memilih tanggal lain
     setSelectedDate(null)
-    setSelectedTimes([])
+    setSelectedStartTime(null)
     setAvailability(null)
     setIsAvailabilityLoading(false)
     setPricePreview(null)
@@ -260,25 +299,36 @@ function DetailOrder() {
   // Validasi jadwal dipakai bersama oleh desktop & mobile. Mengembalikan pesan error atau null
   const getScheduleError = (): string | null => {
     if (!resourceId) return 'Pilih fasilitas terlebih dahulu.'
-    if (selectedDate && selectedDate < getTodayKey(new Date())) return 'Tanggal yang dipilih sudah lewat. Pilih tanggal hari ini atau setelahnya.'
+    if (!selectedDate) return 'Pilih tanggal terlebih dahulu.'
+    if (selectedDate < getTodayKey(new Date())) return 'Tanggal yang dipilih sudah lewat. Pilih tanggal hari ini atau setelahnya.'
     if (isAvailabilityLoading || !availability) return 'Ketersediaan jadwal belum selesai dimuat.'
     if (isDateBooked) return 'Fasilitas tutup atau jadwal sudah penuh pada tanggal ini.'
-    if (sessionCount === 0) return 'Pilih minimal satu sesi waktu terlebih dahulu.'
-    if (!isConsecutive) return 'Jam yang dipilih harus berurutan dalam satu sesi.'
-    if (selectedSlots.length !== sessionCount || selectedSlots.some((slot) => !slot.available)) {
+    if (!selectedStartTime) return 'Pilih waktu mulai terlebih dahulu.'
+    if (bookedSlotsToday.includes(selectedStartTime)) {
       return 'Salah satu slot sudah tidak tersedia. Muat ulang jadwal dan pilih waktu lain.'
     }
-    if (selectedTimes.some((time) => isPastSlot(selectedDate, time, new Date()))) {
+    if (isPastSlot(selectedDate, selectedStartTime, new Date())) {
       return 'Jam yang dipilih sudah lewat. Pilih waktu yang masih tersedia.'
+    }
+    if (durationMinutes < 60 || !canBookWindow(timeToMinutes(selectedStartTime), durationMinutes)) {
+      return 'Durasi tidak tersedia sampai waktu selesai. Pilih waktu atau durasi lain.'
     }
     if (isPriceLoading || !pricePreview) return 'Harga booking belum selesai dihitung.'
     return null
   }
 
+  const reportScheduleError = (message: string) => {
+    const hasAvailabilityConflict = Boolean(
+      availability && (isDateBooked || (selectedStartTime && bookedSlotsToday.includes(selectedStartTime))),
+    )
+    if (hasAvailabilityConflict) setConflictMessage(message)
+    else toast.error(message)
+  }
+
   const handleConfirmSchedule = () => {
     const error = getScheduleError()
     if (error) {
-      setConflictMessage(error)
+      reportScheduleError(error)
       return
     }
     setIsConfirmed(true)
@@ -315,7 +365,7 @@ function DetailOrder() {
     }
     const error = getScheduleError()
     if (error) {
-      setConflictMessage(error)
+      reportScheduleError(error)
       return
     }
     goToPayment()
@@ -334,7 +384,7 @@ function DetailOrder() {
 
     const error = getScheduleError()
     if (error) {
-      setConflictMessage(error)
+      reportScheduleError(error)
       setIsSheetOpen(true)
       return
     }
@@ -383,7 +433,8 @@ function DetailOrder() {
               onClose={() => setIsSheetOpen(false)}
               onChangeMonth={handleChangeMonth}
               onSelectDate={handleSelectDate}
-              onToggleTime={handleToggleTime}
+              onToggleTime={handleSelectStartTime}
+              onChangeDuration={handleChangeDuration}
               onOrderNow={handleOrderNowMobile}
               onSearchOther={handleSearchOtherMobile}
               onAddToCart={handleAddToCart}
@@ -395,7 +446,8 @@ function DetailOrder() {
               bookedSlotsToday={bookedSlotsToday}
               availableTimeSlots={availableTimeSlots}
               isAvailabilityLoading={isAvailabilityLoading}
-              selectedTimes={selectedTimes}
+              selectedStartTime={selectedStartTime}
+              durationMinutes={durationMinutes}
               isDateBooked={isDateBooked}
               sessionCount={sessionCount}
               durationLabel={durationLabel}
@@ -408,7 +460,7 @@ function DetailOrder() {
         </>
       ) : (
         <div className="min-h-screen bg-white font-body text-[#343133]">
-          <NavbarDashboard userName={USER_NAME} showDesktopNavigation={false} showMobileHeader={false} />
+          <NavbarDashboard showDesktopNavigation={false} showMobileHeader={false} />
 
           <main className="max-w-[1248px] mx-auto px-6 pt-6 pb-16">
             <div className="grid items-start gap-12 lg:grid-cols-[736px_1fr]">
@@ -433,32 +485,54 @@ function DetailOrder() {
                   merah / soft-red sudah dibooking.
                 </p>
                 <Suspense fallback={<div aria-hidden="true" className="min-h-[420px]" />}>
-                  <BookingCalendar
-                    variant="desktop"
-                    viewYear={viewYear}
-                    viewMonth={viewMonth}
-                    selectedDate={selectedDate}
-                    bookedDates={BOOKED_DATES}
-                    onChangeMonth={handleChangeMonth}
-                    onSelectDate={handleSelectDate}
-                  />
-                  <TimeSlotPicker
-                    variant="desktop"
-                    isDateBooked={isDateBooked}
-                    bookedSlotsToday={bookedSlotsToday}
-                    availableTimeSlots={availableTimeSlots}
-                    isLoading={isAvailabilityLoading}
-                    selectedTimes={selectedTimes}
-                    sessionCount={sessionCount}
-                    durationLabel={durationLabel}
-                    selectedDateLabel={selectedDateLabel}
-                    startTime={startTime}
-                    endTime={endTime}
-                    maxSessionHours={MAX_SESSION_HOURS}
-                    onToggleTime={handleToggleTime}
-                    onConfirmSchedule={handleConfirmSchedule}
-                    onResetSearch={handleResetSearch}
-                  />
+                  {!selectedDate ? (
+                    <BookingCalendar
+                      variant="desktop"
+                      viewYear={viewYear}
+                      viewMonth={viewMonth}
+                      selectedDate={selectedDate}
+                      bookedDates={BOOKED_DATES}
+                      onChangeMonth={handleChangeMonth}
+                      onSelectDate={handleSelectDate}
+                    />
+                  ) : (
+                    <>
+                      <div className="mt-3 flex items-center justify-between gap-4 rounded-xl border border-[#D4D4D4] bg-white px-4 py-3">
+                        <div className="min-w-0">
+                          <p className="text-xs text-[#6F6B6E]">Tanggal dipilih</p>
+                          <p className="truncate font-heading text-sm font-bold text-[#343133]">
+                            {selectedDateLabel}
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={handleResetSearch}
+                          className="shrink-0 cursor-pointer rounded-lg border border-[#D4D4D4] px-3 py-2 font-heading text-xs font-bold text-[#265021] transition-colors hover:bg-[#F5FAF0]"
+                        >
+                          Ubah tanggal
+                        </button>
+                      </div>
+                      <TimeSlotPicker
+                        variant="desktop"
+                        isDateBooked={isDateBooked}
+                        bookedSlotsToday={bookedSlotsToday}
+                        availableTimeSlots={availableTimeSlots}
+                        isLoading={isAvailabilityLoading}
+                        selectedStartTime={selectedStartTime}
+                        durationMinutes={durationMinutes}
+                        sessionCount={sessionCount}
+                        durationLabel={durationLabel}
+                        selectedDateLabel={selectedDateLabel}
+                        startTime={startTime}
+                        endTime={endTime}
+                        maxSessionHours={MAX_SESSION_HOURS}
+                        onToggleTime={handleSelectStartTime}
+                        onChangeDuration={handleChangeDuration}
+                        onConfirmSchedule={handleConfirmSchedule}
+                        onResetSearch={handleResetSearch}
+                      />
+                    </>
+                  )}
                 </Suspense>
               </div>
             </div>

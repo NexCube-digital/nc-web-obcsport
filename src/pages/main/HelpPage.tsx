@@ -1,10 +1,10 @@
 import { useState } from 'react'
 import { Plus, Search } from 'lucide-react'
-import NavbarDashboard from '../components/layout/Navbar'
-import MobileHeader from '../components/layout/MobileHeader'
-import DeferredFooter from '../components/layout/DeferredFooter'
-import DeferredSection from '../components/layout/DeferredSection'
-import { useIsMobile } from '../hooks/useIsMobile'
+import NavbarDashboard from '../../components/layout/Navbar'
+import MobileHeader from '../../components/layout/MobileHeader'
+import DeferredFooter from '../../components/layout/DeferredFooter'
+import DeferredSection from '../../components/layout/DeferredSection'
+import { useIsMobile } from '../../hooks/useIsMobile'
 
 /* -------------------------------------------------------------------------
    Tipe data
@@ -18,9 +18,6 @@ interface FaqItem {
 /* -------------------------------------------------------------------------
    Data (ganti dengan data dari API / services/faqService.js)
    ------------------------------------------------------------------------- */
-// TODO: nama user sementara hardcode, ganti dari auth context / API
-const USER_NAME = 'Budiman Santoso'
-
 const FAQ_ITEMS: FaqItem[] = [
   {
     id: 'batal-pemesanan',
@@ -75,7 +72,7 @@ function HelpPage() {
   return (
     <div className="min-h-screen bg-white font-body text-[#343133]">
       {!isMobile && (
-        <NavbarDashboard userName={USER_NAME} />
+        <NavbarDashboard />
       )}
       {isMobile && (
         <MobileHeader variant="title" title="Bantuan & QnA" />

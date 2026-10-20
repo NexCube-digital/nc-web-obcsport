@@ -1,11 +1,11 @@
 // pages/MembershipPage.tsx
 import { useState } from 'react'
 import { ArrowRight, ArrowUpRight, Check } from 'lucide-react'
-import NavbarDashboard from '../components/layout/Navbar'
-import DeferredSection from '../components/layout/DeferredSection'
-import DeferredFooter from '../components/layout/DeferredFooter'
-import ScrollReveal from '../components/animation/ScrollReveal'
-import member from '../assets/bfe838718c7f801119930d28d3d286f12b853b5e.jpg'
+import NavbarDashboard from '../../components/layout/Navbar'
+import DeferredSection from '../../components/layout/DeferredSection'
+import DeferredFooter from '../../components/layout/DeferredFooter'
+import ScrollReveal from '../../components/animation/ScrollReveal'
+import member from '../../assets/bfe838718c7f801119930d28d3d286f12b853b5e.jpg'
 
 /* -------------------------------------------------------------------------
    Tipe data
@@ -40,9 +40,6 @@ const SHOWCASE_COPY = {
 /* -------------------------------------------------------------------------
    Data (ganti dengan data dari API / services/membershipService.js)
    ------------------------------------------------------------------------- */
-// TODO: nama user sementara hardcode, ganti dari auth context / API
-const USER_NAME = 'Budiman Santoso'
-
 const SPORT_OPTIONS: SportOption[] = [
   { id: 'futsal', name: 'Futsal', amount: 'Rp 500.000', unit: '4x Sesi' },
   { id: 'badminton', name: 'Badminton', amount: 'Rp 240.000', unit: '4x Sesi' },
@@ -283,7 +280,7 @@ function MembershipOptions() {
 function MembershipPage() {
   return (
     <div className="min-h-screen bg-white font-body text-[#343133]">
-      <NavbarDashboard userName={USER_NAME} />
+      <NavbarDashboard />
       <main className="mx-auto max-w-[1288px] px-6 pb-32 pt-4 md:pb-16 md:pt-10">
         <ScrollReveal>
           <MembershipShowcase />

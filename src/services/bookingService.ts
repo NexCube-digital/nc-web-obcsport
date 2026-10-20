@@ -41,12 +41,18 @@ export interface CreatedBooking {
 	totalPriceFormatted: string
 	payment:
 		| { token: string; redirectUrl: string }
+		| { cardPayment: true }
 		| { chargeResponse: import('./paymentService').MidtransChargeResponse }
 		| { unavailable: true; message: string }
 		| null
 	holdExpiresAt: string | null
 	holdMinutes?: number
 	message: string
+}
+
+export interface CreditCardChargeResult {
+	transactionStatus: string
+	redirectUrl: string | null
 }
 
 export interface BookingSummary {
@@ -109,6 +115,7 @@ export interface BookingDetails {
 		amount: number
 		amountFormatted: string
 		status: string
+		paymentDetails: import('./paymentService').MidtransChargeResponse | null
 		paidAt: string | null
 		createdAt: string
 		redirectUrl: string | null
@@ -155,6 +162,14 @@ export async function getBookings(params: {
 
 export async function getBookingDetails(bookingId: string) {
 	const response = await api.get<ApiSuccess<BookingDetails>>(`/sports/bookings/${bookingId}`)
+	return response.data.data
+}
+
+export async function chargeBookingByCreditCard(bookingId: string, tokenId: string, retry = false) {
+	const response = await api.post<ApiSuccess<CreditCardChargeResult>>(
+		`/sports/bookings/${bookingId}/credit-card`,
+		{ tokenId, retry },
+	)
 	return response.data.data
 }
 

@@ -40,6 +40,7 @@ export interface FacilityAvailability {
 	date: string
 	dayOfWeek: string
 	slotMinutes: number
+	startIntervalMinutes: number
 	isClosed: boolean
 	operatingHours: { openTime: string; closeTime: string } | null
 	slots: AvailabilitySlot[]

@@ -4,7 +4,8 @@ interface TimeSlotPickerProps {
   bookedSlotsToday: string[]
   availableTimeSlots?: string[]
   isLoading?: boolean
-  selectedTimes: string[]
+  selectedStartTime: string | null
+  durationMinutes: number
   sessionCount: number
   durationLabel?: string
   selectedDateLabel: string
@@ -12,14 +13,10 @@ interface TimeSlotPickerProps {
   endTime: string
   maxSessionHours: number
   onToggleTime: (time: string) => void
+  onChangeDuration: (durationMinutes: number) => void
   onConfirmSchedule?: () => void
   onResetSearch?: () => void
 }
-
-const TIME_SLOTS = ['05:00', '07:00', '08:00', '09:00', '11:00', '13:00', '15:00', '17:00', '19:00', '21:00']
-const MOBILE_TIME_SLOTS: string[] = Array.from({ length: 18 }, (_, index) =>
-  `${String(5 + index).padStart(2, '0')}:00`,
-)
 
 function TimeSlotPicker({
   variant,
@@ -27,7 +24,8 @@ function TimeSlotPicker({
   bookedSlotsToday,
   availableTimeSlots,
   isLoading = false,
-  selectedTimes,
+  selectedStartTime,
+  durationMinutes,
   sessionCount,
   durationLabel = `${sessionCount} Jam`,
   selectedDateLabel,
@@ -35,28 +33,47 @@ function TimeSlotPicker({
   endTime,
   maxSessionHours,
   onToggleTime,
+  onChangeDuration,
   onConfirmSchedule,
   onResetSearch,
 }: TimeSlotPickerProps) {
-  const timeSlots = availableTimeSlots ?? (variant === 'mobile' ? MOBILE_TIME_SLOTS : TIME_SLOTS)
+  const timeSlots = availableTimeSlots ?? []
+  const durationControl = (
+    <label className="mt-3 flex items-center justify-between gap-3 text-sm text-[#343133]">
+      <span>Durasi sewa</span>
+      <select
+        value={durationMinutes}
+        onChange={(event) => onChangeDuration(Number(event.target.value))}
+        className="h-10 rounded-md border border-[#D4D4D4] bg-white px-3 font-heading font-bold text-[#265021]"
+      >
+        {Array.from({ length: maxSessionHours * 4 - 3 }, (_, index) => 60 + index * 15).map((minutes) => (
+          <option key={minutes} value={minutes}>
+            {Math.floor(minutes / 60) > 0 ? `${Math.floor(minutes / 60)} jam` : ''}
+            {minutes % 60 > 0 ? ` ${minutes % 60} menit` : ''}
+          </option>
+        ))}
+      </select>
+    </label>
+  )
 
   if (variant === 'mobile') {
     return (
       <>
         <h3 className="mt-8 font-heading text-xs font-bold text-[#121212] md:text-sm">
-          Pilih Sesi Jam Main (Maks {maxSessionHours} jam)
+          Pilih Waktu Mulai (interval 15 menit)
         </h3>
+        {durationControl}
         {isLoading ? (
           <p role="status" className="mt-3 text-sm text-[#6F6B6E]">Memuat ketersediaan...</p>
         ) : isDateBooked ? (
           <p className="mt-3 text-sm leading-relaxed text-[#E02424]">
-            Seluruh sesi pada tanggal ini sudah penuh. Silakan pilih tanggal lain.
+            Tidak ada rentang waktu untuk durasi ini. Ubah durasi atau pilih tanggal lain.
           </p>
         ) : (
           <div className="mt-3 grid grid-cols-3 gap-2.5 min-[600px]:grid-cols-[repeat(auto-fill,minmax(96px,1fr))] md:gap-3">
             {timeSlots.map((time) => {
               const isBooked = bookedSlotsToday.includes(time)
-              const isSelected = selectedTimes.includes(time)
+              const isSelected = selectedStartTime === time
               let style = 'bg-white border-[#E5E5E5] text-[#121212]'
               if (isBooked) style = 'bg-[#C8C8C8] border-[#B5B5B5] text-[#121212] cursor-not-allowed'
               if (isSelected) style = 'bg-[#265021] border-[#265021] text-white'
@@ -85,12 +102,23 @@ function TimeSlotPicker({
     )
   }
 
+  if (isLoading) {
+    return (
+      <section className="mt-3 w-full rounded-2xl border border-[#D4D4D4] bg-white p-5 md:p-6">
+        <h3 className="font-heading text-lg font-bold text-[#343133] md:text-xl">Pilih Waktu Mulai</h3>
+        {durationControl}
+        <p role="status" className="mt-4 text-sm text-[#6F6B6E]">Memuat ketersediaan...</p>
+      </section>
+    )
+  }
+
   if (isDateBooked) {
     return (
       <section className="mt-3 w-full rounded-2xl border border-[#D4D4D4] bg-white p-5 md:p-6">
-        <h3 className="font-heading text-lg font-bold text-[#E02424] md:text-xl">Maaf, Jadwal Penuh</h3>
+        <h3 className="font-heading text-lg font-bold text-[#E02424] md:text-xl">Jadwal Tidak Tersedia</h3>
+        {durationControl}
         <p className="mt-4 max-w-full text-sm leading-relaxed text-[#343133] md:mt-6 md:max-w-[420px]">
-          Seluruh sesi untuk fasilitas ini pada tanggal yang dipilih telah terpesona penuh. Silakan cek ketersediaan untuk tanggal lain atau pilih kategori olahraga alternatif di bawah ini
+          Tidak ada rentang waktu yang tersedia untuk durasi ini. Ubah durasi atau pilih tanggal lain.
         </p>
         <button type="button" onClick={onResetSearch} className="mt-5 h-10 w-full rounded-md bg-[#E8302F] text-sm font-heading font-medium text-white hover:bg-[#C41717] transition-colors cursor-pointer md:h-11">
           Cari Lain
@@ -101,11 +129,12 @@ function TimeSlotPicker({
 
   return (
     <section className="mt-3 w-full min-w-0 rounded-2xl border border-[#D4D4D4] bg-white p-4 md:p-5">
-      <h3 className="font-heading text-base font-bold text-[#343133] md:text-lg">Pilih Waktu (05:00 - 22:00)</h3>
+      <h3 className="font-heading text-base font-bold text-[#343133] md:text-lg">Pilih Waktu Mulai (interval 15 menit)</h3>
+      {durationControl}
       <div className="mt-4 grid grid-cols-[repeat(auto-fill,minmax(88px,1fr))] gap-2 md:gap-2.5">
           {timeSlots.map((time) => {
           const isBooked = bookedSlotsToday.includes(time)
-          const isSelected = selectedTimes.includes(time)
+          const isSelected = selectedStartTime === time
           let style = 'bg-[#FDFCF7] border-[#E5E5E5] text-[#121212] hover:border-[#9AAD3E]'
           if (isSelected) style = 'bg-[#CDF178] border-[#9AAD3E] text-[#404F14] font-bold'
           if (isBooked) style = 'bg-[#FDE8E8] border-[#E02424] text-[#E02424] cursor-not-allowed'
@@ -120,9 +149,9 @@ function TimeSlotPicker({
 
       <div className="mt-6 space-y-3 border-t border-[#D4D4D4] pt-4 text-sm">
         <div className="flex items-center justify-between gap-3">
-          <span className="shrink-0 text-[#343133]">Sesi Terpilih:</span>
+          <span className="shrink-0 text-[#343133]">Durasi:</span>
           <span className="min-w-0 text-right font-heading font-bold text-[#121212]">
-            {sessionCount > 0 ? `${sessionCount} Sesi (${durationLabel})` : '-'}
+            {sessionCount > 0 ? durationLabel : '-'}
           </span>
         </div>
         <div className="flex items-center justify-between gap-3">

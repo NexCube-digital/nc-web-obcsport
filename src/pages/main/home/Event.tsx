@@ -1,4 +1,4 @@
-import promoSport from '../../assets/promo/Famplet_OBC_SPORT.jpeg'
+import promoSport from '../../../assets/promo/Famplet_OBC_SPORT.jpeg'
 
 interface PromoItem {
 	id: string

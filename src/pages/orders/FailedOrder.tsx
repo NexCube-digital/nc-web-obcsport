@@ -23,9 +23,6 @@ interface FailedState {
 /* -------------------------------------------------------------------------
    Data (ganti dengan data dari API / services/paymentService.js)
    ------------------------------------------------------------------------- */
-// TODO: nama user sementara hardcode, ganti dari auth context / API
-const USER_NAME = 'Budiman Santoso'
-
 // TODO: nomor WhatsApp admin sementara hardcode, ambil dari konfigurasi
 const ADMIN_WA_URL = 'https://wa.me/6281234567890'
 
@@ -252,7 +249,7 @@ function FailedOrder() {
           =================================================================== */}
 
       {!isMobile && <div className="min-h-screen flex flex-col bg-white font-body text-[#343133]">
-        <NavbarDashboard userName={USER_NAME} showDesktopNavigation={false} showMobileHeader={false} />
+        <NavbarDashboard showDesktopNavigation={false} showMobileHeader={false} />
 
         <main className="mx-auto flex w-full max-w-[1068px] flex-1 items-center px-6 py-12">
           <ScrollReveal className="w-full">

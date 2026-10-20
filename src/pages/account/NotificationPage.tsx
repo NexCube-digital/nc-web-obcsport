@@ -9,9 +9,6 @@ import { INITIAL_NOTIFICATIONS, type PromoNotification } from '../../data/notifi
 /* -------------------------------------------------------------------------
    Data (ganti dengan data dari API / services/notificationService.js)
    ------------------------------------------------------------------------- */
-// TODO: nama user sementara hardcode, ganti dari auth context / API
-const USER_NAME = 'Budiman Santoso'
-
 function NotificationPage() {
   const [notifications, setNotifications] = useState<PromoNotification[]>(INITIAL_NOTIFICATIONS)
 
@@ -22,7 +19,7 @@ function NotificationPage() {
 
   return (
     <div className="min-h-screen bg-[#FDFCF7] font-body text-[#343133]">
-      <NavbarDashboard userName={USER_NAME} />
+      <NavbarDashboard />
 
       {/* Lebar konten 1240px sesuai desain */}
       <main className="max-w-[1288px] mx-auto px-6 pt-6 pb-10">

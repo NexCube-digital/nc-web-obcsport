@@ -1,23 +1,25 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Zap } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Zap } from 'lucide-react'
 import { toast } from 'sonner'
-import NavbarDashboard from '../components/layout/Navbar'
-import MobileHeader from '../components/layout/MobileHeader'
-import DeferredFooter from '../components/layout/DeferredFooter'
-import DeferredSection from '../components/layout/DeferredSection'
-import { getBookings, type BookingSummary } from '../services/bookingService'
-import { getApiErrorMessage } from '../services/apiService'
+import NavbarDashboard from '../../components/layout/Navbar'
+import MobileHeader from '../../components/layout/MobileHeader'
+import DeferredFooter from '../../components/layout/DeferredFooter'
+import DeferredSection from '../../components/layout/DeferredSection'
+import { getBookings, type BookingSummary } from '../../services/bookingService'
+import { getApiErrorMessage } from '../../services/apiService'
 
 /* -------------------------------------------------------------------------
    Tipe data
    ------------------------------------------------------------------------- */
 type TransactionStatus = 'success' | 'failed' | 'pending'
 type FilterType = 'all' | 'success' | 'pending' | 'failed'
+const PAGE_SIZE = 10
 
 interface Transaction {
   id: string
   code: string
+  paymentMethod: string | null
   date: string
   facility: string
   total: string
@@ -26,6 +28,7 @@ interface Transaction {
 
 interface MobileTransaction {
   id: string
+  paymentMethod: string | null
   date: string
   title: string
   time: string
@@ -48,14 +51,12 @@ interface Facility {
    Data (ganti dengan data dari API / services/historyService.js)
    Untuk melihat empty state, kosongkan TRANSACTIONS & MOBILE_TRANSACTIONS ([]).
    ------------------------------------------------------------------------- */
-// TODO: nama user sementara hardcode, ganti dari auth context / API
-const USER_NAME = 'Budiman Santoso'
-
 // Filter tampilan desktop
 const FILTERS: FilterOption[] = [
   { id: 'all', label: 'Semua' },
   { id: 'success', label: 'Berhasil' },
   { id: 'pending', label: 'Menunggu' },
+  { id: 'failed', label: 'Gagal' },
 ]
 
 // Filter tampilan mobile (sesuai desain mobile)
@@ -113,6 +114,7 @@ function mapBooking(booking: BookingSummary): { desktop: Transaction; mobile: Mo
     desktop: {
       id: booking.id,
       code,
+      paymentMethod: booking.latestPayment?.method ?? null,
       date,
       facility: booking.resource.name,
       total: booking.totalPriceFormatted,
@@ -120,6 +122,7 @@ function mapBooking(booking: BookingSummary): { desktop: Transaction; mobile: Mo
     },
     mobile: {
       id: booking.id,
+      paymentMethod: booking.latestPayment?.method ?? null,
       date,
       title: `${booking.resource.name} - ${booking.sportType}`,
       time: `${startTime} - ${endTime} (${(booking.endMinute - booking.startMinute) / 60} Jam)`,
@@ -132,25 +135,36 @@ function mapBooking(booking: BookingSummary): { desktop: Transaction; mobile: Mo
 function HistoryPage() {
   const navigate = useNavigate()
   const [activeFilter, setActiveFilter] = useState<FilterType>('all')
+  const [currentPage, setCurrentPage] = useState(1)
   const [transactions, setTransactions] = useState<Transaction[]>([])
   const [mobileTransactions, setMobileTransactions] = useState<MobileTransaction[]>([])
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
     let active = true
-    getBookings({ page: 1, limit: 100 })
-      .then(({ bookings }) => {
-        if (!active) return
-        const mapped = bookings.map(mapBooking)
-        setTransactions(mapped.map((item) => item.desktop))
-        setMobileTransactions(mapped.map((item) => item.mobile))
-      })
-      .catch((error: unknown) => {
-        if (active) toast.error(getApiErrorMessage(error, 'Riwayat booking tidak dapat dimuat.'))
-      })
-      .finally(() => { if (active) setIsLoading(false) })
+    const loadBookings = (showError: boolean) => {
+      getBookings({ page: 1, limit: 100 })
+        .then(({ bookings }) => {
+          if (!active) return
+          const mapped = bookings.map(mapBooking)
+          setTransactions(mapped.map((item) => item.desktop))
+          setMobileTransactions(mapped.map((item) => item.mobile))
+        })
+        .catch((error: unknown) => {
+          if (active && showError) {
+            toast.error(getApiErrorMessage(error, 'Riwayat booking tidak dapat dimuat.'))
+          }
+        })
+        .finally(() => { if (active) setIsLoading(false) })
+    }
 
-    return () => { active = false }
+    loadBookings(true)
+    const refreshTimer = window.setInterval(() => loadBookings(false), 30_000)
+
+    return () => {
+      active = false
+      window.clearInterval(refreshTimer)
+    }
   }, [])
 
   // Filter sesuai tombol (desktop: Semua / Berhasil / Menunggu)
@@ -164,14 +178,38 @@ function HistoryPage() {
     if (activeFilter === 'all') return true
     return trx.status === activeFilter
   })
+  const totalPages = Math.max(1, Math.ceil(filteredTransactions.length / PAGE_SIZE))
+  const displayedPage = Math.min(currentPage, totalPages)
+  const pageStart = (displayedPage - 1) * PAGE_SIZE
+  const currentTransactions = filteredTransactions.slice(pageStart, pageStart + PAGE_SIZE)
+  const currentMobileTransactions = filteredMobile.slice(pageStart, pageStart + PAGE_SIZE)
+
+  const handleFilterChange = (filter: FilterType) => {
+    setActiveFilter(filter)
+    setCurrentPage(1)
+  }
 
   // True jika user memang belum punya transaksi sama sekali (bukan karena filter)
   const hasNoTransactions = transactions.length === 0 && !isLoading
   const hasNoMobileTransactions = mobileTransactions.length === 0 && !isLoading
 
-  const handleDetail = (code: string) => {
-    // TODO: arahkan ke halaman detail transaksi, mis. navigate(`/history/${code}`)
-    console.log({ code })
+  const handleDetail = (transaction: Pick<Transaction, 'id' | 'status' | 'paymentMethod'>) => {
+    if (transaction.status === 'pending' && transaction.paymentMethod === 'credit_card') {
+      navigate(`/credit-card-payment?bookingId=${encodeURIComponent(transaction.id)}`, {
+        state: { bookingId: transaction.id },
+      })
+      return
+    }
+
+    const pathByStatus: Record<TransactionStatus, string> = {
+      pending: '/information-order',
+      success: '/success-order',
+      failed: '/failed-order',
+    }
+
+    navigate(`${pathByStatus[transaction.status]}?bookingId=${encodeURIComponent(transaction.id)}`, {
+      state: { bookingId: transaction.id },
+    })
   }
 
   return (
@@ -183,7 +221,7 @@ function HistoryPage() {
     <div className="flex min-h-screen flex-col bg-white font-body text-[#343133]">
       {/* Navbar desktop (di mobile diganti header + bottom nav) */}
       <div className="hidden shrink-0 md:block">
-        <NavbarDashboard userName={USER_NAME} />
+        <NavbarDashboard />
       </div>
 
       <div className="md:hidden">
@@ -283,7 +321,7 @@ function HistoryPage() {
                 <button
                   key={filter.id}
                   type="button"
-                  onClick={() => setActiveFilter(filter.id)}
+                  onClick={() => handleFilterChange(filter.id)}
                   className={`shrink-0 rounded-full border px-5 py-2 text-xs font-heading font-bold transition-colors cursor-pointer ${
                     isActive
                       ? 'bg-[#404F14] border-[#404F14] text-white'
@@ -315,7 +353,7 @@ function HistoryPage() {
                 <button
                   key={filter.id}
                   type="button"
-                  onClick={() => setActiveFilter(filter.id)}
+                  onClick={() => handleFilterChange(filter.id)}
                   className={`rounded-full border px-4 py-1.5 text-xs font-heading font-bold transition-colors cursor-pointer ${
                     isActive
                       ? 'bg-[#404F14] border-[#404F14] text-white'
@@ -334,7 +372,7 @@ function HistoryPage() {
           <DeferredSection placeholderClassName="mt-4 min-h-[420px]">
           {filteredMobile.length > 0 ? (
             <ul className="mt-4 space-y-4">
-              {filteredMobile.map((trx) => {
+              {currentMobileTransactions.map((trx) => {
                 const badge = MOBILE_STATUS_BADGE[trx.status]
                 return (
                   <li
@@ -361,6 +399,13 @@ function HistoryPage() {
                         {trx.total}
                       </span>
                     </div>
+                    <button
+                      type="button"
+                      onClick={() => handleDetail(trx)}
+                      className="mt-3 w-full rounded-lg border border-[#404F14] py-2 font-heading text-xs font-bold text-[#404F14]"
+                    >
+                      Detail
+                    </button>
                   </li>
                 )
               })}
@@ -417,7 +462,7 @@ function HistoryPage() {
               </tr>
             </thead>
             <tbody>
-              {filteredTransactions.map((trx) => {
+              {currentTransactions.map((trx) => {
                 const badge = STATUS_BADGE[trx.status]
                 return (
                   <tr key={trx.id}>
@@ -441,7 +486,7 @@ function HistoryPage() {
                     <td className="pt-6 text-center">
                       <button
                         type="button"
-                        onClick={() => handleDetail(trx.code)}
+                        onClick={() => handleDetail(trx)}
                         className="cursor-pointer text-xs font-heading font-bold text-[#404F14] underline underline-offset-2 hover:text-[#004000]"
                       >
                         Detail
@@ -461,6 +506,35 @@ function HistoryPage() {
           )}
         </section>
         </DeferredSection>
+
+        {filteredTransactions.length > 0 && totalPages > 1 && (
+          <nav
+            aria-label="Pagination riwayat transaksi"
+            className="mt-5 flex items-center justify-center gap-4 pb-4"
+          >
+            <button
+              type="button"
+              onClick={() => setCurrentPage(Math.max(1, displayedPage - 1))}
+              disabled={displayedPage === 1}
+              aria-label="Halaman sebelumnya"
+              className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-[#D4D4D4] text-[#404F14] disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              <ChevronLeft size={18} aria-hidden="true" />
+            </button>
+            <span aria-live="polite" className="font-heading text-sm text-[#343133]">
+              Halaman {displayedPage} dari {totalPages}
+            </span>
+            <button
+              type="button"
+              onClick={() => setCurrentPage(Math.min(totalPages, displayedPage + 1))}
+              disabled={displayedPage === totalPages}
+              aria-label="Halaman berikutnya"
+              className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-[#D4D4D4] text-[#404F14] disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              <ChevronRight size={18} aria-hidden="true" />
+            </button>
+          </nav>
+        )}
       </main>
 
       {/* Footer selalu menempel di dasar halaman */}

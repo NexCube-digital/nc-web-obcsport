@@ -7,24 +7,18 @@ import MobileHeader from '../../components/layout/MobileHeader'
 import DeferredSection from '../../components/layout/DeferredSection'
 import DeferredFooter from '../../components/layout/DeferredFooter'
 import ScrollReveal from '../../components/animation/ScrollReveal'
-import PaymentInstructionCard from './payment/PaymentInstructionCard'
 import { useIsMobile } from '../../hooks/useIsMobile'
 import { createBooking, previewBookingPrice, type BookingPrice, type PaymentChannel } from '../../services/bookingService'
 import { getApiErrorMessage } from '../../services/apiService'
-import {
-  isDirectChannel,
-  openMidtransCheckout,
-  parseMidtransCharge,
-  type DirectPaymentInfo,
-} from '../../services/paymentService'
+import { isDirectChannel, openMidtransCheckout } from '../../services/paymentService'
 
 /* -------------------------------------------------------------------------
    Tipe data
    ------------------------------------------------------------------------- */
-type PaymentMethodId = PaymentChannel | 'all'
+type PaymentMethodId = PaymentChannel
 
 // Metode pembayaran khusus tampilan mobile (lebih lengkap sesuai desain)
-type MobileMethodId = PaymentChannel | 'all'
+type MobileMethodId = PaymentChannel
 
 interface PaymentMethod {
   id: PaymentMethodId
@@ -43,6 +37,7 @@ interface MobileMethod {
   id: MobileMethodId
   badge: string
   name: string
+  description: string
 }
 
 interface MobileMethodGroup {
@@ -74,9 +69,6 @@ interface CheckoutState {
 /* -------------------------------------------------------------------------
    Data (ganti dengan data dari API / services/paymentService.js)
    ------------------------------------------------------------------------- */
-// TODO: nama user sementara hardcode, ganti dari auth context / API
-const USER_NAME = 'Budiman Santoso'
-
 const PROMO_CODE = 'Diskon'
 
 // Fallback bila halaman dibuka tanpa state (sesuai desain)
@@ -88,18 +80,6 @@ const DEFAULT_SUBTOTAL = 250000
 const FONT_MONTSERRAT = "font-['Montserrat',sans-serif]"
 
 const PAYMENT_GROUPS: PaymentGroup[] = [
-  {
-    id: 'all',
-    label: 'PILIH DI MIDTRANS',
-    methods: [
-      {
-        id: 'all',
-        badge: 'ALL',
-        name: 'Semua metode pembayaran',
-        description: 'Lihat semua metode yang aktif di Midtrans',
-      },
-    ],
-  },
   {
     id: 'instant',
     label: 'QRIS & E-WALLET',
@@ -153,45 +133,38 @@ const EXTRA_ITEMS: ExtraItem[] = [
 
 const MOBILE_METHOD_GROUPS: MobileMethodGroup[] = [
   {
-    id: 'all',
-    label: 'SEMUA METODE MIDTRANS',
-    methods: [
-      { id: 'all', badge: 'ALL', name: 'Pilih metode di Midtrans' },
-    ],
-  },
-  {
     id: 'ewallet',
     label: 'QRIS & E-WALLET',
     methods: [
-      { id: 'qris', badge: 'QRIS', name: 'QRIS' },
-      { id: 'gopay', badge: 'GOPAY', name: 'GoPay' },
-      { id: 'shopeepay', badge: 'SPAY', name: 'ShopeePay' },
-      { id: 'ovo', badge: 'OVO', name: 'OVO' },
-      { id: 'dana', badge: 'DANA', name: 'DANA' },
+      { id: 'qris', badge: 'QRIS', name: 'QRIS', description: 'Bayar dengan scan kode QR' },
+      { id: 'gopay', badge: 'GOPAY', name: 'GoPay', description: 'Konfirmasi lewat aplikasi GoPay' },
+      { id: 'shopeepay', badge: 'SPAY', name: 'ShopeePay', description: 'Bayar dari saldo ShopeePay' },
+      { id: 'ovo', badge: 'OVO', name: 'OVO', description: 'Konfirmasi lewat aplikasi OVO' },
+      { id: 'dana', badge: 'DANA', name: 'DANA', description: 'Bayar dari saldo DANA' },
     ],
   },
   {
     id: 'card',
     label: 'KARTU',
-    methods: [{ id: 'credit_card', badge: 'CARD', name: 'Kartu kredit / debit' }],
+    methods: [{ id: 'credit_card', badge: 'CARD', name: 'Kartu kredit / debit', description: 'Pembayaran aman dengan kartu' }],
   },
   {
     id: 'bank',
     label: 'VIRTUAL ACCOUNT',
     methods: [
-      { id: 'bca_va', badge: 'BCA', name: 'BCA Virtual Account' },
-      { id: 'bni_va', badge: 'BNI', name: 'BNI Virtual Account' },
-      { id: 'bri_va', badge: 'BRI', name: 'BRI Virtual Account' },
-      { id: 'mandiri_va', badge: 'MANDIRI', name: 'Mandiri Virtual Account' },
-      { id: 'permata_va', badge: 'PERMATA', name: 'Permata Virtual Account' },
+      { id: 'bca_va', badge: 'BCA', name: 'BCA Virtual Account', description: 'Transfer ke nomor VA BCA' },
+      { id: 'bni_va', badge: 'BNI', name: 'BNI Virtual Account', description: 'Transfer ke nomor VA BNI' },
+      { id: 'bri_va', badge: 'BRI', name: 'BRI Virtual Account', description: 'Transfer ke nomor VA BRI' },
+      { id: 'mandiri_va', badge: 'MANDIRI', name: 'Mandiri Virtual Account', description: 'Transfer ke nomor VA Mandiri' },
+      { id: 'permata_va', badge: 'PERMATA', name: 'Permata Virtual Account', description: 'Transfer ke nomor VA Permata' },
     ],
   },
   {
     id: 'retail',
     label: 'GERAI RETAIL',
     methods: [
-      { id: 'alfamart', badge: 'ALFA', name: 'Alfamart' },
-      { id: 'indomaret', badge: 'INDO', name: 'Indomaret' },
+      { id: 'alfamart', badge: 'ALFA', name: 'Alfamart', description: 'Bayar melalui kasir Alfamart' },
+      { id: 'indomaret', badge: 'INDO', name: 'Indomaret', description: 'Bayar melalui kasir Indomaret' },
     ],
   },
 ]
@@ -212,23 +185,20 @@ function PaymentPage() {
   const isMobile = useIsMobile()
   const state = (location.state as CheckoutState | null) ?? {}
 
-  const [method, setMethod] = useState<PaymentMethodId>('all')
+  const [method, setMethod] = useState<PaymentMethodId | null>(null)
 
   // State khusus mobile: metode pembayaran & alat tambahan yang dicentang
-  const [mobileMethod, setMobileMethod] = useState<MobileMethodId>('all')
+  const [mobileMethod, setMobileMethod] = useState<MobileMethodId | null>(null)
   const [selectedExtras, setSelectedExtras] = useState<string[]>(['raket'])
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [pricePreview, setPricePreview] = useState<Pick<BookingPrice, 'basePrice' | 'discountAmount' | 'adminFee' | 'totalPrice'> | null>(state.price ?? null)
-
-  // Instruksi pembayaran langsung (Core API Midtrans) yang ditampilkan di halaman ini, tanpa modal Snap
-  const [directPayment, setDirectPayment] = useState<{ bookingId: string; info: DirectPaymentInfo } | null>(null)
 
   useEffect(() => {
     if (!state.resourceId || !state.bookingDate) navigate('/home', { replace: true })
   }, [navigate, state.bookingDate, state.resourceId])
 
-  const selectedChannel: PaymentChannel | 'all' = isMobile ? mobileMethod : method
-  const paymentMethod = selectedChannel === 'all'
+  const selectedChannel: PaymentChannel | null = isMobile ? mobileMethod : method
+  const paymentMethod = !selectedChannel
     ? undefined
     : selectedChannel === 'qris'
       ? 'qris'
@@ -289,6 +259,10 @@ function PaymentPage() {
       toast.error('Data fasilitas atau jadwal tidak ditemukan. Silakan pilih jadwal kembali.')
       return
     }
+    if (!selectedChannel) {
+      toast.error('Pilih metode pembayaran terlebih dahulu.')
+      return
+    }
 
     setIsSubmitting(true)
     try {
@@ -299,7 +273,7 @@ function PaymentPage() {
         endTime,
         sportType: state.sportType,
         bookingType: 'regular',
-        ...(selectedChannel !== 'all' ? { paymentChannel: selectedChannel } : {}),
+        paymentChannel: selectedChannel,
         notes: selectedExtras.length > 0
           ? `Tambahan yang dipilih: ${EXTRA_ITEMS.filter((item) => selectedExtras.includes(item.id)).map((item) => item.name).join(', ')}`
           : undefined,
@@ -313,42 +287,63 @@ function PaymentPage() {
         return
       }
 
-      if (payment && 'chargeResponse' in payment && selectedChannel !== 'all' && isDirectChannel(selectedChannel)) {
-        setDirectPayment({
-          bookingId: booking.bookingId,
-          info: parseMidtransCharge(payment.chargeResponse, selectedChannel),
+      if (selectedChannel === 'credit_card') {
+        const bookingId = booking.bookingId
+        navigate(`/credit-card-payment?bookingId=${encodeURIComponent(bookingId)}`, {
+          replace: true,
+          state: { bookingId },
         })
-        toast.success('Instruksi pembayaran berhasil dibuat.')
-        setIsSubmitting(false)
-        window.scrollTo({ top: 0 })
+        return
+      }
+
+      if (payment && 'cardPayment' in payment) {
+        const bookingId = booking.bookingId
+        navigate(`/information-order?bookingId=${encodeURIComponent(bookingId)}`, {
+          replace: true,
+          state: { bookingId },
+        })
+        return
+      }
+
+      if (payment && 'chargeResponse' in payment && isDirectChannel(selectedChannel)) {
+        const bookingId = booking.bookingId
+        navigate(`/information-order?bookingId=${encodeURIComponent(bookingId)}`, {
+          replace: true,
+          state: { bookingId },
+        })
         return
       }
 
       // Channel langsung wajib memakai chargeResponse. Jangan jatuh ke halaman template Snap
       // (app.sandbox.midtrans.com/snap/...), tampilkan pesan agar mudah ditelusuri.
       // CATATAN BACKEND: bila pesan ini muncul, endpoint booking belum memanggil Core API (/v2/charge).
-      if (selectedChannel !== 'all' && isDirectChannel(selectedChannel)) {
+      if (isDirectChannel(selectedChannel)) {
         toast.error('Server belum mengembalikan data pembayaran langsung (chargeResponse). Periksa endpoint booking.')
         setIsSubmitting(false)
         return
       }
 
-      // Cadangan: Snap (modal) hanya untuk "Semua metode", kartu kredit, dan OVO
+      // OVO remains on Snap, but its booking instructions stay on our status page.
       if (booking.payment && 'redirectUrl' in booking.payment) {
         const bookingId = booking.bookingId
+        const informationOrderPath = `/information-order?bookingId=${encodeURIComponent(bookingId)}`
+        if (selectedChannel === 'ovo') {
+          navigate(informationOrderPath, { replace: true, state: { bookingId } })
+          return
+        }
         try {
           await openMidtransCheckout(booking.payment.token, {
-            onSuccess: () => navigate('/information-order', { replace: true, state: { bookingId } }),
-            onPending: () => navigate('/information-order', { replace: true, state: { bookingId } }),
-            onError: () => navigate('/information-order', { replace: true, state: { bookingId } }),
-            onClose: () => navigate('/information-order', { replace: true, state: { bookingId } }),
+            onSuccess: () => navigate(informationOrderPath, { replace: true, state: { bookingId } }),
+            onPending: () => navigate(informationOrderPath, { replace: true, state: { bookingId } }),
+            onError: () => navigate(informationOrderPath, { replace: true, state: { bookingId } }),
+            onClose: () => navigate(informationOrderPath, { replace: true, state: { bookingId } }),
           })
         } catch {
           window.location.assign(booking.payment.redirectUrl)
         }
         return
       }
-      navigate('/success-order', {
+      navigate(`/success-order?bookingId=${encodeURIComponent(booking.bookingId)}`, {
         replace: true,
         state: { bookingId: booking.bookingId },
       })
@@ -365,30 +360,6 @@ function PaymentPage() {
   }
 
   const handlePayMobile = () => { void handlePay() }
-
-  /* ---------- Tampilan instruksi pembayaran langsung ---------- */
-  // Diletakkan setelah semua hook agar urutan hook tetap konsisten
-  if (directPayment) {
-    const goToStatus = () =>
-      navigate('/information-order', { replace: true, state: { bookingId: directPayment.bookingId } })
-
-    return (
-      <div className="min-h-screen bg-white font-body text-[#343133]">
-        {isMobile ? (
-          <MobileHeader variant="title" title="Pembayaran" showShare={false} showBottomNav={false} />
-        ) : (
-          <NavbarDashboard userName={USER_NAME} showDesktopNavigation={false} showMobileHeader={false} />
-        )}
-        <main className="mx-auto max-w-[560px] px-4 pt-6 pb-16">
-          <PaymentInstructionCard
-            info={directPayment.info}
-            totalLabel={formatRupiah(directPayment.info.grossAmount ?? total)}
-            onCheckStatus={goToStatus}
-          />
-        </main>
-      </div>
-    )
-  }
 
   return (
     <>
@@ -452,49 +423,7 @@ function PaymentPage() {
             </div>
           </section>
           </ScrollReveal>
-
-          {/* Sewa alat tambahan */}
-          <DeferredSection placeholderClassName="mt-6 min-h-[150px]">
-            <div className="mt-6">
-              <h2 className={`${FONT_MONTSERRAT} font-semibold text-base text-[#343133]`}>
-                Sewa Alat Tambahan
-              </h2>
-              <div className="mt-2 space-y-2">
-                {EXTRA_ITEMS.map((item) => {
-                  const isChecked = selectedExtras.includes(item.id)
-                  return (
-                    <button
-                      key={item.id}
-                      type="button"
-                      role="checkbox"
-                      aria-checked={isChecked}
-                      onClick={() => handleToggleExtra(item.id)}
-                      className={`flex h-12 w-full items-center gap-3 rounded-lg bg-white px-3 text-left cursor-pointer transition-colors ${
-                        isChecked ? 'border-2 border-[#404F14]' : 'border border-[#D4D4D4]'
-                      }`}
-                    >
-                      <span
-                        className={`flex h-5 w-5 shrink-0 items-center justify-center rounded ${
-                          isChecked ? 'bg-[#404F14] text-white' : 'border border-[#D4D4D4] bg-white'
-                        }`}
-                        aria-hidden="true"
-                      >
-                        {isChecked && <Check size={14} strokeWidth={3} />}
-                      </span>
-                      <span className="flex-1 font-heading text-sm text-[#343133]">{item.name}</span>
-                      <span
-                        className={`font-heading text-sm ${
-                          isChecked ? 'font-bold text-[#404F14]' : 'text-[#6F6B6E]'
-                        }`}
-                      >
-                        {formatRupiah(item.price)}
-                      </span>
-                    </button>
-                  )
-                })}
-              </div>
-            </div>
-          </DeferredSection>
+         
 
           <DeferredSection placeholderClassName="mt-6 min-h-[360px]">
             <div className="mt-6">
@@ -504,50 +433,56 @@ function PaymentPage() {
 
               <div role="radiogroup" aria-label="Metode pembayaran" className="mt-2 space-y-3">
                 {MOBILE_METHOD_GROUPS.map((group) => (
-                  <div
-                    key={group.id}
-                    className="overflow-hidden rounded-2xl border border-[#D4D4D4] bg-white"
-                  >
-                    <h3 className={`${FONT_MONTSERRAT} px-3 pt-3 pb-1 font-bold text-[11px] text-[#404F14]`}>
+                  <div key={group.id}>
+                    <h3 className={`${FONT_MONTSERRAT} px-1 font-bold text-[11px] text-[#404F14]`}>
                       {group.label}
                     </h3>
 
-                    {group.methods.map((item, index) => {
-                      const isActive = mobileMethod === item.id
-                      return (
-                        <button
-                          key={item.id}
-                          type="button"
-                          role="radio"
-                          aria-checked={isActive}
-                          onClick={() => setMobileMethod(item.id)}
-                          className={`flex h-12 w-full items-center gap-3 bg-white px-3 text-left cursor-pointer ${
-                            index > 0 ? 'border-t border-[#D4D4D4]' : ''
-                          }`}
-                        >
-                          <span
-                            className={`flex h-6 w-14 shrink-0 items-center justify-center rounded px-1 text-[9px] font-heading font-bold ${
+                    <div className="mt-2 grid grid-cols-2 gap-2">
+                      {group.methods.map((item) => {
+                        const isActive = mobileMethod === item.id
+                        return (
+                          <button
+                            key={item.id}
+                            type="button"
+                            role="radio"
+                            aria-checked={isActive}
+                            onClick={() => setMobileMethod(item.id)}
+                            className={`flex min-h-[112px] min-w-0 flex-col items-start gap-2 rounded-xl border bg-white p-3 text-left cursor-pointer transition-colors ${
                               isActive
-                                ? 'bg-[#E6F0E0] text-[#404F14]'
-                                : 'bg-[#F0F0F0] text-[#6F6B6E]'
+                                ? 'border-[#404F14] bg-[#F5FAF0] shadow-[0_0_0_1px_#404F14]'
+                                : 'border-[#D4D4D4] hover:border-[#9AAD3E]'
                             }`}
                           >
-                            {item.badge}
-                          </span>
-                          <span className="flex-1 font-heading text-sm font-semibold text-[#343133]">
-                            {item.name}
-                          </span>
-                          <span
-                            className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full ${
-                              isActive ? 'border-2 border-[#404F14]' : 'border border-[#D4D4D4]'
-                            }`}
-                            aria-hidden="true"
-                          >
-                            {isActive && <span className="h-2.5 w-2.5 rounded-full bg-[#404F14]" />}
-                          </span>
-                        </button>
-                      )
-                    })}
+                            <span className="flex w-full items-center justify-between gap-2">
+                              <span
+                                className={`flex h-5 min-w-10 shrink-0 items-center justify-center rounded px-1 text-[9px] font-heading font-bold ${
+                                  isActive
+                                    ? 'bg-[#E6F0E0] text-[#404F14]'
+                                    : 'bg-[#F0F0F0] text-[#6F6B6E]'
+                                }`}
+                              >
+                                {item.badge}
+                              </span>
+                              <span
+                                className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full ${
+                                  isActive ? 'border-2 border-[#404F14]' : 'border border-[#D4D4D4]'
+                                }`}
+                                aria-hidden="true"
+                              >
+                                {isActive && <span className="h-2 w-2 rounded-full bg-[#404F14]" />}
+                              </span>
+                            </span>
+                            <span className="block w-full break-words font-heading text-xs font-semibold leading-tight text-[#343133]">
+                              {item.name}
+                            </span>
+                            <span className="block w-full break-words text-[10px] leading-snug text-[#6F6B6E]">
+                              {item.description}
+                            </span>
+                          </button>
+                        )
+                      })}
+                    </div>
                   </div>
                 ))}
               </div>
@@ -568,10 +503,10 @@ function PaymentPage() {
           <button
             type="button"
             onClick={handlePayMobile}
-            disabled={isSubmitting}
-            className="h-12 w-full rounded-xl bg-[#CDF178] font-heading text-sm font-bold text-[#404F14] transition-colors active:bg-[#9AAD3E] cursor-pointer"
+            disabled={isSubmitting || !selectedChannel}
+            className="h-12 w-full rounded-xl bg-[#CDF178] font-heading text-sm font-bold text-[#404F14] transition-colors active:bg-[#9AAD3E] disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer"
           >
-            {isSubmitting ? 'Memproses booking...' : 'Bayar Sekarang'}
+            {isSubmitting ? 'Memproses booking...' : selectedChannel ? 'Bayar Sekarang' : 'Pilih metode pembayaran'}
           </button>
         </div>
         </div>
@@ -582,7 +517,7 @@ function PaymentPage() {
           TAMPILAN DESKTOP (>= md): tampilan asli
           =================================================================== */}
       {!isMobile && <div className="min-h-screen bg-white font-body text-[#343133]">
-        <NavbarDashboard userName={USER_NAME} showDesktopNavigation={false} showMobileHeader={false} />
+        <NavbarDashboard showDesktopNavigation={false} showMobileHeader={false} />
 
         {/* Lebar konten 1200px sesuai desain */}
         <main className="max-w-[1248px] mx-auto px-6 pt-6 pb-16">
@@ -608,47 +543,49 @@ function PaymentPage() {
                       {group.label}
                     </h3>
 
-                    {group.methods.map((item) => {
-                      const isActive = method === item.id
-                      return (
-                        <button
-                          key={item.id}
-                          type="button"
-                          role="radio"
-                          aria-checked={isActive}
-                          onClick={() => setMethod(item.id)}
-                          className={`mt-2 flex h-14 w-full items-center gap-3 rounded-lg bg-white px-3 text-left cursor-pointer transition-colors ${
-                            isActive
-                              ? 'border-2 border-[#404F14]'
-                              : 'border border-[#D4D4D4] hover:border-[#9AAD3E]'
-                          }`}
-                        >
-                          <span
-                            className={`flex h-5 w-14 shrink-0 items-center justify-center rounded text-[10px] font-heading font-bold ${
+                    <div className="mt-2 grid grid-cols-2 gap-2">
+                      {group.methods.map((item) => {
+                        const isActive = method === item.id
+                        return (
+                          <button
+                            key={item.id}
+                            type="button"
+                            role="radio"
+                            aria-checked={isActive}
+                            onClick={() => setMethod(item.id)}
+                            className={`flex min-h-[76px] min-w-0 items-center gap-3 rounded-lg bg-white px-3 py-2 text-left cursor-pointer transition-colors ${
                               isActive
-                                ? 'bg-[#E6F0E0] text-[#404F14]'
-                                : 'bg-[#F0F0F0] text-[#6F6B6E]'
+                                ? 'border-2 border-[#404F14]'
+                                : 'border border-[#D4D4D4] hover:border-[#9AAD3E]'
                             }`}
                           >
-                            {item.badge}
-                          </span>
-                          <span className="flex-1">
-                            <span className="block font-heading font-semibold text-[13px] leading-[18px] text-[#343133]">
-                              {item.name}
+                            <span
+                              className={`flex h-5 w-14 shrink-0 items-center justify-center rounded text-[10px] font-heading font-bold ${
+                                isActive
+                                  ? 'bg-[#E6F0E0] text-[#404F14]'
+                                  : 'bg-[#F0F0F0] text-[#6F6B6E]'
+                              }`}
+                            >
+                              {item.badge}
                             </span>
-                            <span className="block font-heading text-[10px] leading-[14px] text-[#6F6B6E]">
-                              {item.description}
+                            <span className="min-w-0 flex-1">
+                              <span className="block break-words font-heading text-[13px] font-semibold leading-[18px] text-[#343133]">
+                                {item.name}
+                              </span>
+                              <span className="block break-words font-heading text-[10px] leading-[14px] text-[#6F6B6E]">
+                                {item.description}
+                              </span>
                             </span>
-                          </span>
-                          <span
-                            className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full ${
-                              isActive ? 'bg-[#404F14]' : 'border border-[#D4D4D4] bg-white'
-                            }`}
-                            aria-hidden="true"
-                          />
-                        </button>
-                      )
-                    })}
+                            <span
+                              className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full ${
+                                isActive ? 'bg-[#404F14]' : 'border border-[#D4D4D4] bg-white'
+                              }`}
+                              aria-hidden="true"
+                            />
+                          </button>
+                        )
+                      })}
+                    </div>
                   </div>
                 ))}
               </div>
@@ -724,10 +661,10 @@ function PaymentPage() {
               <button
                 type="button"
                 onClick={handlePay}
-                disabled={isSubmitting}
-                className="mt-4 h-10 w-full rounded-lg bg-[#CDF178] font-heading text-xs font-bold text-[#404F14] transition-colors hover:bg-[#9AAD3E] cursor-pointer"
+                disabled={isSubmitting || !selectedChannel}
+                className="mt-4 h-10 w-full rounded-lg bg-[#CDF178] font-heading text-xs font-bold text-[#404F14] transition-colors hover:bg-[#9AAD3E] disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer"
               >
-                {isSubmitting ? 'Memproses booking...' : 'Konfirmasi & Bayar'}
+                {isSubmitting ? 'Memproses booking...' : selectedChannel ? 'Konfirmasi & Bayar' : 'Pilih metode pembayaran'}
               </button>
             </div>
           </div>

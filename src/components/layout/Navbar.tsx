@@ -25,7 +25,7 @@ interface Language {
 }
 
 interface NavbarDashboardProps {
-  userName?: string // TODO: ganti default ini dengan nama user dari auth context / API
+  userName?: string
   profileImage?: string
   showDesktopNavigation?: boolean
   showMobileHeader?: boolean
@@ -92,7 +92,7 @@ function Avatar({
 }
 
 function Navbar({
-  userName = 'Budiman Santoso',
+  userName,
   profileImage,
   showDesktopNavigation = true,
   showMobileHeader = true,
@@ -101,7 +101,7 @@ function Navbar({
   const navigate = useNavigate()
   const isMobile = useIsMobile()
   const { user } = useAuth()
-  const displayName = user?.name ?? userName
+  const displayName = user?.name ?? userName ?? 'Akun OBC'
 
   // State dropdown bahasa dan menu user
   const [activeLang, setActiveLang] = useState<Language>(LANGUAGES[0])

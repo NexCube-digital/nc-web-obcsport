@@ -1,17 +1,14 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Check } from 'lucide-react'
-import NavbarDashboard from '../components/layout/Navbar'
-import DeferredSection from '../components/layout/DeferredSection'
-import DeferredFooter from '../components/layout/DeferredFooter'
+import NavbarDashboard from '../../components/layout/Navbar'
+import DeferredSection from '../../components/layout/DeferredSection'
+import DeferredFooter from '../../components/layout/DeferredFooter'
+import { useAuth } from '../../hooks/useAuth'
 
 /* -------------------------------------------------------------------------
    Data sementara
    ------------------------------------------------------------------------- */
-// TODO: ganti data hardcode ini dengan data dari auth context / services/profileService.js
-const USER_NAME = 'Budiman Santoso'
-const INITIAL_USERNAME = 'budimansantoso'
 const INITIAL_BIO = 'Kapten tim futsal rutin setiap hari Selasa & Kamis.'
-const USER_EMAIL = 'budiman.santoso@email.com'
 // TODO: ganti dengan URL foto profil asli dari API (null = tampilkan inisial)
 const USER_PHOTO_URL: string | null = null
 
@@ -43,16 +40,24 @@ function maskEmail(email: string): string {
 }
 
 function ProfilePage() {
-  const [fullName, setFullName] = useState(USER_NAME)
-  const [username, setUsername] = useState(INITIAL_USERNAME)
+  const { user } = useAuth()
+  const fullNameFromSession = user?.name ?? ''
+  const usernameFromSession = user?.email?.split('@')[0] ?? ''
+  const [fullName, setFullName] = useState(fullNameFromSession)
+  const [username, setUsername] = useState(usernameFromSession)
   const [bio, setBio] = useState(INITIAL_BIO)
+
+  useEffect(() => {
+    setFullName(fullNameFromSession)
+    setUsername(usernameFromSession)
+  }, [fullNameFromSession, usernameFromSession])
 
   // TODO: desain belum punya tombol simpan; sambungkan ke services/profileService.js
   // (PUT /profile) saat tombol simpan / autosave sudah ditentukan.
 
   return (
     <div className="flex min-h-screen flex-col bg-[#FDFCF8] font-body text-[#343133]">
-      <NavbarDashboard userName={USER_NAME} />
+      <NavbarDashboard />
 
       {/* Lebar konten 1200px sesuai desain */}
       <main className="mx-auto w-full max-w-[1248px] flex-1 px-6 pt-8 pb-16">
@@ -132,7 +137,7 @@ function ProfilePage() {
               <input
                 id="email"
                 type="text"
-                value={maskEmail(USER_EMAIL)}
+                value={maskEmail(user?.email ?? '')}
                 readOnly
                 aria-label="Alamat email"
                 className={`${INPUT_CLASS} flex-1`}

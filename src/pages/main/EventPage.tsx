@@ -1,8 +1,8 @@
-import NavbarDashboard from '../components/layout/Navbar'
-import DeferredFooter from '../components/layout/DeferredFooter'
-import DeferredSection from '../components/layout/DeferredSection'
-import ScrollReveal from '../components/animation/ScrollReveal'
-import whatsappIcon from '../assets/icon/whatsapp2.svg'
+import NavbarDashboard from '../../components/layout/Navbar'
+import DeferredFooter from '../../components/layout/DeferredFooter'
+import DeferredSection from '../../components/layout/DeferredSection'
+import ScrollReveal from '../../components/animation/ScrollReveal'
+import whatsappIcon from '../../assets/icon/whatsapp2.svg'
 
 /* -------------------------------------------------------------------------
    Tipe data
@@ -17,9 +17,6 @@ interface ReservationStep {
 /* -------------------------------------------------------------------------
    Data (ganti dengan data dari API / services/eventService.js jika perlu)
    ------------------------------------------------------------------------- */
-// TODO: nama user sementara hardcode, ganti dari auth context / API
-const USER_NAME = 'Budiman Santoso'
-
 // Font heading di desain terlihat seperti Montserrat, pastikan sudah di-load
 const FONT_MONTSERRAT = "font-['Montserrat',sans-serif]"
 
@@ -59,7 +56,7 @@ function OrderPage() {
 
   return (
     <div className="min-h-screen bg-white font-body text-[#343133]">
-      <NavbarDashboard userName={USER_NAME} />
+      <NavbarDashboard />
 
       {/* Lebar konten 1200px sesuai desain */}
       <main className="max-w-[1248px] mx-auto px-6 pt-6 pb-16">
