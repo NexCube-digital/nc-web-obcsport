@@ -1,28 +1,83 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { toast } from 'sonner'
 import NavbarDashboard from '../../components/layout/Navbar'
 import Footer from '../../components/layout/Footer'
 import { INITIAL_NOTIFICATIONS, type PromoNotification } from '../../data/notificationsData'
-
-/* -------------------------------------------------------------------------
-   Tipe data
-   ------------------------------------------------------------------------- */
-/* -------------------------------------------------------------------------
-   Data (ganti dengan data dari API / services/notificationService.js)
-   ------------------------------------------------------------------------- */
-// TODO: nama user sementara hardcode, ganti dari auth context / API
-const USER_NAME = 'Budiman Santoso'
+import { sportApi } from '../../services/api'
 
 function NotificationPage() {
   const [notifications, setNotifications] = useState<PromoNotification[]>(INITIAL_NOTIFICATIONS)
+  const [userName, setUserName] = useState('Pengguna')
 
-  const handleMarkAllAsRead = () => {
-    // TODO: sambungkan juga ke services/notificationService.js (mark-all-read)
-    setNotifications((prev) => prev.map((notif) => ({ ...notif, isUnread: false })))
+  useEffect(() => {
+    let isMounted = true
+    const loadData = async () => {
+      try {
+        const [profileRes, notifRes] = await Promise.allSettled([
+          sportApi.getProfile(),
+          sportApi.getNotifications(),
+        ])
+
+        if (isMounted && profileRes.status === 'fulfilled') {
+          const profile = profileRes.value.data?.data || profileRes.value.data
+          if (profile?.name) setUserName(profile.name)
+        }
+
+        if (isMounted && notifRes.status === 'fulfilled') {
+          const apiNotifs = notifRes.value.data?.data || notifRes.value.data
+          if (Array.isArray(apiNotifs) && apiNotifs.length > 0) {
+            const mapped: PromoNotification[] = apiNotifs.map((n: any) => ({
+              id: n.id,
+              title: n.title,
+              description: n.message,
+              time: new Date(n.createdAt).toLocaleDateString('id-ID', {
+                day: 'numeric',
+                month: 'short',
+                hour: '2-digit',
+                minute: '2-digit',
+              }),
+              isUnread: !n.isRead,
+            }))
+            setNotifications(mapped)
+          }
+        }
+      } catch (err: any) {
+        console.error('Failed to load notifications:', err)
+      }
+    }
+    loadData()
+    return () => {
+      isMounted = false
+    }
+  }, [])
+
+  const handleMarkAllAsRead = async () => {
+    try {
+      await sportApi.markAllNotificationsAsRead()
+      setNotifications((prev) => prev.map((notif) => ({ ...notif, isUnread: false })))
+      toast.success('Semua notifikasi telah ditandai sebagai dibaca.')
+    } catch {
+      setNotifications((prev) => prev.map((notif) => ({ ...notif, isUnread: false })))
+    }
+  }
+
+  const handleMarkAsRead = async (id: string) => {
+    try {
+      await sportApi.markNotificationAsRead(id)
+      setNotifications((prev) =>
+        prev.map((notif) => (notif.id === id ? { ...notif, isUnread: false } : notif)),
+      )
+    } catch {
+      // Local fallback
+      setNotifications((prev) =>
+        prev.map((notif) => (notif.id === id ? { ...notif, isUnread: false } : notif)),
+      )
+    }
   }
 
   return (
     <div className="min-h-screen bg-[#FDFCF7] font-body text-[#343133]">
-      <NavbarDashboard userName={USER_NAME} />
+      <NavbarDashboard userName={userName} />
 
       {/* Lebar konten 1240px sesuai desain */}
       <main className="max-w-[1288px] mx-auto px-6 pt-6 pb-10">
@@ -47,10 +102,11 @@ function NotificationPage() {
             {notifications.map((notif) => (
               <div
                 key={notif.id}
-                className={`rounded-lg border px-4 py-3 ${
+                onClick={() => notif.isUnread && handleMarkAsRead(notif.id)}
+                className={`rounded-lg border px-4 py-3 cursor-pointer transition-colors ${
                   notif.isUnread
-                    ? 'bg-[#E8EBE4] border-[#E8EBE4]'
-                    : 'bg-white border-[#E5E5E5]'
+                    ? 'bg-[#E8EBE4] border-[#E8EBE4] hover:bg-[#dfe4d8]'
+                    : 'bg-white border-[#E5E5E5] hover:bg-[#F9FAF8]'
                 }`}
               >
                 <div className="flex items-center justify-between gap-2">

@@ -1,8 +1,10 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { CircleCheck, Eye, EyeOff, House } from 'lucide-react'
+import { toast } from 'sonner'
 import logo from '../../assets/logo/unit bisnis/LOGO OBC SPORT CENTER.png'
 import { useIsMobile } from '../../hooks/useIsMobile'
+import { sportApi } from '../../services/api'
 
 /* Ikon Google */
 function GoogleIcon() {
@@ -73,27 +75,99 @@ function Register() {
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [agreed, setAgreed] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
   const navigate = useNavigate()
   const isMobile = useIsMobile()
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!agreed) return // TODO: tampilkan validasi "harap setujui syarat & ketentuan"
-    // TODO: sambungkan ke services/authService.js (POST /register)
-    console.log({ fullName, phone, email, password, confirmPassword })
+  const handleRegisterUser = async (data: { name: string; email: string; password: string; phone?: string }) => {
+    setIsLoading(true)
+    try {
+      await sportApi.register(data)
+      toast.success('Pendaftaran berhasil! Selamat bergabung di OBC Sport.')
+      navigate('/home')
+    } catch (err: any) {
+      const msg = err.response?.data?.error?.message || err.message || 'Pendaftaran gagal'
+      toast.error(msg)
+    } finally {
+      setIsLoading(false)
+    }
   }
 
-  const handleSubmitMobile = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    // Catatan: desain mobile tidak memiliki field No. Telepon & checkbox syarat/ketentuan.
-    // TODO: validasi password min. 8 karakter & password === confirmPassword
-    // TODO: sambungkan ke services/authService.js (POST /register)
-    console.log({ fullName, email, password, confirmPassword })
+    if (!fullName.trim() || !email.trim() || !password) {
+      toast.error('Harap lengkapi semua kolom yang wajib diisi.')
+      return
+    }
+    if (password.length < 8) {
+      toast.error('Kata sandi minimal 8 karakter.')
+      return
+    }
+    if (password !== confirmPassword) {
+      toast.error('Konfirmasi kata sandi tidak cocok.')
+      return
+    }
+    if (!agreed) {
+      toast.error('Harap setujui Syarat dan Ketentuan layanan.')
+      return
+    }
+
+    await handleRegisterUser({
+      name: fullName.trim(),
+      email: email.trim(),
+      password,
+      phone: phone.trim() || undefined,
+    })
+  }
+
+  const handleSubmitMobile = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!fullName.trim() || !email.trim() || !password) {
+      toast.error('Harap lengkapi semua kolom.')
+      return
+    }
+    if (password.length < 8) {
+      toast.error('Kata sandi minimal 8 karakter.')
+      return
+    }
+    if (password !== confirmPassword) {
+      toast.error('Konfirmasi kata sandi tidak cocok.')
+      return
+    }
+
+    await handleRegisterUser({
+      name: fullName.trim(),
+      email: email.trim(),
+      password,
+    })
   }
 
   const handleGoogleLogin = () => {
-    // TODO: sambungkan ke alur OAuth Google (services/authService.js)
-    navigate('/auth/google')
+    if (typeof window !== 'undefined' && (window as any).google?.accounts?.id) {
+      const google = (window as any).google
+      const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || ''
+      if (!clientId) {
+        toast.info('Google Client ID belum dikonfigurasi di env frontend.')
+        return
+      }
+
+      google.accounts.id.initialize({
+        client_id: clientId,
+        callback: async (response: any) => {
+          try {
+            await sportApi.loginWithGoogle(response.credential)
+            toast.success('Pendaftaran / Masuk dengan Google berhasil!')
+            navigate('/home')
+          } catch (err: any) {
+            const msg = err.response?.data?.error?.message || err.message || 'Gagal autentikasi via Google'
+            toast.error(msg)
+          }
+        },
+      })
+      google.accounts.id.prompt()
+    } else {
+      toast.info('Google Sign-In sedang dimuat, silakan coba beberapa saat lagi.')
+    }
   }
 
   return (
@@ -139,6 +213,7 @@ function Register() {
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
               placeholder="Masukkan nama lengkap Anda"
+              disabled={isLoading}
               className={M_INPUT_CLASS}
             />
           </div>
@@ -153,6 +228,7 @@ function Register() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="nama@email.com"
+              disabled={isLoading}
               className={M_INPUT_CLASS}
             />
           </div>
@@ -168,6 +244,7 @@ function Register() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Min. 8 karakter"
+                disabled={isLoading}
                 className={`${M_INPUT_CLASS} pr-12`}
               />
               <button
@@ -192,6 +269,7 @@ function Register() {
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 placeholder="Ulangi kata sandi"
+                disabled={isLoading}
                 className={`${M_INPUT_CLASS} pr-12`}
               />
               <button
@@ -207,9 +285,10 @@ function Register() {
 
           <button
             type="submit"
-            className="mt-1 h-[clamp(36px,6vh,48px)] w-full rounded-xl bg-[#CDF178] text-sm font-heading font-bold text-[#404F14] hover:bg-[#9AAD3E] active:bg-[#9AAD3E] transition-colors cursor-pointer"
+            disabled={isLoading}
+            className="mt-1 h-[clamp(36px,6vh,48px)] w-full rounded-xl bg-[#CDF178] text-sm font-heading font-bold text-[#404F14] hover:bg-[#9AAD3E] active:bg-[#9AAD3E] transition-colors cursor-pointer disabled:opacity-50"
           >
-            Daftar Sekarang
+            {isLoading ? 'Mendaftarkan...' : 'Daftar Sekarang'}
           </button>
         </form>
 
@@ -294,6 +373,7 @@ function Register() {
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
                     placeholder="Contoh: Budiman Santoso"
+                    disabled={isLoading}
                     className={INPUT_CLASS}
                   />
                 </div>
@@ -308,6 +388,7 @@ function Register() {
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
                     placeholder="Contoh: 08123456789"
+                    disabled={isLoading}
                     className={INPUT_CLASS}
                   />
                 </div>
@@ -322,6 +403,7 @@ function Register() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="budiman@email.com"
+                    disabled={isLoading}
                     className={INPUT_CLASS}
                   />
                 </div>
@@ -336,6 +418,8 @@ function Register() {
                       type={showPassword ? 'text' : 'password'}
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
+                      placeholder="Min. 8 karakter"
+                      disabled={isLoading}
                       className={`${INPUT_CLASS} pr-10`}
                     />
                     <button
@@ -359,6 +443,8 @@ function Register() {
                       type={showConfirmPassword ? 'text' : 'password'}
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
+                      placeholder="Ulangi kata sandi"
+                      disabled={isLoading}
                       className={`${INPUT_CLASS} pr-10`}
                     />
                     <button
@@ -370,7 +456,6 @@ function Register() {
                       {showConfirmPassword ? <EyeOff size={14} aria-hidden="true" /> : <Eye size={14} aria-hidden="true" />}
                     </button>
                   </div>
-                  {/* TODO: tampilkan pesan error jika password & confirmPassword tidak sama */}
                 </div>
 
                 <label className="flex items-start gap-2 pt-1 text-xs text-[#343133]">
@@ -378,6 +463,7 @@ function Register() {
                     type="checkbox"
                     checked={agreed}
                     onChange={(e) => setAgreed(e.target.checked)}
+                    disabled={isLoading}
                     className="mt-0.5 h-4 w-4 shrink-0 rounded border-[#404F14] accent-[#404F14] cursor-pointer"
                   />
                   <span>
@@ -387,9 +473,10 @@ function Register() {
 
                 <button
                   type="submit"
-                  className="w-full rounded-lg bg-[#CDF178] py-[clamp(7px,1.3vh,10px)] text-sm font-heading font-bold text-[#404F14] hover:bg-[#9AAD3E] transition-colors cursor-pointer"
+                  disabled={isLoading}
+                  className="w-full rounded-lg bg-[#CDF178] py-[clamp(7px,1.3vh,10px)] text-sm font-heading font-bold text-[#404F14] hover:bg-[#9AAD3E] transition-colors cursor-pointer disabled:opacity-50"
                 >
-                  Daftar Sekarang
+                  {isLoading ? 'Mendaftarkan...' : 'Daftar Sekarang'}
                 </button>
               </form>
 
