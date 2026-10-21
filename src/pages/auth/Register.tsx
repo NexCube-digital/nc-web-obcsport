@@ -6,7 +6,7 @@ import logo from '../../assets/logo/unit bisnis/LOGO OBC SPORT CENTER.png'
 import { useIsMobile } from '../../hooks/useIsMobile'
 import ScrollReveal from '../../components/animation/ScrollReveal'
 import { getApiErrorMessage } from '../../services/apiService'
-import { registerCustomer } from '../../services/authService'
+import { registerCustomer, loginGoogleCustomer } from '../../services/authService'
 
 /* Ikon Google */
 function GoogleIcon() {
@@ -87,8 +87,8 @@ function Register() {
       toast.error('Nama harus terdiri dari minimal 3 karakter.')
       return
     }
-    if (password.length < 12 || password.length > 128 || !/[a-z]/.test(password) || !/[A-Z]/.test(password) || !/\d/.test(password)) {
-      toast.error('Password harus 12-128 karakter dan mengandung huruf kecil, huruf besar, serta angka.')
+    if (password.length < 8) {
+      toast.error('Password minimal 8 karakter.')
       return
     }
     if (password !== confirmPassword) {
@@ -130,334 +130,374 @@ function Register() {
   }
 
   const handleGoogleLogin = () => {
-    // TODO: sambungkan ke alur OAuth Google (services/authService.js)
-    navigate('/auth/google')
+    if (typeof window !== 'undefined' && (window as any).google?.accounts?.id) {
+      const google = (window as any).google
+      const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || ''
+      if (!clientId) {
+        toast.info('Google Client ID belum dikonfigurasi di env frontend.')
+        return
+      }
+
+      google.accounts.id.initialize({
+        client_id: clientId,
+        callback: async (response: any) => {
+          setIsSubmitting(true)
+          try {
+            await loginGoogleCustomer(response.credential)
+            toast.success('Pendaftaran / Masuk dengan Google berhasil!')
+            navigate('/home', { replace: true })
+          } catch (err: any) {
+            toast.error(getApiErrorMessage(err, 'Gagal mendaftar via Google.'))
+          } finally {
+            setIsSubmitting(false)
+          }
+        },
+      })
+      google.accounts.id.prompt()
+    } else {
+      toast.info('Google Sign-In sedang dimuat, silakan coba beberapa saat lagi.')
+    }
   }
 
   return (
     <>
-      {/* ===================== MOBILE (< md) — satu layar, tanpa scroll ===================== */}
+      {/* ===================== MOBILE (< md) ===================== */}
       {isMobile && (
-      <ScrollReveal className="h-dvh">
-      <div className="relative flex h-full flex-col justify-center overflow-hidden bg-white px-5 py-[clamp(8px,2vh,24px)] font-heading text-[#343133]">
-        <Link
-          to="/"
-          aria-label="Kembali ke Home"
-          className="absolute left-4 top-4 inline-flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-sm font-semibold text-[#404F14] transition-colors hover:bg-[#F5FAF3]"
-        >
-          <House size={17} aria-hidden="true" />
-          Home
-        </Link>
-        <Link to="/" className="mx-auto flex shrink-0 items-center gap-3">
-          <img
-            src={logo}
-            alt="OBC Sport Center"
-            className="h-[clamp(40px,8vh,68px)] w-[clamp(40px,8vh,68px)] rounded-full object-contain"
-          />
-          <span className="flex flex-col font-['Montserrat',sans-serif] text-[clamp(14px,2.5vh,18px)] font-extrabold italic leading-[1.05] text-[#343133]">
-            <span className="uppercase">OBC SPORT</span>
-            <span>Center</span>
-          </span>
-        </Link>
+        <ScrollReveal className="min-h-screen">
+          <div className="flex min-h-screen flex-col justify-center bg-[#FDFCF7] px-6 py-8 font-heading text-[#343133]">
+            <Link
+              to="/"
+              aria-label="Kembali ke Home"
+              className="inline-flex w-fit items-center gap-1.5 rounded-lg px-2 py-1.5 text-sm font-semibold text-[#404F14] transition-colors hover:bg-[#E8EDE3]"
+            >
+              <House size={17} aria-hidden="true" />
+              Home
+            </Link>
 
-        <h1 className="mt-[clamp(8px,2vh,24px)] text-[clamp(18px,3vh,22px)] font-bold leading-tight text-[#343133]">
-          Daftar Akun Baru
-        </h1>
-        <p className="mt-1 font-body text-[clamp(11px,1.9vh,14px)] leading-snug text-[#6F6B6E]">
-          Bergabunglah dan nikmati kemudahan akses olahraga
-        </p>
-
-        <form onSubmit={handleSubmitMobile} className="mt-[clamp(8px,1.8vh,20px)] space-y-[clamp(6px,1.4vh,12px)]">
-          <div>
-            <label htmlFor="m-fullName" className={M_LABEL_CLASS}>
-              Nama Lengkap
-            </label>
-            <input
-              id="m-fullName"
-              type="text"
-              value={fullName}
-              onChange={(e) => setFullName(e.target.value)}
-              placeholder="Masukkan nama lengkap Anda"
-              className={M_INPUT_CLASS}
-            />
-          </div>
-
-          <div>
-            <label htmlFor="m-email" className={M_LABEL_CLASS}>
-              Alamat Email
-            </label>
-            <input
-              id="m-email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="nama@email.com"
-              className={M_INPUT_CLASS}
-            />
-          </div>
-
-          <div>
-            <label htmlFor="m-password" className={M_LABEL_CLASS}>
-              Kata Sandi
-            </label>
-            <div className="relative">
-              <input
-                id="m-password"
-                type={showPassword ? 'text' : 'password'}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Min. 8 karakter"
-                className={`${M_INPUT_CLASS} pr-12`}
+            <div className="mt-4 flex items-center justify-center gap-3">
+              <img
+                src={logo}
+                alt="OBC Sport Center"
+                className="h-[clamp(44px,8vh,64px)] w-[clamp(44px,8vh,64px)] rounded-full object-contain"
               />
-              <button
-                type="button"
-                onClick={() => setShowPassword((prev) => !prev)}
-                aria-label={showPassword ? 'Sembunyikan kata sandi' : 'Tampilkan kata sandi'}
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-[#404F14] cursor-pointer"
-              >
-                <EyeIcon visible={showPassword} />
-              </button>
+              <span className="flex flex-col font-['Montserrat',sans-serif] text-xl font-extrabold italic leading-tight text-[#121212]">
+                <span className="uppercase">OBC SPORT</span>
+                <span>Center</span>
+              </span>
             </div>
-          </div>
 
-          <div>
-            <label htmlFor="m-confirmPassword" className={M_LABEL_CLASS}>
-              Konfirmasi Kata Sandi
-            </label>
-            <div className="relative">
-              <input
-                id="m-confirmPassword"
-                type={showConfirmPassword ? 'text' : 'password'}
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                placeholder="Ulangi kata sandi"
-                className={`${M_INPUT_CLASS} pr-12`}
-              />
+            <h1 className="mt-6 text-center text-2xl font-bold text-[#404F14]">
+              Buat Akun Baru
+            </h1>
+            <p className="mt-1 text-center font-body text-xs text-[#6F6B6E]">
+              Daftar akun OBC Sport untuk kemudahan reservasi
+            </p>
+
+            <form onSubmit={handleSubmitMobile} className="mt-6 space-y-3">
+              <div>
+                <label htmlFor="m-name" className={M_LABEL_CLASS}>
+                  Nama Lengkap
+                </label>
+                <input
+                  id="m-name"
+                  type="text"
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  placeholder="Nama Lengkap Anda"
+                  disabled={isSubmitting}
+                  className={M_INPUT_CLASS}
+                />
+              </div>
+
+              <div>
+                <label htmlFor="m-email" className={M_LABEL_CLASS}>
+                  Email
+                </label>
+                <input
+                  id="m-email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="nama@email.com"
+                  disabled={isSubmitting}
+                  className={M_INPUT_CLASS}
+                />
+              </div>
+
+              <div>
+                <label htmlFor="m-password" className={M_LABEL_CLASS}>
+                  Kata Sandi
+                </label>
+                <div className="relative">
+                  <input
+                    id="m-password"
+                    type={showPassword ? 'text' : 'password'}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Minimal 8 karakter"
+                    disabled={isSubmitting}
+                    className={`${M_INPUT_CLASS} pr-12`}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((prev) => !prev)}
+                    aria-label={showPassword ? 'Sembunyikan kata sandi' : 'Tampilkan kata sandi'}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-[#404F14] cursor-pointer"
+                  >
+                    <EyeIcon visible={showPassword} />
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label htmlFor="m-confirm-password" className={M_LABEL_CLASS}>
+                  Konfirmasi Kata Sandi
+                </label>
+                <div className="relative">
+                  <input
+                    id="m-confirm-password"
+                    type={showConfirmPassword ? 'text' : 'password'}
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    placeholder="Ulangi kata sandi"
+                    disabled={isSubmitting}
+                    className={`${M_INPUT_CLASS} pr-12`}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword((prev) => !prev)}
+                    aria-label={showConfirmPassword ? 'Sembunyikan kata sandi' : 'Tampilkan kata sandi'}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-[#404F14] cursor-pointer"
+                  >
+                    <EyeIcon visible={showConfirmPassword} />
+                  </button>
+                </div>
+              </div>
+
               <button
-                type="button"
-                onClick={() => setShowConfirmPassword((prev) => !prev)}
-                aria-label={showConfirmPassword ? 'Sembunyikan kata sandi' : 'Tampilkan kata sandi'}
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-[#404F14] cursor-pointer"
+                type="submit"
+                disabled={isSubmitting}
+                className="mt-1 h-[clamp(36px,6vh,48px)] w-full rounded-xl bg-[#CDF178] text-sm font-heading font-bold text-[#404F14] hover:bg-[#9AAD3E] active:bg-[#9AAD3E] transition-colors cursor-pointer disabled:opacity-50"
               >
-                <EyeIcon visible={showConfirmPassword} />
+                {isSubmitting ? 'Memproses...' : 'Daftar Sekarang'}
               </button>
+            </form>
+
+            <div className="mt-[clamp(6px,1.4vh,14px)] flex items-center gap-3">
+              <span className="h-px flex-1 bg-[#D4D4D4]" />
+              <span className="font-body text-xs text-[#343133]">Atau</span>
+              <span className="h-px flex-1 bg-[#D4D4D4]" />
             </div>
+
+            <button
+              type="button"
+              onClick={handleGoogleLogin}
+              className="mt-3 flex h-[clamp(36px,6vh,48px)] w-full items-center justify-center gap-2 rounded-xl border border-[#D4D4D4] bg-white text-sm font-bold text-[#121212] active:bg-[#FDFCF7] transition-colors cursor-pointer"
+            >
+              <GoogleIcon />
+              Daftar dengan Google
+            </button>
+
+            <p className="mt-4 text-center font-body text-sm text-[#343133]">
+              Sudah punya akun?{' '}
+              <Link
+                to="/login"
+                className="font-heading font-bold text-[#404F14] underline underline-offset-2"
+              >
+                Masuk Sekarang
+              </Link>
+            </p>
           </div>
-
-          <button
-            type="submit"
-            disabled={isSubmitting}
-            className="mt-1 h-[clamp(36px,6vh,48px)] w-full rounded-xl bg-[#CDF178] text-sm font-heading font-bold text-[#404F14] hover:bg-[#9AAD3E] active:bg-[#9AAD3E] transition-colors cursor-pointer"
-          >
-            {isSubmitting ? 'Memproses...' : 'Daftar Sekarang'}
-          </button>
-        </form>
-        <div className="mt-[clamp(6px,1.4vh,14px)] flex items-center gap-3">
-          <span className="h-px flex-1 bg-[#D4D4D4]" />
-          <span className="font-body text-xs text-[#343133]">Atau</span>
-          <span className="h-px flex-1 bg-[#D4D4D4]" />
-        </div>
-
-        <button
-          type="button"
-          onClick={handleGoogleLogin}
-          className="mt-[clamp(6px,1.4vh,14px)] flex h-[clamp(36px,6vh,48px)] w-full items-center justify-center gap-2 rounded-xl border border-[#D4D4D4] bg-white text-sm font-heading font-bold text-[#121212] active:bg-[#FDFCF7] transition-colors cursor-pointer"
-        >
-          <GoogleIcon />
-          Masuk dengan Google
-        </button>
-
-        <p className="mt-[clamp(8px,2vh,20px)] text-center font-body text-sm text-[#343133]">
-          Sudah memiliki akun?{' '}
-          <Link
-            to="/login"
-            className="font-heading font-bold text-[#404F14] underline underline-offset-2"
-          >
-            Masuk
-          </Link>
-        </p>
-      </div>
-      </ScrollReveal>
+        </ScrollReveal>
       )}
 
-      {/* ===================== DESKTOP (>= md) — satu layar, tanpa scroll ===================== */}
+      {/* ===================== DESKTOP / TABLET (>= md) ===================== */}
       {!isMobile && (
-      <div className="relative h-[100dvh] flex flex-col overflow-hidden bg-white font-body text-[#343133]">
-        <Link
-          to="/"
-          aria-label="Kembali ke Home"
-          className="absolute left-8 top-6 z-10 inline-flex items-center gap-2 rounded-lg px-2.5 py-2 text-sm font-semibold text-[#404F14] transition-colors hover:bg-[#F5FAF3]"
-        >
-          <House size={18} aria-hidden="true" />
-          Home
-        </Link>
-        <main className="flex min-h-0 flex-1 items-center">
-          <section className="mx-auto grid w-full max-w-[1120px] items-center gap-8 px-6 py-[clamp(8px,2vh,20px)] lg:grid-cols-[1fr_420px] lg:gap-14">
-            {/* Kolom kiri */}
-            <ScrollReveal>
-            <div>
-              <h1 className="font-heading text-2xl font-bold leading-tight text-[#343133] lg:text-3xl">
-                Buat Akun OBC Anda
-              </h1>
-              <p className="mt-3 max-w-lg text-sm leading-relaxed text-[#6F6B6E]">
-                Bergabunglah sekarang untuk menikmati seluruh keuntungan sewa lapangan
-                instan dan pendaftaran akademi. Satu akun untuk Futsal, Badminton,
-                Basket, dan Billiard.
-              </p>
+        <div className="flex h-[100dvh] flex-col overflow-hidden bg-white font-body text-[#343133]">
+          <header className="mx-auto w-full max-w-[1400px] shrink-0 px-8 pt-[clamp(8px,1.5vh,20px)] md:px-12 lg:px-8">
+            <Link
+              to="/"
+              aria-label="Kembali ke Home"
+              className="-ml-2.5 inline-flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-sm font-semibold leading-none text-[#404F14] transition-colors hover:bg-[#F5FAF3]"
+            >
+              <House size={18} className="shrink-0" aria-hidden="true" />
+              <span>Home</span>
+            </Link>
+          </header>
 
-              <ul className="mt-4 space-y-2">
-                {BENEFITS.map((benefit) => (
-                  <li key={benefit} className="flex items-center gap-1.5 text-sm text-[#6F6B6E]">
-                    <CircleCheck size={16} className="shrink-0 text-[#404F14]" aria-hidden="true" />
-                    <span>{benefit}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-            </ScrollReveal>
+          <main className="min-h-0 flex-1">
+            <section className="mx-auto flex h-full w-full max-w-[1400px] flex-col gap-6 px-8 pb-6 pt-2 md:px-12 lg:grid lg:grid-cols-[1fr_clamp(460px,36vw,560px)] lg:items-center lg:gap-12 lg:px-8">
+              {/* Kolom Kiri */}
+              <ScrollReveal delay={0} className="hidden lg:block">
+                <div className="max-w-lg">
+                  <h1 className="font-heading text-3xl font-extrabold leading-tight text-[#343133] lg:text-4xl">
+                    Bergabung Bersama Komunitas Olahraga Terlengkap
+                  </h1>
+                  <p className="mt-3 text-sm leading-relaxed text-[#6F6B6E]">
+                    Nikmati kemudahan reservasi lapangan secara mandiri, akses ke berbagai program keanggotaan eksklusif, serta keuntungan poin promo setiap pemesanan.
+                  </p>
 
-            {/* Kolom kanan: kartu form */}
-            <ScrollReveal className="w-full" delay={140}>
-            <div className="w-full rounded-2xl border border-[#D4D4D4] bg-white p-[clamp(14px,2.6vh,24px)] shadow-[0_4px_16px_rgba(0,0,0,0.08)]">
-              <h2 className="font-heading text-xl font-bold text-[#343133]">
-                Daftar Akun Baru
-              </h2>
-              <p className="mt-1 text-sm text-[#343133]">
-                Mulai rasakan kemudahan pemesanan instan
-              </p>
-
-              <form onSubmit={handleSubmit} className="mt-[clamp(8px,1.8vh,16px)] space-y-[clamp(6px,1.3vh,12px)]">
-                <div>
-                  <label htmlFor="fullName" className={LABEL_CLASS}>
-                    Nama Lengkap
-                  </label>
-                  <input
-                    id="fullName"
-                    type="text"
-                    value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
-                    placeholder="Contoh: Budiman Santoso"
-                    className={INPUT_CLASS}
-                  />
+                  <ul className="mt-6 space-y-3">
+                    {BENEFITS.map((b, i) => (
+                      <li key={i} className="flex items-center gap-2.5 text-sm font-medium text-[#404F14]">
+                        <CircleCheck size={18} className="shrink-0 text-[#404F14]" />
+                        <span>{b}</span>
+                      </li>
+                    ))}
+                  </ul>
                 </div>
+              </ScrollReveal>
 
-                <div>
-                  <label htmlFor="phone" className={LABEL_CLASS}>
-                    No. Telepon / WhatsApp
-                  </label>
-                  <input
-                    id="phone"
-                    type="tel"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    placeholder="Contoh: 08123456789"
-                    className={INPUT_CLASS}
-                  />
-                </div>
+              {/* Kolom Kanan: Kartu Form */}
+              <ScrollReveal delay={120}>
+                <div className="mx-auto w-full max-w-[520px] rounded-2xl border border-[#D4D4D4] bg-white p-6 shadow-[0_4px_20px_rgba(0,0,0,0.08)]">
+                  <h2 className="font-heading text-xl font-bold text-[#343133]">
+                    Buat Akun OBC
+                  </h2>
+                  <p className="mt-0.5 text-xs text-[#6F6B6E]">
+                    Lengkapi formulir di bawah ini untuk memulai
+                  </p>
 
-                <div>
-                  <label htmlFor="email" className={LABEL_CLASS}>
-                    Alamat Email
-                  </label>
-                  <input
-                    id="email"
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="budiman@email.com"
-                    className={INPUT_CLASS}
-                  />
-                </div>
+                  <form onSubmit={handleSubmit} className="mt-4 space-y-2.5">
+                    <div>
+                      <label htmlFor="fullName" className={LABEL_CLASS}>
+                        Nama Lengkap
+                      </label>
+                      <input
+                        id="fullName"
+                        type="text"
+                        value={fullName}
+                        onChange={(e) => setFullName(e.target.value)}
+                        placeholder="Nama Lengkap Anda"
+                        disabled={isSubmitting}
+                        className={INPUT_CLASS}
+                      />
+                    </div>
 
-                <div>
-                  <label htmlFor="password" className={LABEL_CLASS}>
-                    Kata Sandi
-                  </label>
-                  <div className="relative">
-                    <input
-                      id="password"
-                      type={showPassword ? 'text' : 'password'}
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      className={`${INPUT_CLASS} pr-10`}
-                    />
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label htmlFor="email" className={LABEL_CLASS}>
+                          Email
+                        </label>
+                        <input
+                          id="email"
+                          type="email"
+                          value={email}
+                          onChange={(e) => setEmail(e.target.value)}
+                          placeholder="nama@email.com"
+                          disabled={isSubmitting}
+                          className={INPUT_CLASS}
+                        />
+                      </div>
+                      <div>
+                        <label htmlFor="phone" className={LABEL_CLASS}>
+                          Nomor Telepon (WhatsApp)
+                        </label>
+                        <input
+                          id="phone"
+                          type="tel"
+                          value={phone}
+                          onChange={(e) => setPhone(e.target.value)}
+                          placeholder="08123456789"
+                          disabled={isSubmitting}
+                          className={INPUT_CLASS}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label htmlFor="password" className={LABEL_CLASS}>
+                          Kata Sandi
+                        </label>
+                        <div className="relative">
+                          <input
+                            id="password"
+                            type={showPassword ? 'text' : 'password'}
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            placeholder="Min. 8 karakter"
+                            disabled={isSubmitting}
+                            className={`${INPUT_CLASS} pr-10`}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowPassword((p) => !p)}
+                            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#404F14] cursor-pointer"
+                          >
+                            {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                          </button>
+                        </div>
+                      </div>
+
+                      <div>
+                        <label htmlFor="confirmPassword" className={LABEL_CLASS}>
+                          Ulangi Kata Sandi
+                        </label>
+                        <div className="relative">
+                          <input
+                            id="confirmPassword"
+                            type={showConfirmPassword ? 'text' : 'password'}
+                            value={confirmPassword}
+                            onChange={(e) => setConfirmPassword(e.target.value)}
+                            placeholder="Ulangi sandi"
+                            disabled={isSubmitting}
+                            className={`${INPUT_CLASS} pr-10`}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowConfirmPassword((p) => !p)}
+                            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#404F14] cursor-pointer"
+                          >
+                            {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+
+                    <label className="flex items-start gap-2 pt-1 text-xs text-[#343133]">
+                      <input
+                        type="checkbox"
+                        checked={agreed}
+                        onChange={(e) => setAgreed(e.target.checked)}
+                        disabled={isSubmitting}
+                        className="mt-0.5 h-4 w-4 shrink-0 rounded border-[#404F14] accent-[#404F14] cursor-pointer"
+                      />
+                      <span>
+                        Saya menyetujui Syarat dan Ketentuan serta Kebijakan Privasi OBC Sport Center.
+                      </span>
+                    </label>
+
                     <button
-                      type="button"
-                      onClick={() => setShowPassword((prev) => !prev)}
-                      aria-label={showPassword ? 'Sembunyikan kata sandi' : 'Tampilkan kata sandi'}
-                      className="absolute right-3 top-1/2 flex -translate-y-1/2 items-center text-[#404F14] cursor-pointer"
+                      type="submit"
+                      disabled={isSubmitting}
+                      className="w-full rounded-lg bg-[#CDF178] py-[clamp(7px,1.3vh,10px)] text-sm font-heading font-bold text-[#404F14] hover:bg-[#9AAD3E] transition-colors cursor-pointer disabled:opacity-50"
                     >
-                      {showPassword ? <EyeOff size={14} aria-hidden="true" /> : <Eye size={14} aria-hidden="true" />}
+                      {isSubmitting ? 'Memproses...' : 'Daftar Sekarang'}
                     </button>
-                  </div>
+                  </form>
+                  <p className="mt-[clamp(6px,1.4vh,12px)] text-center text-xs text-[#343133]">
+                    Sudah punya akun?{' '}
+                    <Link to="/login" className="font-heading font-bold text-[#404F14]">
+                      Masuk Disini
+                    </Link>
+                  </p>
+
+                  <p className="mt-2 text-center text-xs text-[#343133]">Atau</p>
+
+                  <button
+                    type="button"
+                    onClick={handleGoogleLogin}
+                    className="mx-auto mt-2 flex w-full max-w-[280px] items-center justify-center gap-2 rounded-md border border-[#D4D4D4] bg-white py-1.5 font-heading text-xs font-bold text-[#121212] hover:bg-[#FDFCF7] transition-colors cursor-pointer"
+                  >
+                    <GoogleIcon />
+                    Daftar dengan Google
+                  </button>
                 </div>
-
-                <div>
-                  <label htmlFor="confirmPassword" className={LABEL_CLASS}>
-                    Konfirmasi Kata Sandi
-                  </label>
-                  <div className="relative">
-                    <input
-                      id="confirmPassword"
-                      type={showConfirmPassword ? 'text' : 'password'}
-                      value={confirmPassword}
-                      onChange={(e) => setConfirmPassword(e.target.value)}
-                      className={`${INPUT_CLASS} pr-10`}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowConfirmPassword((prev) => !prev)}
-                      aria-label={showConfirmPassword ? 'Sembunyikan kata sandi' : 'Tampilkan kata sandi'}
-                      className="absolute right-3 top-1/2 flex -translate-y-1/2 items-center text-[#404F14] cursor-pointer"
-                    >
-                      {showConfirmPassword ? <EyeOff size={14} aria-hidden="true" /> : <Eye size={14} aria-hidden="true" />}
-                    </button>
-                  </div>
-                  {/* TODO: tampilkan pesan error jika password & confirmPassword tidak sama */}
-                </div>
-
-                <label className="flex items-start gap-2 pt-1 text-xs text-[#343133]">
-                  <input
-                    type="checkbox"
-                    checked={agreed}
-                    onChange={(e) => setAgreed(e.target.checked)}
-                    className="mt-0.5 h-4 w-4 shrink-0 rounded border-[#404F14] accent-[#404F14] cursor-pointer"
-                  />
-                  <span>
-                    Saya menyetujui Syarat dan Ketentuan serta Kebijakan Privasi OBC Sport Center.
-                  </span>
-                </label>
-
-                <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="w-full rounded-lg bg-[#CDF178] py-[clamp(7px,1.3vh,10px)] text-sm font-heading font-bold text-[#404F14] hover:bg-[#9AAD3E] transition-colors cursor-pointer"
-                >
-                  {isSubmitting ? 'Memproses...' : 'Daftar Sekarang'}
-                </button>
-              </form>
-              <p className="mt-[clamp(6px,1.4vh,12px)] text-center text-xs text-[#343133]">
-                Sudah punya akun?{' '}
-                <Link to="/login" className="font-heading font-bold text-[#404F14]">
-                  Masuk Disini
-                </Link>
-              </p>
-
-              <p className="mt-[clamp(4px,1vh,12px)] text-center text-xs text-[#343133]">Atau</p>
-
-              <button
-                type="button"
-                onClick={handleGoogleLogin}
-                className="mx-auto mt-2 flex w-full max-w-[248px] items-center justify-center gap-2 rounded-md border border-[#D4D4D4] bg-white py-[clamp(5px,1vh,8px)] font-heading font-bold text-sm text-[#121212] hover:bg-[#FDFCF7] transition-colors cursor-pointer"
-              >
-                <GoogleIcon />
-                Masuk dengan Google
-              </button>
-            </div>
-            </ScrollReveal>
-          </section>
-        </main>
-      </div>
+              </ScrollReveal>
+            </section>
+          </main>
+        </div>
       )}
     </>
   )

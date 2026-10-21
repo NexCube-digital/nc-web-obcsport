@@ -1,16 +1,34 @@
 import { useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { ArrowLeft, CircleCheck } from 'lucide-react'
+import { toast } from 'sonner'
 import loginIllustration from '../../assets/figma/login.jpg'
 import logo from '../../assets/logo/unit bisnis/LOGO OBC SPORT CENTER.png'
+import { sportApi } from '../../services/api'
 
 function ForgetPassword() {
 	const [email, setEmail] = useState('')
 	const [isSubmitted, setIsSubmitted] = useState(false)
+	const [isLoading, setIsLoading] = useState(false)
 
-	const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+	const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
 		event.preventDefault()
-		setIsSubmitted(true)
+		if (!email.trim()) {
+			toast.error('Masukkan alamat email Anda.')
+			return
+		}
+
+		setIsLoading(true)
+		try {
+			await sportApi.forgotPassword(email.trim())
+			setIsSubmitted(true)
+			toast.success('Tautan reset kata sandi telah dikirim ke email Anda.')
+		} catch (err: any) {
+			const msg = err.response?.data?.error?.message || err.message || 'Gagal mengirim instruksi reset.'
+			toast.error(msg)
+		} finally {
+			setIsLoading(false)
+		}
 	}
 
 	return (
@@ -56,15 +74,15 @@ function ForgetPassword() {
 						Lupa Kata Sandi?
 					</h2>
 					<p className="mt-2 text-sm leading-relaxed text-[#6F6B6E] md:text-base">
-						Masukkan alamat email yang terhubung ke akun Anda. Kami akan membantu memulihkan akses.
+						Masukkan alamat email yang terhubung ke akun Anda. Kami akan mengirimkan tautan pemulihan kata sandi.
 					</p>
 
 					{isSubmitted ? (
 						<div role="status" className="mt-8 rounded-xl border border-[#D4D4D4] bg-white p-5">
 							<CircleCheck size={28} className="text-[#404F14]" aria-hidden="true" />
-							<p className="mt-3 font-heading font-bold text-[#343133]">Permintaan disiapkan</p>
+							<p className="mt-3 font-heading font-bold text-[#343133]">Tautan Terkirim</p>
 							<p className="mt-1 break-all text-sm leading-relaxed text-[#6F6B6E]">
-								Simulasi pemulihan untuk {email}. Pengiriman email akan aktif setelah layanan dihubungkan.
+								Instruksi pengaturan ulang kata sandi telah dikirim ke <strong>{email}</strong>. Silakan periksa folder masuk (atau spam) email Anda.
 							</p>
 						</div>
 					) : (
@@ -80,13 +98,15 @@ function ForgetPassword() {
 								placeholder="nama@email.com"
 								autoComplete="email"
 								required
+								disabled={isLoading}
 								className="h-12 w-full rounded-lg border border-[#D4D4D4] bg-white px-4 text-sm text-[#343133] placeholder:text-[#8A8688] focus:border-[#404F14] focus:outline-none"
 							/>
 							<button
 								type="submit"
-								className="mt-5 h-12 w-full cursor-pointer rounded-lg bg-[#CDF178] font-heading text-sm font-bold text-[#404F14] shadow-[0_2px_6px_rgba(0,0,0,0.15)] transition-colors hover:bg-[#BDE35F]"
+								disabled={isLoading}
+								className="mt-5 h-12 w-full cursor-pointer rounded-lg bg-[#CDF178] font-heading text-sm font-bold text-[#404F14] shadow-[0_2px_6px_rgba(0,0,0,0.15)] transition-colors hover:bg-[#BDE35F] disabled:opacity-50"
 							>
-								Kirim Instruksi Reset
+								{isLoading ? 'Mengirim Instruksi...' : 'Kirim Instruksi Reset'}
 							</button>
 						</form>
 					)}

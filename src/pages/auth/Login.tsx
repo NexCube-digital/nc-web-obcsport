@@ -7,7 +7,7 @@ import logo from '../../assets/logo/unit bisnis/LOGO OBC SPORT CENTER.png'
 import { useIsMobile } from '../../hooks/useIsMobile'
 import ScrollReveal from '../../components/animation/ScrollReveal'
 import { getApiErrorMessage } from '../../services/apiService'
-import { loginCustomer } from '../../services/authService'
+import { loginCustomer, loginGoogleCustomer } from '../../services/authService'
 
 /* Ikon Google */
 function GoogleIcon() {
@@ -36,18 +36,26 @@ function LoginPage() {
   const navigate = useNavigate()
   const isMobile = useIsMobile()
 
+  const navigateAfterLogin = () => {
+    const from = location.state?.from
+    const destination = from?.pathname
+      ? `${from.pathname}${from.search ?? ''}${from.hash ?? ''}`
+      : '/home'
+    navigate(destination, { replace: true })
+  }
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
-    setIsSubmitting(true)
+    if (!email || !password) {
+      toast.error('Silakan isi email dan kata sandi')
+      return
+    }
 
+    setIsSubmitting(true)
     try {
       await loginCustomer(email.trim(), password, rememberMe)
       toast.success('Berhasil masuk.')
-      const from = location.state?.from
-      const destination = from?.pathname
-        ? `${from.pathname}${from.search ?? ''}${from.hash ?? ''}`
-        : '/home'
-      navigate(destination, { replace: true })
+      navigateAfterLogin()
     } catch (error) {
       toast.error(getApiErrorMessage(error, 'Login gagal. Periksa koneksi dan coba lagi.'))
     } finally {
@@ -56,8 +64,33 @@ function LoginPage() {
   }
 
   const handleGoogleLogin = () => {
-    // TODO: sambungkan ke alur OAuth Google (services/authService.js)
-    navigate('/auth/google')
+    if (typeof window !== 'undefined' && (window as any).google?.accounts?.id) {
+      const google = (window as any).google
+      const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || ''
+      if (!clientId) {
+        toast.info('Google Client ID belum dikonfigurasi di env frontend.')
+        return
+      }
+
+      google.accounts.id.initialize({
+        client_id: clientId,
+        callback: async (response: any) => {
+          setIsSubmitting(true)
+          try {
+            await loginGoogleCustomer(response.credential)
+            toast.success('Berhasil masuk dengan Google!')
+            navigateAfterLogin()
+          } catch (err: any) {
+            toast.error(getApiErrorMessage(err, 'Gagal login via Google.'))
+          } finally {
+            setIsSubmitting(false)
+          }
+        },
+      })
+      google.accounts.id.prompt()
+    } else {
+      toast.info('Google Sign-In sedang dimuat, silakan coba beberapa saat lagi.')
+    }
   }
 
   return (
@@ -105,6 +138,7 @@ function LoginPage() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="nama@email.com"
+            disabled={isSubmitting}
             className="h-[clamp(40px,6.8vh,54px)] w-full rounded-xl border border-[#E5E5E5] bg-white px-4 font-body text-sm text-[#343133] placeholder:text-[#8A8688] focus:outline-none focus:border-[#404F14]"
           />
 
@@ -118,6 +152,7 @@ function LoginPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••"
+              disabled={isSubmitting}
               className="h-[clamp(40px,6.8vh,54px)] w-full rounded-xl border border-[#E5E5E5] bg-white pl-4 pr-12 font-body text-sm text-[#343133] placeholder:text-[#8A8688] focus:outline-none focus:border-[#404F14]"
             />
             <button
@@ -152,7 +187,7 @@ function LoginPage() {
           <button
             type="submit"
             disabled={isSubmitting}
-            className="mt-[clamp(8px,1.8vh,20px)] h-[clamp(40px,6.8vh,54px)] w-full rounded-xl bg-[#CDF178] text-base font-bold text-[#343133] shadow-[0_6px_16px_rgba(154,173,62,0.35)] active:bg-[#9AAD3E] transition-colors cursor-pointer"
+            className="mt-[clamp(8px,1.8vh,20px)] h-[clamp(40px,6.8vh,54px)] w-full rounded-xl bg-[#CDF178] text-base font-bold text-[#343133] shadow-[0_6px_16px_rgba(154,173,62,0.35)] active:bg-[#9AAD3E] transition-colors cursor-pointer disabled:opacity-50"
           >
             {isSubmitting ? 'Memproses...' : 'Masuk Sekarang'}
           </button>
@@ -245,14 +280,15 @@ function LoginPage() {
                     htmlFor="email"
                     className="mb-[clamp(4px,0.8vh,8px)] block text-[clamp(12px,1.7vh,15px)] font-heading font-bold text-[#343133]"
                   >
-                    Email / Username
+                    Email
                   </label>
                   <input
                     id="email"
-                    type="text"
+                    type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="Masukan email Anda"
+                    disabled={isSubmitting}
                     className="w-full rounded-lg border border-[#D4D4D4] bg-[#FDFCF7] px-4 py-[clamp(9px,1.8vh,18px)] text-[clamp(13px,1.9vh,17px)] placeholder:text-[#343133] focus:outline-none focus:border-[#404F14]"
                   />
                 </div>
@@ -271,6 +307,7 @@ function LoginPage() {
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       placeholder="Masukan kata sandi Anda"
+                      disabled={isSubmitting}
                       className="w-full rounded-lg border border-[#D4D4D4] bg-[#FDFCF7] px-4 py-[clamp(9px,1.8vh,18px)] pr-12 text-[clamp(13px,1.9vh,17px)] placeholder:text-[#343133] focus:outline-none focus:border-[#404F14]"
                     />
                     <button
@@ -303,7 +340,7 @@ function LoginPage() {
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="w-full rounded-lg bg-[#CDF178] py-[clamp(10px,1.9vh,18px)] text-[clamp(14px,2vh,17px)] font-heading font-bold text-[#404F14] shadow-[0_2px_6px_rgba(0,0,0,0.15)] hover:bg-[#9AAD3E] transition-colors cursor-pointer"
+                  className="w-full rounded-lg bg-[#CDF178] py-[clamp(10px,1.9vh,18px)] text-[clamp(14px,2vh,17px)] font-heading font-bold text-[#404F14] shadow-[0_2px_6px_rgba(0,0,0,0.15)] hover:bg-[#9AAD3E] transition-colors cursor-pointer disabled:opacity-50"
                 >
                   {isSubmitting ? 'Memproses...' : 'Masuk Ke Akun'}
                 </button>
@@ -333,7 +370,6 @@ function LoginPage() {
         </main>
       </div>
       )}
-
     </>
   )
 }

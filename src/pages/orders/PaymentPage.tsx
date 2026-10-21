@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { CalendarDays, Check } from 'lucide-react'
+import { CalendarDays } from 'lucide-react'
 import { toast } from 'sonner'
 import NavbarDashboard from '../../components/layout/Navbar'
 import MobileHeader from '../../components/layout/MobileHeader'
@@ -189,7 +189,7 @@ function PaymentPage() {
 
   // State khusus mobile: metode pembayaran & alat tambahan yang dicentang
   const [mobileMethod, setMobileMethod] = useState<MobileMethodId | null>(null)
-  const [selectedExtras, setSelectedExtras] = useState<string[]>(['raket'])
+  const [selectedExtras] = useState<string[]>(['raket'])
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [pricePreview, setPricePreview] = useState<Pick<BookingPrice, 'basePrice' | 'discountAmount' | 'adminFee' | 'totalPrice'> | null>(state.price ?? null)
 
@@ -353,11 +353,7 @@ function PaymentPage() {
     }
   }
 
-  const handleToggleExtra = (id: string) => {
-    setSelectedExtras((prev) =>
-      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id],
-    )
-  }
+  
 
   const handlePayMobile = () => { void handlePay() }
 

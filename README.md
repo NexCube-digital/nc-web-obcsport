@@ -1,78 +1,109 @@
-# React + TypeScript + Vite
+# OBC Sport Center — Frontend Web Application
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Frontend resmi **OBC Sport Center** untuk reservasi lapangan olahraga instan (Futsal, Badminton, Pickleball, Basket, Tenis Meja, Biliard), membership akademi, manajemen profil customer, dan pembayaran online Midtrans.
 
-Currently, two official plugins are available:
+Dibangun dengan **React 19**, **TypeScript**, **Vite 8**, dan terintegrasi langsung dengan **OBC Group Monolith API** (`nc-api-obc-platform`).
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+---
 
-## React Compiler
+## Update: 22 Oktober 2026 (Integrasi Backend Monolitik)
 
-The React Compiler is enabled on this template. See [this documentation](https://react.dev/learn/react-compiler) for more information.
+Seluruh modul autentikasi, profil pengguna, keranjang pesanan, ulasan, dan notifikasi telah terhubung langsung dengan backend monolitik `nc-api-obc-platform` tanpa lagi bergantung pada mock data statis.
 
-Note: This will impact Vite dev & build performances.
-You can also try [the experimental native React Compiler support in plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md#rust-react-compiler) by using `compiler: true` in the plugin options instead of using the Babel plugin.
+### Fitur Terintegrasi:
+1. **Autentikasi Customer**:
+   - **Login & Register**: Form login dan registrasi terhubung ke endpoint `/api/v1/auth/customer/login` dan `/api/v1/auth/customer/register`.
+   - **Google Sign-In**: Menggunakan Google Identity Services (GIS SDK di frontend) via `window.google.accounts.id` dan memverifikasi ID token ke `/api/v1/auth/customer/google` dengan auto-link akun.
+   - **Lupa Kata Sandi**: Halaman `ForgetPassword.tsx` mengirim instruksi reset kata sandi ke email melalui endpoint `/api/v1/auth/customer/forgot-password`.
+2. **Pengaturan Akun & Profil**:
+   - `SettingPage.tsx` & `ProfilPage.tsx` mengambil data profil pengguna secara langsung via `GET /api/v1/customer/profile`.
+   - Simpan perubahan profil (nama, username, bio) via `PUT /api/v1/customer/profile`.
+   - Unggah foto profil / avatar melalui modal crop gambar via `POST /api/v1/customer/avatar`.
+   - Pembaruan kata sandi akun dengan validasi sandi lama via `PUT /api/v1/customer/password`.
+3. **Pusat Notifikasi**:
+   - `NotificationPage.tsx` menampilkan daftar notifikasi aktual dari endpoint `GET /api/v1/customer/notifications`.
+   - Aksi tandai sudah dibaca per item (`PATCH /api/v1/customer/notifications/{id}/read`) dan tandai semua (`PATCH /api/v1/customer/notifications/read-all`).
+4. **Cart Booking & Batch Checkout**:
+   - Service keranjang `src/services/cart.ts` menyimpan jadwal pesanan di `localStorage` (`obc_sport_cart`).
+   - Mendukung penambahan beberapa sesi lapangan dan checkout batch.
+5. **Feedback & Notifikasi UI**:
+   - Terintegrasi secara global menggunakan `Toaster` dari library `sonner` untuk pesan error, sukses, dan status proses secara real-time.
 
-## Expanding the ESLint configuration
+---
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+## Struktur Folder Proyek
 
-```js
-# Sport OBC
+```
+nc-web-obcsport/
+├── public/                 # Aset statis & logo
+├── src/
+│   ├── assets/             # Gambar, ikon, & font Montserrat
+│   ├── components/
+│   │   ├── layout/         # Navbar, Footer, MobileHeader
+│   │   └── ui/             # CartModal, ModalCheckout, TestimonialModal
+│   ├── data/               # Data katalog fasilitas & referensi
+│   ├── hooks/              # Custom React hooks (useIsMobile, dll)
+│   ├── pages/
+│   │   ├── account/        # SettingPage, NotificationPage, ProfileMobile
+│   │   ├── auth/           # Login, Register, ForgetPassword, LandingPage
+│   │   ├── orders/         # CheckoutPage, PaymentPage, SuccessOrder, FailedOrder
+│   │   ├── HomePage.tsx    # Katalog utama sewa lapangan
+│   │   ├── ProfilPage.tsx  # Halaman profil desktop
+│   │   └── ...
+│   ├── routes/             # AppRoutes konfigurasi React Router v7
+│   ├── services/
+│   │   ├── api.ts          # Axios client & method API OBC Platform
+│   │   └── cart.ts         # Cart localStorage service
+│   ├── utils/              # Helper auth, session token, formatters
+│   ├── App.tsx             # Root component + Sonner Toaster
+│   └── main.tsx            # Entrypoint Vite
+├── index.html              # Template HTML + script Google GIS SDK
+├── package.json
+└── vite.config.ts
+```
 
-Aplikasi web Sport OBC menggunakan React, TypeScript, dan Vite.
+---
 
-## Persyaratan
+## Konfigurasi Lingkungan (`.env`)
 
-- Node.js 20.19+ atau 22.12+
-- npm
+Buat file `.env` di dalam root folder `nc-web-obcsport/`:
 
-## Instalasi
+```env
+# Alamat Backend API Monolith OBC Group
+VITE_API_BASE_URL=http://localhost:3000/api/v1
 
-Clone repository, lalu masuk ke folder proyek:
+# Google OAuth Client ID (Google Cloud Console - Web Application)
+VITE_GOOGLE_CLIENT_ID=your-google-client-id.apps.googleusercontent.com
+```
+
+---
+
+## Menjalankan Proyek
+
+### 1. Instalasi Dependensi
+Gunakan `pnpm` atau `npm`:
 
 ```bash
-git clone <URL_REPOSITORY>
-cd sport-obc
+pnpm install
 ```
 
-Pasang dependency sesuai lockfile:
+### 2. Development Server
+Jalankan server pengembangan Vite:
 
 ```bash
-npm ci
+pnpm run dev
 ```
+Aplikasi dapat diakses melalui browser pada `http://localhost:5174` (atau port yang dialokasikan Vite).
 
-Buat file konfigurasi lokal dari contoh. Di PowerShell:
-
-```powershell
-Copy-Item .env.example .env
-```
-
-Di macOS/Linux:
+### 3. Build Production
+Untuk memastikan tidak ada kesalahan TypeScript dan menghasilkan bundle produksi:
 
 ```bash
-cp .env.example .env
+pnpm run build
 ```
+Output tersimpan di direktori `dist/` dan siap dideploy.
 
-Jalankan aplikasi dalam mode development:
-
+### 4. Preview Build Production
 ```bash
-npm run dev
+pnpm run preview
 ```
-
-Buka alamat lokal yang ditampilkan Vite di terminal.
-
-## Perintah lainnya
-
-```bash
-npm run build    # Type-check dan build untuk production
-npm run preview  # Preview hasil build production
-npm run lint     # Jalankan ESLint
-```
-
-## Environment variables
-
-`.env.example` adalah template konfigurasi. Saat ini aplikasi menggunakan environment variable; `VITE_API_BASE_URL` disediakan sebagai tempat konfigurasi URL backend saat integrasi API ditambahkan.
-
-Salin template ke `.env-example` untuk konfigurasi lokal.

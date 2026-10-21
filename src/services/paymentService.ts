@@ -167,8 +167,8 @@ export const DIRECT_CHANNELS = [
 
 export type DirectChannel = (typeof DIRECT_CHANNELS)[number]
 
-export const isDirectChannel = (channel: string): channel is DirectChannel =>
-	(DIRECT_CHANNELS as readonly string[]).includes(channel)
+export const isDirectChannel = (channel: string | undefined | null): channel is DirectChannel =>
+	Boolean(channel && (DIRECT_CHANNELS as readonly string[]).includes(channel))
 
 // Bentuk respons mentah dari POST /v2/charge Midtrans (hanya field yang dipakai)
 export interface MidtransChargeResponse {

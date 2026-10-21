@@ -24,6 +24,12 @@ export async function loginCustomer(email: string, password: string, rememberMe:
 	return data.data.customer
 }
 
+export async function loginGoogleCustomer(credential: string) {
+	const { data } = await api.post<ApiSuccess<AuthResponse>>('/auth/customer/google', { credential })
+	saveSession(data.data.customer, toTokens(data.data), true)
+	return data.data.customer
+}
+
 export async function registerCustomer(input: {
 	name: string
 	email: string
