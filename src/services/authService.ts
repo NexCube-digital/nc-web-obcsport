@@ -1,11 +1,6 @@
 import { api } from './apiService'
 import { clearUser, getStoredTokens, saveSession, type AuthTokens, type AuthUser } from '../utils/auth'
 
-interface ApiSuccess<T> {
-	success: true
-	data: T
-}
-
 interface CustomerProfile extends AuthUser {
 	id: string
 	lastLoginAt: string
@@ -18,16 +13,34 @@ interface AuthResponse {
 	customer: CustomerProfile
 }
 
+function unwrap<T>(body: unknown): T {
+	const payload = body as { data?: T } | undefined
+	return (payload && typeof payload === 'object' && 'data' in payload && payload.data !== undefined
+		? payload.data
+		: body) as T
+}
+
+function ensureAuthResponse(result: AuthResponse | undefined): AuthResponse {
+	if (!result?.accessToken || !result?.customer) {
+		throw new Error('Respons login tidak valid dari server.')
+	}
+	return result
+}
+
 export async function loginCustomer(email: string, password: string, rememberMe: boolean) {
-	const { data } = await api.post<ApiSuccess<AuthResponse>>('/auth/customer/login', { email, password })
-	saveSession(data.data.customer, toTokens(data.data), rememberMe)
-	return data.data.customer
+	const response = await api.post('/auth/customer/login', { email, password })
+	const result = ensureAuthResponse(unwrap<AuthResponse>(response.data))
+	saveSession(result.customer, toTokens(result), rememberMe)
+	return result.customer
 }
 
 export async function loginGoogleCustomer(credential: string) {
-	const { data } = await api.post<ApiSuccess<AuthResponse>>('/auth/customer/google', { credential })
-	saveSession(data.data.customer, toTokens(data.data), true)
-	return data.data.customer
+	// CATATAN BACKEND: sportApi lama mengirim { idToken }, di sini { credential }.
+	// Sesuaikan dengan nama field yang diterima endpoint /auth/customer/google.
+	const response = await api.post('/auth/customer/google', { credential })
+	const result = ensureAuthResponse(unwrap<AuthResponse>(response.data))
+	saveSession(result.customer, toTokens(result), true)
+	return result.customer
 }
 
 export async function registerCustomer(input: {
@@ -36,9 +49,23 @@ export async function registerCustomer(input: {
 	password: string
 	phone?: string
 }) {
-	const { data } = await api.post<ApiSuccess<AuthResponse>>('/auth/customer/register', input)
-	saveSession(data.data.customer, toTokens(data.data), true)
-	return data.data.customer
+	const response = await api.post('/auth/customer/register', input)
+	const result = ensureAuthResponse(unwrap<AuthResponse>(response.data))
+	saveSession(result.customer, toTokens(result), true)
+	return result.customer
+}
+
+export async function forgotPasswordCustomer(email: string) {
+	const response = await api.post('/auth/customer/forgot-password', { email })
+	return unwrap<{ success: boolean; message: string }>(response.data)
+}
+
+export async function resetPasswordCustomer(token: string, newPassword: string) {
+	const response = await api.post('/auth/customer/reset-password', {
+		token,
+		newPassword,
+	})
+	return unwrap<{ message: string }>(response.data)
 }
 
 export async function logoutCustomer() {

@@ -468,6 +468,8 @@ function SuccesOrder() {
             onDefer={handleDeferReview}
             facilityName={data.facility}
             dateLabel={data.schedule}
+            resourceId={booking.resource.id}
+            bookingId={booking.id}
             onSubmit={handleReviewSubmitted}
           />
         </Suspense>

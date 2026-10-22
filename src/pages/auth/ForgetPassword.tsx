@@ -4,7 +4,7 @@ import { ArrowLeft, CircleCheck } from 'lucide-react'
 import { toast } from 'sonner'
 import loginIllustration from '../../assets/figma/login.jpg'
 import logo from '../../assets/logo/unit bisnis/LOGO OBC SPORT CENTER.png'
-import { sportApi } from '../../services/api'
+import { forgotPasswordCustomer } from '../../services/authService'
 
 function ForgetPassword() {
 	const [email, setEmail] = useState('')
@@ -20,7 +20,7 @@ function ForgetPassword() {
 
 		setIsLoading(true)
 		try {
-			await sportApi.forgotPassword(email.trim())
+			await forgotPasswordCustomer(email.trim())
 			setIsSubmitted(true)
 			toast.success('Tautan reset kata sandi telah dikirim ke email Anda.')
 		} catch (err: any) {

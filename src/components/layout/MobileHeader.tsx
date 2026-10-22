@@ -2,6 +2,7 @@ import { lazy, Suspense, useEffect, useRef, useState } from 'react'
 import { ChevronDown, Globe, ShoppingCart, UserRound } from 'lucide-react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../hooks/useAuth'
+import { getImageUrl } from '../../utils/imageUrl'
 import NotificationDropdown from './NotificationDropdown'
 
 const CartModal = lazy(() => import('../ui/CartModal'))
@@ -140,6 +141,7 @@ function MobileHeader({
   const navigate = useNavigate()
   const { user } = useAuth()
   const displayName = user?.name ?? userName ?? 'Akun OBC'
+  const displayImage = profileImage ?? user?.avatarUrl
   const [activeLanguage, setActiveLanguage] = useState(LANGUAGES[0])
   const [isLanguageMenuOpen, setIsLanguageMenuOpen] = useState(false)
   const [isCartOpen, setIsCartOpen] = useState(false)
@@ -199,8 +201,8 @@ function MobileHeader({
                 aria-label={`Foto profil ${displayName}`}
                 className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#404F14] font-heading text-xs font-bold text-white"
               >
-                {profileImage ? (
-                  <img src={profileImage} alt="" className="h-full w-full object-cover" />
+                {displayImage ? (
+                  <img src={getImageUrl(displayImage) || ''} alt="" className="h-full w-full object-cover" />
                 ) : (
                   <span aria-hidden="true">{getUserInitials(displayName)}</span>
                 )}

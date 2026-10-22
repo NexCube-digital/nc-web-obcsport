@@ -1,12 +1,19 @@
 import { lazy, Suspense, useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ArrowRight, Check } from 'lucide-react'
+import { ArrowRight, Check, Eye, EyeOff } from 'lucide-react'
 import { toast } from 'sonner'
 import NavbarDashboard from '../../components/layout/Navbar'
 import DeferredFooter from '../../components/layout/DeferredFooter'
 import DeferredSection from '../../components/layout/DeferredSection'
-import { sportApi } from '../../services/api'
+import {
+  changePassword,
+  getAccountErrorMessage,
+  getProfile,
+  updateProfile,
+  uploadAvatar,
+} from '../../services/accountService'
 import { useAuth } from '../../hooks/useAuth'
+import { getImageUrl } from '../../utils/imageUrl'
 
 const PhotoCropModal = lazy(() => import('./Photocropmodal'))
 
@@ -30,7 +37,7 @@ const HELP_LINKS: HelpLink[] = [
 
 const MAX_PHOTO_SIZE = 2 * 1024 * 1024 // 2MB
 const ALLOWED_PHOTO_TYPES = ['image/jpeg', 'image/png', 'image/gif']
-const MIN_PASSWORD_LENGTH = 8
+const MIN_PASSWORD_LENGTH = 12
 
 // Kelas bersama supaya semua kolom form seragam
 const LABEL_CLASS = 'block text-sm font-heading font-medium text-[#121212] mb-2'
@@ -57,6 +64,7 @@ function SettingsPage() {
   // State profil
   const [fullName, setFullName] = useState(user?.name ?? '')
   const [username, setUsername] = useState(user?.email?.split('@')[0] ?? '')
+  const [phone, setPhone] = useState('')
   const [bio, setBio] = useState('')
   const [email, setEmail] = useState(user?.email ?? '')
   const [photoPreview, setPhotoPreview] = useState<string | null>(null)
@@ -67,28 +75,29 @@ function SettingsPage() {
 
   // State sandi
   const [passwordError, setPasswordError] = useState('')
-  const oldPasswordRef = useRef<HTMLInputElement>(null)
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false)
+  const [showNewPassword, setShowNewPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+  const currentPasswordRef = useRef<HTMLInputElement>(null)
   const newPasswordRef = useRef<HTMLInputElement>(null)
   const confirmPasswordRef = useRef<HTMLInputElement>(null)
 
-  // Fetch initial profile
+  // Ambil data profil awal
   useEffect(() => {
     let isMounted = true
     const loadProfile = async () => {
       try {
-        const res = await sportApi.getProfile()
-        const profile = res.data?.data || res.data
+        const profile = await getProfile()
         if (isMounted && profile) {
           if (profile.name) setFullName(profile.name)
           if (profile.username) setUsername(profile.username)
+          if (profile.phone) setPhone(profile.phone)
           if (profile.bio) setBio(profile.bio)
           if (profile.email) setEmail(profile.email)
-          if (profile.avatarUrl) {
-            setPhotoPreview(profile.avatarUrl)
-          }
+          if (profile.avatarUrl) setPhotoPreview(getImageUrl(profile.avatarUrl))
         }
-      } catch (err: any) {
-        console.error('Failed to load profile:', err)
+      } catch (err) {
+        console.error('Gagal memuat profil:', err)
       }
     }
     loadProfile()
@@ -121,26 +130,24 @@ function SettingsPage() {
     setCropSource(null)
     const file = new File([blob], 'avatar.jpg', { type: 'image/jpeg' })
     try {
-      const res = await sportApi.uploadAvatar(file)
-      const data = res.data?.data || res.data
-      if (data?.avatarUrl) {
-        setPhotoPreview(data.avatarUrl)
+      const res = await uploadAvatar(file)
+      if (res?.avatarUrl) {
+        setPhotoPreview(getImageUrl(res.avatarUrl))
       } else {
         setPhotoPreview(URL.createObjectURL(blob))
       }
       toast.success('Foto profil berhasil diperbarui!')
-    } catch (err: any) {
-      const msg = err.response?.data?.error?.message || err.message || 'Gagal mengunggah foto profil.'
-      toast.error(msg)
+    } catch (err) {
+      toast.error(getAccountErrorMessage(err, 'Gagal mengunggah foto profil.'))
     }
   }
 
   const handleUpdatePassword = async () => {
-    const oldPassword = oldPasswordRef.current?.value ?? ''
+    const currentPassword = currentPasswordRef.current?.value ?? ''
     const newPassword = newPasswordRef.current?.value ?? ''
     const confirmPassword = confirmPasswordRef.current?.value ?? ''
 
-    if (!oldPassword || !newPassword || !confirmPassword) {
+    if (!currentPassword || !newPassword || !confirmPassword) {
       setPasswordError('Semua kolom sandi wajib diisi.')
       return
     }
@@ -156,13 +163,13 @@ function SettingsPage() {
     setPasswordError('')
     setIsUpdatingPassword(true)
     try {
-      await sportApi.changePassword(oldPassword, newPassword)
+      await changePassword(currentPassword, newPassword)
       toast.success('Kata sandi berhasil diperbarui!')
-      if (oldPasswordRef.current) oldPasswordRef.current.value = ''
+      if (currentPasswordRef.current) currentPasswordRef.current.value = ''
       if (newPasswordRef.current) newPasswordRef.current.value = ''
       if (confirmPasswordRef.current) confirmPasswordRef.current.value = ''
-    } catch (err: any) {
-      const msg = err.response?.data?.error?.message || err.message || 'Gagal memperbarui sandi.'
+    } catch (err) {
+      const msg = getAccountErrorMessage(err, 'Gagal memperbarui sandi.')
       setPasswordError(msg)
       toast.error(msg)
     } finally {
@@ -173,15 +180,15 @@ function SettingsPage() {
   const handleSaveChanges = async () => {
     setIsSaving(true)
     try {
-      await sportApi.updateProfile({
+      await updateProfile({
         name: fullName,
         username: username || undefined,
+        phone: phone || undefined,
         bio: bio || undefined,
       })
       toast.success('Perubahan profil berhasil disimpan!')
-    } catch (err: any) {
-      const msg = err.response?.data?.error?.message || err.message || 'Gagal menyimpan profil.'
-      toast.error(msg)
+    } catch (err) {
+      toast.error(getAccountErrorMessage(err, 'Gagal menyimpan profil.'))
     } finally {
       setIsSaving(false)
     }
@@ -197,7 +204,7 @@ function SettingsPage() {
 
   return (
     <div className="min-h-screen bg-white font-body text-[#343133]">
-      <NavbarDashboard userName={fullName || 'Pengguna'} />
+      <NavbarDashboard userName={fullName || 'Pengguna'} profileImage={photoPreview || undefined} />
 
       {/* Lebar konten 1200px sesuai desain */}
       <main className="max-w-[1248px] mx-auto px-6 pt-8 pb-16">
@@ -275,6 +282,21 @@ function SettingsPage() {
               </div>
             </div>
 
+            {/* Phone */}
+            <div className="mt-6">
+              <label htmlFor="phone" className={LABEL_CLASS}>
+                Nomor Telepon (Opsional)
+              </label>
+              <input
+                id="phone"
+                type="tel"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                placeholder="+62812345678 atau 08123456789"
+                className={INPUT_CLASS}
+              />
+            </div>
+
             {/* Bio */}
             <div className="mt-6">
               <label htmlFor="bio" className={LABEL_CLASS}>
@@ -286,6 +308,18 @@ function SettingsPage() {
                 onChange={(e) => setBio(e.target.value)}
                 className="w-full h-20 resize-none rounded-lg border border-[#E5E5E5] bg-white px-4 py-3 text-sm text-[#121212] focus:outline-none focus:border-[#404F14]"
               />
+            </div>
+
+            {/* Tombol simpan profil */}
+            <div className="mt-8 flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={handleSaveChanges}
+                disabled={isSaving}
+                className="h-9 rounded-lg bg-[#CDF178] px-6 text-sm font-heading font-semibold text-[#404F14] hover:bg-[#9AAD3E] transition-colors cursor-pointer disabled:opacity-50"
+              >
+                {isSaving ? 'Menyimpan...' : 'Simpan Profil'}
+              </button>
             </div>
           </section>
 
@@ -322,39 +356,69 @@ function SettingsPage() {
 
             <div className="mt-5 grid md:grid-cols-3 gap-4">
               <div>
-                <label htmlFor="oldPassword" className={LABEL_CLASS}>
-                  Sandi Lama
+                <label htmlFor="currentPassword" className={LABEL_CLASS}>
+                  Sandi Saat Ini
                 </label>
-                <input
-                  id="oldPassword"
-                  type="password"
-                  ref={oldPasswordRef}
-                  className={INPUT_CLASS}
-                />
+                <div className="relative">
+                  <input
+                    id="currentPassword"
+                    type={showCurrentPassword ? 'text' : 'password'}
+                    ref={currentPasswordRef}
+                    className={INPUT_CLASS}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                    aria-label={showCurrentPassword ? 'Sembunyikan sandi' : 'Tampilkan sandi'}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[#6F6B6E] hover:text-[#121212] cursor-pointer"
+                  >
+                    {showCurrentPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
               </div>
               <div>
                 <label htmlFor="newPassword" className={LABEL_CLASS}>
                   Sandi Baru
                 </label>
-                <input
-                  id="newPassword"
-                  type="password"
-                  ref={newPasswordRef}
-                  placeholder="Minimal 8 karakter"
-                  className={INPUT_CLASS}
-                />
+                <div className="relative">
+                  <input
+                    id="newPassword"
+                    type={showNewPassword ? 'text' : 'password'}
+                    ref={newPasswordRef}
+                    placeholder="Minimal 8 karakter"
+                    className={INPUT_CLASS}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowNewPassword(!showNewPassword)}
+                    aria-label={showNewPassword ? 'Sembunyikan sandi' : 'Tampilkan sandi'}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[#6F6B6E] hover:text-[#121212] cursor-pointer"
+                  >
+                    {showNewPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
               </div>
               <div>
                 <label htmlFor="confirmPassword" className={LABEL_CLASS}>
                   Konfirmasi Sandi Baru
                 </label>
-                <input
-                  id="confirmPassword"
-                  type="password"
-                  ref={confirmPasswordRef}
-                  placeholder="Minimal 8 karakter"
-                  className={INPUT_CLASS}
-                />
+                <div className="relative">
+                  <input
+                    id="confirmPassword"
+                    type={showConfirmPassword ? 'text' : 'password'}
+                    ref={confirmPasswordRef}
+                    placeholder="Minimal 8 karakter"
+                    className={INPUT_CLASS}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    aria-label={showConfirmPassword ? 'Sembunyikan sandi' : 'Tampilkan sandi'}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[#6F6B6E] hover:text-[#121212] cursor-pointer"
+                  >
+                    {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -393,20 +457,6 @@ function SettingsPage() {
           </section>
           </DeferredSection>
         </div>
-
-        {/* ================= Tombol simpan ================= */}
-        <DeferredSection placeholderClassName="mt-6 min-h-[42px]">
-        <div className="mt-6 flex justify-center">
-          <button
-            type="button"
-            onClick={handleSaveChanges}
-            disabled={isSaving}
-            className="w-full max-w-[486px] h-[42px] rounded-lg bg-[#CDF178] text-base font-heading font-bold text-[#404F14] hover:bg-[#9AAD3E] transition-colors cursor-pointer disabled:opacity-50"
-          >
-            {isSaving ? 'Menyimpan...' : 'Simpan Perubahan'}
-          </button>
-        </div>
-        </DeferredSection>
       </main>
 
       <DeferredFooter />

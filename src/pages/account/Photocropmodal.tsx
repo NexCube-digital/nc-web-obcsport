@@ -1,13 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Crop, Move, RotateCcw, X, ZoomIn, ZoomOut } from 'lucide-react'
 
-/* -------------------------------------------------------------------------
-   Modal atur ukuran & posisi foto profil
-   Letakkan di: components/settings/PhotoCropModal.tsx
-   - Desktop (>= 768px): modal melebar ke samping, area foto di kiri dan kontrol di kanan
-   - Mobile (< 768px): bottom sheet satu kolom
-   - Isi modal selalu muat satu layar (tanpa scroll)
-   ------------------------------------------------------------------------- */
+
 interface PhotoCropModalProps {
   file: File
   onCancel: () => void

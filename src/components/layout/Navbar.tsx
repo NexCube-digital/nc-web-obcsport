@@ -5,6 +5,7 @@ import logo from '../../assets/logo/unit bisnis/LOGO OBC SPORT CENTER.png'
 import { useIsMobile } from '../../hooks/useIsMobile'
 import { useAuth } from '../../hooks/useAuth'
 import { logoutCustomer } from '../../services/authService'
+import { getImageUrl } from '../../utils/imageUrl'
 import NotificationDropdown from './NotificationDropdown'
 
 const CartModal = lazy(() => import('../ui/CartModal'))
@@ -77,13 +78,14 @@ function Avatar({
   image?: string
   className?: string
 }) {
+  const imageUrl = image ? getImageUrl(image) : null
   return (
     <span
       aria-hidden="true"
       className={`flex shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#9AAD3E] font-heading font-semibold text-white ${className}`}
     >
-      {image ? (
-        <img src={image} alt="" className="h-full w-full object-cover" />
+      {imageUrl ? (
+        <img src={imageUrl} alt="" className="h-full w-full object-cover" />
       ) : (
         getInitials(name)
       )}
@@ -102,6 +104,7 @@ function Navbar({
   const isMobile = useIsMobile()
   const { user } = useAuth()
   const displayName = user?.name ?? userName ?? 'Akun OBC'
+  const displayImage = profileImage ?? user?.avatarUrl
 
   // State dropdown bahasa dan menu user
   const [activeLang, setActiveLang] = useState<Language>(LANGUAGES[0])
@@ -176,7 +179,7 @@ function Navbar({
       {/* Header + bottom nav mobile (< md) dipisah ke MobileHeader.tsx */}
       {isMobile && showMobileHeader && (
         <Suspense fallback={null}>
-          <MobileHeader userName={displayName} profileImage={profileImage} />
+          <MobileHeader userName={displayName} profileImage={displayImage} />
         </Suspense>
       )}
 
@@ -281,7 +284,7 @@ function Navbar({
               >
                 <Avatar
                   name={displayName}
-                  image={profileImage}
+                  image={displayImage}
                   className={`h-9 w-9 text-sm transition-transform duration-200 ${EASE} group-hover:scale-105 motion-reduce:transition-none`}
                 />
                 {/* Nama user disembunyikan di bawah lg agar muat */}
@@ -309,7 +312,7 @@ function Navbar({
               >
                 {/* Identitas akun */}
                 <div className="flex items-center gap-3 border-b border-[#EDEDED] bg-[#FDFCF7] px-4 py-3.5">
-                  <Avatar name={displayName} image={profileImage} className="h-10 w-10 text-base" />
+                  <Avatar name={displayName} image={displayImage} className="h-10 w-10 text-base" />
                   <div className="min-w-0">
                     <p className="truncate text-sm font-heading font-semibold text-[#343133]">
                       {displayName}

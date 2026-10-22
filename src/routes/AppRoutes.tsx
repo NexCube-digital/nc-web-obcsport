@@ -6,6 +6,7 @@ const LandingPage = lazy(() => import('../pages/auth/LandingPage'))
 const Login = lazy(() => import('../pages/auth/Login'))
 const Register = lazy(() => import('../pages/auth/Register'))
 const ForgetPassword = lazy(() => import('../pages/auth/ForgetPassword'))
+const ResetPassword = lazy(() => import('../pages/auth/ResetPassword'))
 const CheckoutPage = lazy(() => import('../pages/orders/CheckoutPage'))
 const PaymentPage = lazy(() => import('../pages/orders/PaymentPage'))
 const CreditCardPaymentPage = lazy(() => import('../pages/orders/CreditCardPaymentPage'))
@@ -14,7 +15,7 @@ const ProfileMobile = lazy(() => import('../pages/account/ProfileMobile'))
 const HomePage = lazy(() => import('../pages/main/HomePage'))
 const HelpPage = lazy(() => import('../pages/main/HelpPage'))
 const MembershipPage = lazy(() => import('../pages/main/MembershipPage'))
-const NotificationPage = lazy(() => import('../pages/account/NotificationPage'))
+const NotificationPage = lazy(() => import('../pages/NotificationsPage'))
 const HistoryPage = lazy(() => import('../pages/main/HistoryPage'))
 const EventPage = lazy(() => import('../pages/main/EventPage'))
 const FailedOrder = lazy(() => import('../pages/orders/FailedOrder'))
@@ -38,6 +39,7 @@ const AppRoutes = (
 		<Route path="/register" element={<Register />} />
 		<Route path="/login" element={<Login />} />
 		<Route path="/forgot-password" element={<ForgetPassword />} />
+		<Route path="/reset-password" element={<ResetPassword />} />
 		<Route path="/" element={<LandingPage />} />
 
 		<Route element={<RequireAuth />}>

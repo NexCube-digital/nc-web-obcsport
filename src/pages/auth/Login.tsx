@@ -55,6 +55,8 @@ function LoginPage() {
     try {
       await loginCustomer(email.trim(), password, rememberMe)
       toast.success('Berhasil masuk.')
+      // Tunggu event listener terdeteksi
+      await new Promise(resolve => setTimeout(resolve, 100))
       navigateAfterLogin()
     } catch (error) {
       toast.error(getApiErrorMessage(error, 'Login gagal. Periksa koneksi dan coba lagi.'))
@@ -79,6 +81,7 @@ function LoginPage() {
           try {
             await loginGoogleCustomer(response.credential)
             toast.success('Berhasil masuk dengan Google!')
+            // Navigate immediately - user should be in storage by now
             navigateAfterLogin()
           } catch (err: any) {
             toast.error(getApiErrorMessage(err, 'Gagal login via Google.'))

@@ -157,9 +157,7 @@ class SportApiClient {
   public async uploadAvatar(file: File): Promise<any> {
     const formData = new FormData();
     formData.append('photo', file);
-    return this.client.post('/customer/avatar', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    });
+    return this.client.post('/customer/avatar', formData);
   }
 
   public async deleteAvatar(): Promise<any> {

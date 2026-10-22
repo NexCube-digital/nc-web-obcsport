@@ -1,5 +1,7 @@
-import { useEffect, useRef, useState, type ChangeEvent } from 'react'
-import { Camera, Star, X } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { Star, X } from 'lucide-react'
+import { getApiErrorMessage } from '../../services/apiService'
+import { createResourceReview } from '../../services/testimonialService'
 
 /* -------------------------------------------------------------------------
    Tipe data
@@ -7,7 +9,6 @@ import { Camera, Star, X } from 'lucide-react'
 export interface TestimonialPayload {
   rating: number
   review: string
-  photos: File[]
 }
 
 interface TestimonialModalProps {
@@ -18,6 +19,8 @@ interface TestimonialModalProps {
   facilityName: string
   /** Contoh: "Senin, 12 Januari 2026" */
   dateLabel: string
+  resourceId: string
+  bookingId?: string
   onSubmit?: (payload: TestimonialPayload) => void
 }
 
@@ -31,20 +34,14 @@ function TestimonialModal({
   onDefer,
   facilityName,
   dateLabel,
+  resourceId,
+  bookingId,
   onSubmit,
 }: TestimonialModalProps) {
   const [rating, setRating] = useState(DEFAULT_RATING)
   const [review, setReview] = useState('')
-  const [photos, setPhotos] = useState<File[]>([])
-  const fileInputRef = useRef<HTMLInputElement>(null)
-
-  // Reset form setiap kali modal dibuka
-  useEffect(() => {
-    if (!isOpen) return
-    setRating(DEFAULT_RATING)
-    setReview('')
-    setPhotos([])
-  }, [isOpen])
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [submitError, setSubmitError] = useState('')
 
   // Kunci scroll halaman selama modal aktif; modal hanya ditutup setelah ulasan dikirim atau ditunda.
   useEffect(() => {
@@ -69,14 +66,25 @@ function TestimonialModal({
 
   if (!isOpen) return null
 
-  const handlePickPhotos = (event: ChangeEvent<HTMLInputElement>) => {
-    setPhotos(Array.from(event.target.files ?? []))
-  }
+  const handleSubmit = async () => {
+    const trimmedReview = review.trim()
+    if (trimmedReview.length < 3 || isSubmitting) return
 
-  const handleSubmit = () => {
-    // TODO: kirim ke API ulasan (services/reviewService.js)
-    onSubmit?.({ rating, review: review.trim(), photos })
-    onClose()
+    setIsSubmitting(true)
+    setSubmitError('')
+    try {
+      await createResourceReview(resourceId, {
+        rating,
+        comment: trimmedReview,
+        ...(bookingId ? { bookingId } : {}),
+      })
+      onSubmit?.({ rating, review: trimmedReview })
+      onClose()
+    } catch (error) {
+      setSubmitError(getApiErrorMessage(error, 'Ulasan gagal dikirim. Silakan coba lagi.'))
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   return (
@@ -166,32 +174,11 @@ function TestimonialModal({
             className="mt-[7px] h-[93px] w-full resize-none rounded-lg border border-[#D4D4D4] bg-white px-3 py-2 font-heading text-sm text-[#343133] focus:border-[#404F14] focus:outline-none"
           />
 
-          {/* Tambah foto */}
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*"
-            multiple
-            hidden
-            onChange={handlePickPhotos}
-          />
-          <button
-            type="button"
-            onClick={() => fileInputRef.current?.click()}
-            className="mt-4 flex h-9 w-full cursor-pointer items-center justify-center rounded-lg border border-dashed border-[#BDBDBD] bg-[#FDFCF7] font-heading text-xs text-black transition-colors hover:bg-white"
-          >
-            {photos.length > 0 ? (
-              <span className="flex min-w-0 items-center justify-center gap-2 px-2">
-                <Camera size={16} aria-hidden="true" className="shrink-0" />
-                <span>{photos.length} foto dipilih (klik untuk mengganti)</span>
-              </span>
-            ) : (
-              <span className="flex min-w-0 items-center justify-center gap-2 px-2">
-                <Camera size={16} aria-hidden="true" className="shrink-0" />
-                <span>+ Tambah Foto Lapangan (Opsional)</span>
-              </span>
-            )}
-          </button>
+          {submitError && (
+            <p role="alert" className="mt-3 text-center font-heading text-xs text-red-700">
+              {submitError}
+            </p>
+          )}
 
           {/* Kirim */}
           <div className="mx-auto mt-[50px] flex w-full max-w-[379px] items-center gap-3">
@@ -205,10 +192,10 @@ function TestimonialModal({
             <button
               type="button"
               onClick={handleSubmit}
-              disabled={rating === 0}
+              disabled={review.trim().length < 3 || isSubmitting}
               className="h-10 flex-1 cursor-pointer rounded-md bg-[#CDF178] font-heading text-xs font-bold text-[#404F14] transition-colors hover:bg-[#9AAD3E] disabled:cursor-not-allowed disabled:opacity-60"
             >
-              Konfirmasi Ulasan
+              {isSubmitting ? 'Mengirim...' : 'Konfirmasi Ulasan'}
             </button>
           </div>
         </div>

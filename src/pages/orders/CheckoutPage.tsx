@@ -423,7 +423,7 @@ function DetailOrder() {
               locationName={facility.location?.name}
             />
             <DeferredSection placeholderClassName="min-h-[240px]">
-              <ReviewSection variant="mobile" />
+              <ReviewSection variant="mobile" resourceId={resourceId ?? ''} />
             </DeferredSection>
           </div>
           <Suspense fallback={null}>
@@ -472,7 +472,7 @@ function DetailOrder() {
                   locationName={facility.location?.name}
                 />
                 <DeferredSection placeholderClassName="min-h-[240px]">
-                  <ReviewSection variant="desktop" />
+                  <ReviewSection variant="desktop" resourceId={resourceId ?? ''} />
                 </DeferredSection>
               </div>
 
