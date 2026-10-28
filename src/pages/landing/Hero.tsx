@@ -1,15 +1,17 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import lapangF1 from '../../../assets/layanan/Lapang F1.png'
-import futsalF2 from '../../../assets/layanan/Futsal F2.png'
-import lapangF2 from '../../../assets/layanan/Lapang F2.png'
-import mejaBilliard from '../../../assets/layanan/Meja Billiard.png'
+import { useTranslation } from 'react-i18next'
+import lapangF1 from '../../assets/layanan/Lapang F1.png'
+import futsalF2 from '../../assets/layanan/Futsal F2.png'
+import lapangF2 from '../../assets/layanan/Lapang F2.png'
+import mejaBilliard from '../../assets/layanan/Meja Billiard.png'
 
 const HERO_IMAGES = [lapangF1, futsalF2, lapangF2, mejaBilliard]
 
 function Hero() {
 	const [activeSlide, setActiveSlide] = useState(0)
 	const navigate = useNavigate()
+	const { t } = useTranslation()
 
 	useEffect(() => {
 		const timeoutId = window.setTimeout(() => {
@@ -47,7 +49,7 @@ function Hero() {
 				<img
 					key={activeSlide}
 					src={HERO_IMAGES[activeSlide]}
-					alt="Fasilitas olahraga OBC Sport Center"
+					alt={t('landing.heroAlt')}
 					className="hero-anim absolute inset-0 h-full w-full object-cover"
 					style={{ animation: 'hero-fade 0.7s ease-in-out' }}
 				/>
@@ -61,11 +63,10 @@ function Hero() {
 
 				<div className="absolute inset-x-0 bottom-0 px-6 pb-32 text-center text-white">
 					<h1 className="line-clamp-3 font-heading text-2xl font-bold leading-tight">
-						Fasilitas Olahraga Premium Dalam Genggaman Anda
+						{t('landing.heroTitle')}
 					</h1>
 					<p className="mx-auto mt-3 line-clamp-3 max-w-[340px] text-sm leading-relaxed">
-						Temukan dan sewa lapangan olahraga terbaik pilihan Anda dalam genggaman.
-						Nikmati fasilitas modern premium di kota Anda.
+						{t('landing.heroDescription')}
 					</p>
 
 					<div className="mt-6 flex justify-center gap-2">
@@ -73,7 +74,7 @@ function Hero() {
 							<button
 								key={index}
 								type="button"
-								aria-label={`Tampilkan foto ${index + 1}`}
+								aria-label={t('landing.showPhoto', { number: index + 1 })}
 								aria-pressed={index === activeSlide}
 								onClick={() => setActiveSlide(index)}
 								className="relative h-1.5 w-9 cursor-pointer overflow-hidden rounded-full bg-white/50"
@@ -95,16 +96,15 @@ function Hero() {
 				<div className="mx-auto grid max-w-[1248px] items-center gap-8 px-4 py-10 sm:px-6 sm:py-14 md:py-16 lg:grid-cols-2 lg:gap-16 lg:py-16">
 					<div className="text-center lg:text-left">
 						<span className="inline-block rounded-full bg-[#E8EDE3] px-3 py-1.5 font-heading text-[10px] font-bold tracking-wide text-[#404F14] sm:px-4 sm:py-2 sm:text-xs">
-							PROMOSI DAN SEWA LAPANGAN TERBAIK
+							{t('landing.heroBadge')}
 						</span>
 
 						<h1 className="mt-4 font-heading text-3xl font-bold leading-tight text-[#343133] sm:mt-5 sm:text-4xl lg:text-5xl">
-							Fasilitas Olahraga Premium Dalam Genggaman Anda
+							{t('landing.heroTitle')}
 						</h1>
 
 						<p className="mx-auto mt-4 max-w-md text-sm leading-relaxed text-[#343133] sm:mt-5 sm:text-base lg:mx-0">
-							Temukan dan sewa lapangan olahraga terbaik pilihan Anda dalam genggaman.
-							Nikmati fasilitas modern premium di kota Anda.
+							{t('landing.heroDescription')}
 						</p>
 
 						<div className="mt-6 sm:mt-8">
@@ -113,7 +113,7 @@ function Hero() {
 								onClick={() => navigate('/register')}
 								className="w-full cursor-pointer rounded-lg bg-[#CDF178] px-6 py-3 font-heading font-bold text-[#404F14] transition-colors hover:bg-[#9AAD3E] sm:w-auto"
 							>
-								Mulai Sewa Sekarang
+								{t('landing.startBooking')}
 							</button>
 						</div>
 					</div>
@@ -122,7 +122,7 @@ function Hero() {
 						<img
 							key={activeSlide}
 							src={HERO_IMAGES[activeSlide]}
-							alt="Fasilitas olahraga OBC Sport Center"
+							alt={t('landing.heroAlt')}
 							className="hero-anim h-full w-full object-cover"
 							style={{ animation: 'hero-fade 0.7s ease-in-out' }}
 						/>
@@ -131,7 +131,7 @@ function Hero() {
 								<button
 									key={index}
 									type="button"
-									aria-label={`Tampilkan foto ${index + 1}`}
+									aria-label={t('landing.showPhoto', { number: index + 1 })}
 									aria-pressed={index === activeSlide}
 									onClick={() => setActiveSlide(index)}
 									className="relative h-1.5 w-7 cursor-pointer overflow-hidden rounded-full bg-white/60 sm:w-9"

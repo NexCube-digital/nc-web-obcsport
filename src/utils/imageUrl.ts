@@ -15,6 +15,8 @@ export function getImageUrl(path: string | undefined | null): string | null {
   // URL penuh, preview lokal (blob), atau data URI dipakai apa adanya
   if (/^(https?:|blob:|data:)/i.test(path)) return path
 
+  if (path.startsWith('/assets/')) return `${window.location.origin}${path}`
+
   const origin = getAssetOrigin()
   return path.startsWith('/') ? `${origin}${path}` : `${origin}/${path}`
 }

@@ -1,16 +1,16 @@
 import { Suspense } from 'react'
 import { Navigate, Route, Routes } from 'react-router-dom'
 import { Toaster } from 'sonner'
+import { useTranslation } from 'react-i18next'
 import AppRoutes from './routes/AppRoutes'
 
 function App() {
+  const { t } = useTranslation()
   return (
     <>
       <Suspense
         fallback={
-          <div role="status" className="px-4 py-8 text-center text-sm text-[#6B6B6B]">
-            Memuat halaman...
-          </div>
+          <div role="status" className="px-4 py-8 text-center text-sm text-[#6B6B6B]">{t('common.loading')}</div>
         }
       >
         <Routes>

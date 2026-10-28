@@ -2,14 +2,14 @@ import { lazy, useEffect, useState } from 'react'
 import Navbar from '../../components/layout/LandingNavbar'
 import BtnStart from '../../components/ui/BtnStart'
 import DeferredSection from '../../components/layout/DeferredSection'
-import Hero from './sections/Hero'
+import Hero from './Hero'
 
 const Footer = lazy(() => import('../../components/layout/LandingFooter'))
-const Promo = lazy(() => import('./sections/Promo'))
-const Highlight = lazy(() => import('./sections/Highlight'))
-const Booking = lazy(() => import('./sections/Booking'))
-const Testimoni = lazy(() => import('./sections/Testimoni'))
-const UnitBisnis = lazy(() => import('./sections/UnitBisnis'))
+const Promo = lazy(() => import('./Promo'))
+const Highlight = lazy(() => import('./Highlight'))
+const Booking = lazy(() => import('./Booking'))
+const Testimoni = lazy(() => import('./Testimoni'))
+const UnitBisnis = lazy(() => import('./UnitBisnis'))
 
 function LandingPage() {
   const [hasScrolled, setHasScrolled] = useState(false)

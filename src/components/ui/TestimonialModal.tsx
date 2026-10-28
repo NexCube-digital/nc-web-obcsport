@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Star, X } from 'lucide-react'
+import { toast } from 'sonner'
 import { getApiErrorMessage } from '../../services/apiService'
 import { createResourceReview } from '../../services/testimonialService'
 
@@ -41,7 +42,6 @@ function TestimonialModal({
   const [rating, setRating] = useState(DEFAULT_RATING)
   const [review, setReview] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [submitError, setSubmitError] = useState('')
 
   // Kunci scroll halaman selama modal aktif; modal hanya ditutup setelah ulasan dikirim atau ditunda.
   useEffect(() => {
@@ -71,17 +71,17 @@ function TestimonialModal({
     if (trimmedReview.length < 3 || isSubmitting) return
 
     setIsSubmitting(true)
-    setSubmitError('')
     try {
       await createResourceReview(resourceId, {
         rating,
         comment: trimmedReview,
         ...(bookingId ? { bookingId } : {}),
       })
+      toast.success('Terima kasih, ulasan kamu berhasil dikirim.')
       onSubmit?.({ rating, review: trimmedReview })
       onClose()
     } catch (error) {
-      setSubmitError(getApiErrorMessage(error, 'Ulasan gagal dikirim. Silakan coba lagi.'))
+      toast.error(getApiErrorMessage(error, 'Ulasan gagal dikirim. Silakan coba lagi.'))
     } finally {
       setIsSubmitting(false)
     }
@@ -173,12 +173,6 @@ function TestimonialModal({
             onChange={(event) => setReview(event.target.value)}
             className="mt-[7px] h-[93px] w-full resize-none rounded-lg border border-[#D4D4D4] bg-white px-3 py-2 font-heading text-sm text-[#343133] focus:border-[#404F14] focus:outline-none"
           />
-
-          {submitError && (
-            <p role="alert" className="mt-3 text-center font-heading text-xs text-red-700">
-              {submitError}
-            </p>
-          )}
 
           {/* Kirim */}
           <div className="mx-auto mt-[50px] flex w-full max-w-[379px] items-center gap-3">

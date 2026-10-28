@@ -160,7 +160,7 @@ export async function embedMidtransCheckout(token: string, embedId: string, call
 
 // Channel yang bisa ditampilkan langsung di halaman (tanpa Snap)
 export const DIRECT_CHANNELS = [
-	'qris', 'gopay', 'shopeepay',
+	'qris', 'gopay', 'shopeepay', 'credit_card',
 	'bca_va', 'bni_va', 'bri_va', 'mandiri_va', 'permata_va',
 	'alfamart', 'indomaret',
 ] as const

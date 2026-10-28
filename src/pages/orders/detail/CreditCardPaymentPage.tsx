@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
-import NavbarDashboard from '../../components/layout/Navbar'
-import MobileHeader from '../../components/layout/MobileHeader'
-import DeferredFooter from '../../components/layout/DeferredFooter'
-import { useIsMobile } from '../../hooks/useIsMobile'
-import { getBookingDetails, type BookingDetails } from '../../services/bookingService'
-import { getApiErrorMessage } from '../../services/apiService'
-import CreditCardPaymentForm from './payment/CreditCardPaymentForm'
+import NavbarDashboard from '../../../components/layout/Navbar'
+import MobileHeader from '../../../components/layout/MobileHeader'
+import DeferredFooter from '../../../components/layout/DeferredFooter'
+import { useIsMobile } from '../../../hooks/useIsMobile'
+import { getBookingDetails, type BookingDetails } from '../../../services/bookingService'
+import { getApiErrorMessage } from '../../../services/apiService'
+import CreditCardPaymentForm from '../payment/CreditCardPaymentForm'
 
 interface CreditCardPaymentState {
 	bookingId?: string
@@ -46,7 +46,7 @@ function CreditCardPaymentPage() {
 					return
 				}
 				if (details.payments[0]?.method !== 'credit_card') {
-					navigate(`/information-order?bookingId=${encodeURIComponent(bookingId)}`, {
+					navigate(`/finalisasi-order?bookingId=${encodeURIComponent(bookingId)}`, {
 						replace: true,
 						state: { bookingId },
 					})
@@ -62,7 +62,7 @@ function CreditCardPaymentPage() {
 	}, [bookingId, navigate])
 
 	const openInformationOrder = () => {
-		navigate(`/information-order?bookingId=${encodeURIComponent(bookingId)}`, {
+		navigate(`/finalisasi-order?bookingId=${encodeURIComponent(bookingId)}`, {
 			replace: true,
 			state: { bookingId },
 		})

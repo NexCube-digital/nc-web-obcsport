@@ -2,9 +2,18 @@ import { useEffect, useState } from 'react'
 import { Check, Copy } from 'lucide-react'
 import type { DirectPaymentInfo } from '../../../services/paymentService'
 
+export interface PaymentBookingItem {
+  id: string
+  facilityName: string
+  bookingDate: string
+  startTime: string
+  endTime: string
+}
+
 interface PaymentInstructionCardProps {
   info: DirectPaymentInfo
   totalLabel: string
+  bookings?: PaymentBookingItem[]
   onCheckStatus: () => void
 }
 
@@ -74,7 +83,7 @@ function CopyRow({ label, value }: { label: string; value: string }) {
   )
 }
 
-function PaymentInstructionCard({ info, totalLabel, onCheckStatus }: PaymentInstructionCardProps) {
+function PaymentInstructionCard({ info, totalLabel, bookings = [], onCheckStatus }: PaymentInstructionCardProps) {
   const countdown = useCountdown(info.expiryTime)
 
   return (
@@ -85,7 +94,31 @@ function PaymentInstructionCard({ info, totalLabel, onCheckStatus }: PaymentInst
       <p className="mt-0.5 font-heading text-xs text-[#6F6B6E]">
         {CHANNEL_LABEL[info.channel]}
       </p>
-
+      {bookings.length > 0 && (
+        <section className="mt-3 rounded-lg border border-[#D4D4D4] bg-white">
+          <div className="flex items-center justify-between gap-3 border-b border-[#E5E5E5] px-3 py-2">
+            <h2 className="font-heading text-xs font-bold text-[#121212]">Detail Booking</h2>
+            {bookings.length > 1 && (
+              <span className="rounded-full bg-[#E6F0E0] px-2 py-1 text-[10px] font-bold text-[#404F14]">
+                {bookings.length} pesanan
+              </span>
+            )}
+          </div>
+          <div className="max-h-36 space-y-2 overflow-y-auto p-3">
+            {bookings.map((booking, index) => (
+              <div key={booking.id} className="rounded-lg bg-[#FDFCF7] px-3 py-2">
+                <p className="font-heading text-[11px] font-bold text-[#121212]">
+                  {bookings.length > 1 ? `${index + 1}. ` : ''}{booking.facilityName}
+                </p>
+                <div className="mt-1 flex items-center justify-between gap-3 font-heading text-[10px] text-[#6F6B6E]">
+                  <span>{booking.bookingDate}</span>
+                  <span className="shrink-0 font-bold text-[#404F14]">{booking.startTime} - {booking.endTime}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
       <div className="mt-4 flex items-center justify-between rounded-lg bg-[#E6F0E0] px-3 py-2">
         <span className="font-heading text-xs text-[#404F14]">Total Pembayaran</span>
         <span className={`${FONT_MONTSERRAT} text-lg font-bold text-[#404F14]`}>{totalLabel}</span>

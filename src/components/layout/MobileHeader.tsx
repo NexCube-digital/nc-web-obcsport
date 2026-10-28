@@ -1,8 +1,11 @@
 import { lazy, Suspense, useEffect, useRef, useState } from 'react'
 import { ChevronDown, Globe, ShoppingCart, UserRound } from 'lucide-react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
+import { toast } from 'sonner'
 import { useAuth } from '../../hooks/useAuth'
 import { getImageUrl } from '../../utils/imageUrl'
+import { cartService, removeBackendCartItem, syncBackendCart } from '../../services/cart'
 import NotificationDropdown from './NotificationDropdown'
 
 const CartModal = lazy(() => import('../ui/CartModal'))
@@ -41,6 +44,11 @@ const LANGUAGES: LanguageOption[] = [
   { code: 'IND', label: 'Indonesia' },
   { code: 'ENG', label: 'English' },
 ]
+
+const timeToMinutes = (time: string) => {
+  const [hours, minutes] = time.split(':').map(Number)
+  return hours * 60 + minutes
+}
 
 function getUserInitials(name: string): string {
   return name
@@ -87,7 +95,7 @@ const ShareIcon = () => (
 const BOTTOM_NAV_ITEMS: BottomNavItem[] = [
   {
     id: 'home',
-    label: 'Home',
+    label: 'common.home',
     href: '/home',
     icon: (
       <svg {...iconProps}>
@@ -97,7 +105,7 @@ const BOTTOM_NAV_ITEMS: BottomNavItem[] = [
   },
   {
     id: 'sewa-event',
-    label: 'Sewa Event',
+    label: 'common.eventRental',
     href: '/event',
     icon: (
       <svg {...iconProps}>
@@ -108,7 +116,7 @@ const BOTTOM_NAV_ITEMS: BottomNavItem[] = [
   },
   {
     id: 'membership',
-    label: 'Membership',
+    label: 'common.membership',
     href: '/membership',
     icon: (
       <svg {...iconProps}>
@@ -119,7 +127,7 @@ const BOTTOM_NAV_ITEMS: BottomNavItem[] = [
   },
   {
     id: 'profil',
-    label: 'Profil',
+    label: 'common.profile',
     href: '/profil-mobile',
     icon: <UserRound size={24} strokeWidth={1.8} aria-hidden="true" />,
   },
@@ -139,12 +147,14 @@ function MobileHeader({
 }: MobileHeaderProps) {
   const location = useLocation()
   const navigate = useNavigate()
+  const { t, i18n } = useTranslation()
   const { user } = useAuth()
   const displayName = user?.name ?? userName ?? 'Akun OBC'
   const displayImage = profileImage ?? user?.avatarUrl
-  const [activeLanguage, setActiveLanguage] = useState(LANGUAGES[0])
+  const activeLanguage = i18n.resolvedLanguage?.startsWith('en') ? LANGUAGES[1] : LANGUAGES[0]
   const [isLanguageMenuOpen, setIsLanguageMenuOpen] = useState(false)
   const [isCartOpen, setIsCartOpen] = useState(false)
+  const [cartItems, setCartItems] = useState(() => cartService.getItems())
   const languageMenuRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -159,6 +169,14 @@ function MobileHeader({
     document.addEventListener('pointerdown', handleOutsideClick)
     return () => document.removeEventListener('pointerdown', handleOutsideClick)
   }, [isLanguageMenuOpen])
+
+  useEffect(() => {
+    const unsubscribe = cartService.subscribe(() => setCartItems(cartService.getItems()))
+    syncBackendCart()
+      .then(setCartItems)
+      .catch(() => setCartItems(cartService.getItems()))
+    return unsubscribe
+  }, [])
 
   const handleBack = () => {
     if (backTo) navigate(backTo)
@@ -209,7 +227,7 @@ function MobileHeader({
               </div>
               <div className="flex min-w-0 flex-col leading-tight">
                 <span className="text-[10px] font-heading font-normal text-[#6B6B6B] min-[360px]:text-xs">
-                  Selamat Datang,
+                  {t('common.welcome')}
                 </span>
                 <span className="truncate text-sm font-heading font-semibold text-[#121212] min-[360px]:text-base">
                   {displayName}
@@ -222,7 +240,7 @@ function MobileHeader({
                 <button
                   type="button"
                   onClick={() => setIsLanguageMenuOpen((open) => !open)}
-                  aria-label={`Bahasa ${activeLanguage.label}`}
+                  aria-label={`${t('common.chooseLanguage')}: ${activeLanguage.label}`}
                   aria-haspopup="listbox"
                   aria-expanded={isLanguageMenuOpen}
                   className="flex h-9 items-center gap-1 rounded-full px-1.5 text-[10px] font-heading font-semibold text-[#343133] transition-colors hover:bg-[#F1F4EA] min-[360px]:gap-1.5 min-[360px]:px-2 min-[360px]:text-xs"
@@ -237,7 +255,7 @@ function MobileHeader({
                 {isLanguageMenuOpen && (
                   <ul
                     role="listbox"
-                    aria-label="Pilih bahasa"
+                    aria-label={t('common.chooseLanguage')}
                     className="absolute right-0 top-full z-50 mt-2 w-36 rounded-lg border border-[#E5E5E5] bg-white py-1 shadow-lg"
                   >
                     {LANGUAGES.map((language) => (
@@ -247,7 +265,7 @@ function MobileHeader({
                           role="option"
                           aria-selected={language.code === activeLanguage.code}
                           onClick={() => {
-                            setActiveLanguage(language)
+                            void i18n.changeLanguage(language.code === 'ENG' ? 'en' : 'id')
                             setIsLanguageMenuOpen(false)
                           }}
                           className={`w-full px-3 py-2 text-left text-xs font-heading hover:bg-[#FDFCF7] ${
@@ -270,9 +288,14 @@ function MobileHeader({
                 aria-label="Keranjang"
                 aria-haspopup="dialog"
                 aria-expanded={isCartOpen}
-                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[#404F14] transition-colors hover:bg-[#F1F4EA] hover:text-[#004000]"
+                className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[#404F14] transition-colors hover:bg-[#F1F4EA] hover:text-[#004000]"
               >
                 <ShoppingCart size={19} strokeWidth={1.8} aria-hidden="true" />
+                {cartItems.length > 0 && (
+                  <span className="absolute right-0 top-0 grid min-h-4 min-w-4 -translate-y-1/3 translate-x-1/3 place-items-center rounded-full bg-[#9AAD3E] px-1 text-[9px] font-bold leading-none text-white" aria-label={`${cartItems.length} booking dalam keranjang`}>
+                    {cartItems.length > 99 ? '99+' : cartItems.length}
+                  </span>
+                )}
               </button>
 
               <NotificationDropdown />
@@ -362,7 +385,7 @@ function MobileHeader({
                     }`}
                   >
                     {item.icon}
-                    <span className="whitespace-nowrap">{item.label}</span>
+                    <span className="whitespace-nowrap">{t(item.label)}</span>
                   </Link>
                 </li>
               )
@@ -373,7 +396,40 @@ function MobileHeader({
 
       {isCartOpen && (
         <Suspense fallback={null}>
-          <CartModal isOpen onClose={() => setIsCartOpen(false)} />
+          <CartModal
+            isOpen
+            items={cartItems}
+            onClose={() => setIsCartOpen(false)}
+            onRemove={async (id) => {
+              try {
+                await removeBackendCartItem(id)
+                const items = await syncBackendCart()
+                setCartItems(items)
+                toast.success('Booking berhasil dihapus dari keranjang.')
+              } catch (error) {
+                toast.error(error instanceof Error ? error.message : 'Item keranjang gagal dihapus.')
+              }
+            }}
+            onCheckout={(items) => {
+              const firstItem = items[0]
+              if (!firstItem?.resourceId || !firstItem.bookingDate || !firstItem.startTime || !firstItem.endTime || !firstItem.sportType) return
+              setIsCartOpen(false)
+              navigate('/payment', {
+                state: {
+                  resourceId: firstItem.resourceId,
+                  sportType: firstItem.sportType,
+                  bookingDate: firstItem.bookingDate,
+                  facility: { id: firstItem.resourceId, name: firstItem.facilityName },
+                  date: firstItem.bookingDate,
+                  time: firstItem.startTime,
+                  endTime: firstItem.endTime,
+                  total: firstItem.price,
+                  durationMinutes: ((timeToMinutes(firstItem.endTime) - timeToMinutes(firstItem.startTime)) || 60),
+                  cartItems: items,
+                },
+              })
+            }}
+          />
         </Suspense>
       )}
     </>

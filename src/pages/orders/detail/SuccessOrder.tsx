@@ -1,21 +1,22 @@
 import { lazy, Suspense, useEffect, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { ChevronDown, CircleCheck } from 'lucide-react'
-import NavbarDashboard from '../../components/layout/Navbar'
-import MobileHeader from '../../components/layout/MobileHeader'
-import DeferredFooter from '../../components/layout/DeferredFooter'
-import ScrollReveal from '../../components/animation/ScrollReveal'
+import NavbarDashboard from '../../../components/layout/Navbar'
+import MobileHeader from '../../../components/layout/MobileHeader'
+import DeferredFooter from '../../../components/layout/DeferredFooter'
+import ScrollReveal from '../../../components/animation/ScrollReveal'
 import lapangF1 from '../../assets/layanan/Lapang F1.png'
-import { useIsMobile } from '../../hooks/useIsMobile'
-import { getBookingDetails, type BookingDetails } from '../../services/bookingService'
+import { useIsMobile } from '../../../hooks/useIsMobile'
+import { getBookingDetails, type BookingDetails } from '../../../services/bookingService'
 
-const TestimonialModal = lazy(() => import('../../components/ui/TestimonialModal'))
+const TestimonialModal = lazy(() => import('../../../components/ui/TestimonialModal'))
 
 /* -------------------------------------------------------------------------
    Tipe data
    ------------------------------------------------------------------------- */
 interface SuccessState {
   bookingId?: string
+  bookingIds?: string[]
   transactionNumber?: string
   paidAt?: string
   method?: string
@@ -56,7 +57,10 @@ function SuccesOrder() {
   const location = useLocation()
   const isMobile = useIsMobile()
   const state = (location.state as SuccessState | null) ?? {}
-  const bookingId = state.bookingId ?? new URLSearchParams(location.search).get('bookingId') ?? ''
+  const queryBookingIds = new URLSearchParams(location.search).get('bookingIds')?.split(',').filter(Boolean) ?? []
+  const bookingIds = state.bookingIds?.length ? state.bookingIds : queryBookingIds.length ? queryBookingIds : [state.bookingId ?? new URLSearchParams(location.search).get('bookingId') ?? ''].filter(Boolean)
+  const bookingIdsKey = bookingIds.join('|')
+  const bookingId = bookingIds[0] ?? ''
   const [booking, setBooking] = useState<BookingDetails | null>(null)
   const reviewStorageKey = `obc:review:${bookingId}`
   const [reviewStatus, setReviewStatus] = useState(
@@ -73,20 +77,22 @@ function SuccesOrder() {
       return
     }
     let active = true
-    getBookingDetails(bookingId)
+    const effectBookingIds = bookingIdsKey.split('|').filter(Boolean)
+    Promise.all(effectBookingIds.map((id) => getBookingDetails(id)))
       .then((details) => {
         if (!active) return
-        if (details.status !== 'fully_paid' && details.status !== 'completed') {
-          navigate('/information-order', { replace: true, state: { bookingId } })
+        const unpaid = details.find((item) => item.status !== 'fully_paid' && item.status !== 'completed')
+        if (unpaid) {
+          navigate('/information-order', { replace: true, state: { bookingId: unpaid.id, bookingIds: effectBookingIds } })
           return
         }
-        setBooking(details)
+        setBooking(details[0] ?? null)
       })
       .catch(() => {
         if (active) navigate('/information-order', { replace: true, state: { bookingId } })
       })
     return () => { active = false }
-  }, [bookingId, navigate])
+  }, [bookingId, bookingIdsKey, navigate])
 
   const latestPayment = booking?.payments[0]
   const method = latestPayment?.method === 'qris'
@@ -146,11 +152,9 @@ function SuccesOrder() {
       {isMobile && <MobileHeader variant="title" title="Pesanan Berhasil" showBottomNav={false} />}
       {isMobile && (
         <div
-          className={`flex h-[calc(100dvh-4rem)] flex-col bg-white px-4 pb-5 pt-3 font-body text-[#343133] overscroll-contain ${
-          isPaymentDetailsOpen ? 'overflow-y-auto' : 'overflow-hidden'
-          }`}
+          className="fixed inset-x-0 bottom-0 top-14 flex min-h-0 flex-col overflow-hidden bg-white font-body text-[#343133]"
         >
-        <ScrollReveal className="flex min-h-0 flex-1 flex-col">
+        <ScrollReveal className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-4 pt-3">
         <div
           role="img"
           aria-label="Pembayaran berhasil"
@@ -172,6 +176,11 @@ function SuccesOrder() {
           <h1 className={`${FONT_MONTSERRAT} mt-2 text-lg font-bold leading-6 text-[#343133]`}>
             Selamat! Lapangan Anda Berhasil Dipesan
           </h1>
+          {bookingIds.length > 1 && (
+            <p className="mt-1 font-heading text-[11px] font-bold text-[#265021]">
+              {bookingIds.length} pesanan berhasil diproses
+            </p>
+          )}
           <p className="mt-1.5 font-heading text-[11px] leading-4 text-[#343133]">
             E-ticket Anda telah aktif secara otomatis. Kode booking telah dikirimkan ke
             WhatsApp Anda. Silakan tunjukkan QR Code atau Kode Booking di bawah ini kepada
@@ -288,7 +297,7 @@ function SuccesOrder() {
         </section>
 
         {/* Tombol, menempel di bawah layar */}
-        <div className="mt-auto space-y-2 pt-4">
+        <div className="shrink-0 space-y-2 border-t border-[#E5E5E5] bg-white px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-2">
           <button
             type="button"
             onClick={handleDownloadTicket}

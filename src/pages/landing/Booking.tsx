@@ -1,7 +1,7 @@
-import lapangF1 from '../../../assets/layanan/Lapang F1.png'
-import futsalF2 from '../../../assets/layanan/Futsal F2.png'
-import lapangF2 from '../../../assets/layanan/Lapang F2.png'
-import mejaBilliard from '../../../assets/layanan/Meja Billiard.png'
+import lapangF1 from '../../assets/layanan/Lapang F1.png'
+import futsalF2 from '../../assets/layanan/Futsal F2.png'
+import lapangF2 from '../../assets/layanan/Lapang F2.png'
+import mejaBilliard from '../../assets/layanan/Meja Billiard.png'
 
 const COLLAGE_IMG =
 	'w-full rounded-lg sm:rounded-xl object-cover shadow-[0_2px_10px_rgba(0,0,0,0.15)] transition duration-300 ease-out hover:scale-[1.04] hover:shadow-[0_10px_24px_rgba(0,0,0,0.22)]'

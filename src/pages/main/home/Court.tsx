@@ -1,8 +1,3 @@
-import lapangF1 from '../../../assets/layanan/Lapang F1.png'
-import lapangF2 from '../../../assets/layanan/Lapang F2.png'
-import futsalF2 from '../../../assets/layanan/Futsal F2.png'
-import mejaBilliard from '../../../assets/layanan/Meja Billiard.png'
-
 export interface FacilityCard {
 	id: string
 	name: string
@@ -14,6 +9,7 @@ export interface FacilityCard {
 	slotMinutes?: number
 	fromPrice?: number | null
 	fromPriceFormatted?: string | null
+	amenities?: string[]
 	location?: { name: string; city: string; address: string } | null
 }
 
@@ -31,50 +27,7 @@ interface CourtProps {
 
 const FONT_MONTSERRAT = "font-['Montserrat',sans-serif]"
 
-const FACILITIES: FacilityCard[] = [
-	{
-		id: 'lapangan-f1',
-		name: 'Lapangan F1',
-		description: 'Futsal 1, Badminton, Pickleball',
-		badge: 'TERSEDIA',
-		buttonLabel: 'Booking Sekarang',
-		image: lapangF1,
-	},
-	{
-		id: 'lapangan-f2',
-		name: 'Lapangan F2',
-		description: 'Futsal 2, Basket',
-		badge: 'TERSEDIA',
-		buttonLabel: 'Booking Sekarang',
-		image: lapangF2,
-	},
-	{
-		id: 'lapang-sepak-bola',
-		name: 'Lapang Sepak Bola',
-		description: 'Sepak Bola',
-		badge: 'TERSEDIA',
-		buttonLabel: 'Booking Sekarang',
-		image: futsalF2,
-	},
-	{
-		id: 'ruang-tenis-meja',
-		name: 'Ruang Tenis Meja',
-		description: 'Tenis Meja',
-		badge: 'TERSEDIA',
-		buttonLabel: 'Booking Sekarang',
-		image: futsalF2,
-	},
-	{
-		id: 'ruang-biliard',
-		name: 'Ruang Biliard',
-		description: 'Biliard',
-		badge: 'TERSEDIA',
-		buttonLabel: 'Booking Sekarang',
-		image: mejaBilliard,
-	},
-]
-
-function Court({ submittedSearch, onPreviewImage, onSelectFacility, facilities = FACILITIES }: CourtProps) {
+function Court({ submittedSearch, onPreviewImage, onSelectFacility, facilities = [] }: CourtProps) {
 	const normalizedSearch = submittedSearch.toLocaleLowerCase('id-ID')
 	const filteredFacilities = facilities.filter((facility) =>
 		`${facility.name} ${facility.description}`.toLocaleLowerCase('id-ID').includes(normalizedSearch),
@@ -102,13 +55,19 @@ function Court({ submittedSearch, onPreviewImage, onSelectFacility, facilities =
 							className="absolute inset-0 z-10 cursor-zoom-in focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#404F14]"
 						/>
 						<div className="aspect-video w-full shrink-0 overflow-hidden lg:aspect-auto lg:h-36">
-							<img
-								src={facility.image}
-								alt=""
-								className="h-full w-full object-cover transition-transform duration-300 hover:scale-105"
-								loading="lazy"
-								decoding="async"
-							/>
+							{facility.image ? (
+								<img
+									src={facility.image}
+									alt=""
+									className="h-full w-full object-cover transition-transform duration-300 hover:scale-105"
+									loading="lazy"
+									decoding="async"
+								/>
+							) : (
+								<div className="grid h-full place-items-center bg-[#EEF0EA] text-xs text-[#6F6B6E]">
+									Gambar belum tersedia
+								</div>
+							)}
 						</div>
 						<div className="pointer-events-none relative flex flex-1 flex-col px-2.5 pt-2.5 pb-2.5 min-[360px]:px-3 min-[360px]:pt-3 min-[360px]:pb-3 sm:pb-4">
 							{/* Mobile: nama di atas, badge di bawahnya (selalu rapi). >= sm: sebaris */}

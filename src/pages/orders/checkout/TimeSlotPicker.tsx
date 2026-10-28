@@ -46,10 +46,9 @@ function TimeSlotPicker({
         onChange={(event) => onChangeDuration(Number(event.target.value))}
         className="h-10 rounded-md border border-[#D4D4D4] bg-white px-3 font-heading font-bold text-[#265021]"
       >
-        {Array.from({ length: maxSessionHours * 4 - 3 }, (_, index) => 60 + index * 15).map((minutes) => (
+        {Array.from({ length: maxSessionHours }, (_, index) => (index + 1) * 60).map((minutes) => (
           <option key={minutes} value={minutes}>
-            {Math.floor(minutes / 60) > 0 ? `${Math.floor(minutes / 60)} jam` : ''}
-            {minutes % 60 > 0 ? ` ${minutes % 60} menit` : ''}
+            {minutes / 60} jam
           </option>
         ))}
       </select>

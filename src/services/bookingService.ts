@@ -147,6 +147,37 @@ export async function createBooking(input: CreateBookingInput) {
 	return response.data.data
 }
 
+export interface CartCheckoutItem {
+	resourceId: string
+	bookingDate: string
+	startTime: string
+	endTime: string
+	sportType: string
+}
+
+export interface CartCheckoutResult {
+	orderId: string
+	bookingIds: string[]
+	totalAmount: number
+	totalAmountFormatted: string
+	payment: { token: string; redirectUrl: string } | { unavailable: true; message: string } | null
+	holdExpiresAt: string | null
+	message: string
+}
+
+export async function checkoutCart(
+	items: CartCheckoutItem[],
+	paymentMethod?: 'bank_transfer' | 'credit_card' | 'ewallet' | 'convenience_store' | 'qris' | 'other',
+	paymentChannel?: PaymentChannel,
+) {
+	const response = await api.post<ApiSuccess<CartCheckoutResult>>('/sports/bookings/checkout-cart', {
+		items,
+		...(paymentMethod ? { paymentMethod } : {}),
+		...(paymentChannel ? { paymentChannel } : {}),
+	})
+	return response.data.data
+}
+
 export async function getBookings(params: {
 	page?: number
 	limit?: number

@@ -14,12 +14,29 @@ export interface SportsFacility {
 	sportTypes: string[]
 	capacity: number | null
 	amenities: string[]
+	imageUrl: string | null
+	gallery: string[] | null
 	slotMinutes: number
 	tenantId: string
 	tenant: { id: string; name: string; slug: string }
 	location: { id: string; name: string; city: string; address: string } | null
 	fromPrice: number | null
 	fromPriceFormatted: string | null
+}
+
+export interface FacilityPriceTier {
+	id: string
+	dayType: 'weekday' | 'weekend'
+	tierStart: number
+	tierEnd: number
+	pricePerHour: number
+	pricePerHourFormatted: string
+	priority: number
+}
+
+export async function getFacilityPriceTiers(resourceId: string) {
+	const response = await api.get<ApiSuccess<FacilityPriceTier[]>>(`/sports/resources/${resourceId}/pricing`)
+	return response.data.data
 }
 
 export interface AvailabilitySlot {

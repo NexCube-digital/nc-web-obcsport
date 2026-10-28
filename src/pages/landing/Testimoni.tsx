@@ -1,22 +1,28 @@
 import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
-import TestimonialModal from '../../../components/ui/TestimonialModal'
-import reviewIcon from '../../../assets/icon/image.png'
-import { getSportsFacilities, type SportsFacility } from '../../../services/facilityService'
-import { getResourceReviews, type ResourceReview } from '../../../services/testimonialService'
+import { useNavigate } from 'react-router-dom'
+import { toast } from 'sonner'
+import TestimonialModal from '../../components/ui/TestimonialModal'
+import reviewIcon from '../../assets/icon/image.png'
+import { useAuth } from '../../hooks/useAuth'
+import { getSportsFacilities, type SportsFacility } from '../../services/facilityService'
+import { getResourceReviews, type ResourceReview } from '../../services/testimonialService'
+
+interface FeaturedReview extends ResourceReview {
+	resourceId: string
+	facilityName: string
+}
 
 function Testimoni() {
+	const navigate = useNavigate()
+	const { isLoggedIn } = useAuth()
 	const [facilities, setFacilities] = useState<SportsFacility[]>([])
-	const [selectedResourceId, setSelectedResourceId] = useState('')
-	const [reviews, setReviews] = useState<ResourceReview[]>([])
-	const [reviewsResourceId, setReviewsResourceId] = useState('')
+	const [reviews, setReviews] = useState<FeaturedReview[]>([])
 	const [activeTesti, setActiveTesti] = useState(0)
-	const [isLoadingFacilities, setIsLoadingFacilities] = useState(true)
+	const [isLoadingReviews, setIsLoadingReviews] = useState(true)
 	const [loadError, setLoadError] = useState('')
 	const [isTestimonialOpen, setIsTestimonialOpen] = useState(false)
-	const facility = facilities.find((item) => item.id === selectedResourceId)
 	const testimonial = reviews[activeTesti]
-	const isLoadingReviews = Boolean(selectedResourceId) && reviewsResourceId !== selectedResourceId
 	const dateLabel = new Intl.DateTimeFormat('id-ID', {
 		day: 'numeric',
 		month: 'long',
@@ -25,41 +31,50 @@ function Testimoni() {
 	const handlePrev = () =>
 		setActiveTesti((prev) => (prev - 1 + reviews.length) % reviews.length)
 	const handleNext = () => setActiveTesti((prev) => (prev + 1) % reviews.length)
+	const handleWriteReview = () => {
+		if (!isLoggedIn) {
+			toast.info('Silakan masuk dulu untuk menulis ulasan pengalaman kamu.')
+			navigate('/login', { state: { from: { pathname: window.location.pathname } } })
+			return
+		}
+		setIsTestimonialOpen(true)
+	}
 
 	useEffect(() => {
 		let active = true
-		getSportsFacilities()
-			.then((items) => {
-				if (!active) return
-				setFacilities(items)
-				setSelectedResourceId(items[0]?.id ?? '')
-			})
-			.catch(() => {
-				if (active) setLoadError('Daftar fasilitas gagal dimuat.')
-			})
-			.finally(() => {
-				if (active) setIsLoadingFacilities(false)
-			})
+		Promise.allSettled([getSportsFacilities()]).then(([facilitiesResult]) => {
+			if (!active) return
+			if (facilitiesResult.status === 'rejected') {
+				setLoadError('Testimoni gagal dimuat.')
+				setIsLoadingReviews(false)
+				return
+			}
+
+			const items = facilitiesResult.value
+			setFacilities(items)
+			Promise.allSettled(items.map((item) => getResourceReviews(item.id, { limit: 50 })))
+				.then((reviewResults) => {
+					if (!active) return
+					const featuredReviews = reviewResults.flatMap((result, index) => {
+						if (result.status === 'rejected') return []
+						return result.value.reviews.map((review) => ({
+							...review,
+							resourceId: items[index].id,
+							facilityName: items[index].name,
+						}))
+					})
+					featuredReviews.sort((left, right) =>
+						right.rating - left.rating || new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime())
+					setReviews(featuredReviews.slice(0, 12))
+					setActiveTesti(0)
+					setLoadError(featuredReviews.length ? '' : 'Belum ada ulasan untuk fasilitas ini.')
+				})
+				.finally(() => {
+					if (active) setIsLoadingReviews(false)
+				})
+		})
 		return () => { active = false }
 	}, [])
-
-	useEffect(() => {
-		if (!selectedResourceId) return
-		let active = true
-		getResourceReviews(selectedResourceId, { limit: 50 })
-			.then((result) => {
-				if (!active) return
-				setReviews(result.reviews)
-				setReviewsResourceId(selectedResourceId)
-			})
-			.catch(() => {
-				if (!active) return
-				setReviews([])
-				setReviewsResourceId(selectedResourceId)
-				setLoadError('Ulasan gagal dimuat.')
-			})
-		return () => { active = false }
-	}, [selectedResourceId])
 
 	return (
 		<section className="mx-auto flex w-full max-w-[1248px] flex-col items-center px-4 py-8 sm:px-6 sm:py-12 md:py-8 lg:py-10">
@@ -71,44 +86,28 @@ function Testimoni() {
 				</div>
 
 				<div className="flex flex-col px-5 py-5 sm:px-8 sm:py-7 md:px-9 md:py-9">
-					<label className="mb-5 flex flex-col gap-1.5 font-heading text-xs font-semibold text-[#343133]">
-						<span>Pilih fasilitas</span>
-						<select
-							value={selectedResourceId}
-							onChange={(event) => {
-								setActiveTesti(0)
-								setLoadError('')
-								setSelectedResourceId(event.target.value)
-							}}
-							disabled={isLoadingFacilities || facilities.length === 0}
-							className="h-10 w-full rounded-md border border-[#D4D4D4] bg-white px-3 font-normal disabled:opacity-60"
-						>
-							{isLoadingFacilities && <option value="">Memuat fasilitas...</option>}
-							{facilities.map((item) => (
-								<option key={item.id} value={item.id}>{item.name}</option>
-							))}
-						</select>
-					</label>
+					
 
 					{isLoadingReviews ? (
 						<p role="status" className="mt-5 text-sm text-[#343133]">Memuat ulasan...</p>
 					) : testimonial ? (
 						<>
-					<div className="flex items-center gap-3 sm:gap-4">
-						<span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#9AAD3E] font-heading text-lg font-bold text-white sm:h-16 sm:w-16 sm:text-xl">
-							{testimonial.customer.name.charAt(0).toUpperCase()}
-						</span>
-						<div className="min-w-0">
-							<p className="truncate font-heading text-base font-bold text-[#343133]">
-								{testimonial.customer.name}
+							<div className="flex items-center gap-3 sm:gap-4">
+								<span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#9AAD3E] font-heading text-lg font-bold text-white sm:h-16 sm:w-16 sm:text-xl">
+									{testimonial.customer.name.charAt(0).toUpperCase()}
+								</span>
+								<div className="min-w-0">
+									<p className="truncate font-heading text-base font-bold text-[#343133]">
+										{testimonial.customer.name}
+									</p>
+									<p className="truncate text-xs text-[#343133]">
+										{testimonial.facilityName} · {testimonial.rating.toFixed(1)} ★
+									</p>
+								</div>
+							</div>
+							<p className="mt-5 text-sm italic leading-relaxed text-[#343133] md:mt-8">
+								“{testimonial.comment}”
 							</p>
-							<p className="text-xs text-[#343133]">Pelanggan OBC Sport</p>
-						</div>
-					</div>
-
-					<p className="mt-5 text-sm italic leading-relaxed text-[#343133] md:mt-8">
-						“{testimonial.comment}”
-					</p>
 						</>
 					) : (
 						<p className="mt-5 text-sm leading-relaxed text-[#343133]">
@@ -149,9 +148,9 @@ function Testimoni() {
 			<div className="mt-8 flex w-full justify-center sm:mt-6">
 					<button
 						type="button"
-						onClick={() => setIsTestimonialOpen(true)}
-						disabled={!selectedResourceId}
-						className="flex h-11 w-fit max-w-full cursor-pointer items-center justify-center gap-2 rounded-[45px] border-[0.67px] border-[#CDF178] bg-[#CDF178] px-2.5 py-1 font-['Montserrat'] text-[11px] font-semibold leading-[17px] text-[#000000] shadow-[0px_3px_5.8px_0px_#0000004D] transition-colors hover:bg-[#c0e85a] sm:gap-2.5 sm:px-3 sm:text-[12px] md:h-11 md:px-3.5 md:text-[14px]"
+						onClick={handleWriteReview}
+						disabled={facilities.length === 0 || isLoadingReviews}
+						className="flex h-11 w-fit max-w-full cursor-pointer items-center justify-center gap-2 rounded-[45px] border-[0.67px] border-[#CDF178] bg-[#CDF178] px-2.5 py-1 font-['Montserrat'] text-[11px] font-semibold leading-[17px] text-[#000000] shadow-[0px_3px_5.8px_0px_#0000004D] transition-colors hover:bg-[#c0e85a] disabled:cursor-not-allowed disabled:opacity-60 sm:gap-2.5 sm:px-3 sm:text-[12px] md:h-11 md:px-3.5 md:text-[14px]"
 					>
 						<span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-[#004000] text-[#CDF178] md:h-8 md:w-8">
 							<img src={reviewIcon} alt="" aria-hidden="true" className="h-4 w-4" />
@@ -168,9 +167,9 @@ function Testimoni() {
 						isOpen={isTestimonialOpen}
 						onClose={() => setIsTestimonialOpen(false)}
 						onDefer={() => setIsTestimonialOpen(false)}
-						facilityName={facility?.name ?? 'OBC Sport Center'}
+						facilityName={testimonial?.facilityName ?? facilities[0]?.name ?? 'OBC Sport Center'}
 						dateLabel={dateLabel}
-						resourceId={selectedResourceId}
+						resourceId={testimonial?.resourceId ?? facilities[0]?.id ?? ''}
 					/>,
 					document.body,
 				)}

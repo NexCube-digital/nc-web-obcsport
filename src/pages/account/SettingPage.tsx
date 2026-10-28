@@ -72,6 +72,7 @@ function SettingsPage() {
   const [photoError, setPhotoError] = useState('')
   const [isSaving, setIsSaving] = useState(false)
   const [isUpdatingPassword, setIsUpdatingPassword] = useState(false)
+  const [hasPassword, setHasPassword] = useState(true)
 
   // State sandi
   const [passwordError, setPasswordError] = useState('')
@@ -95,6 +96,7 @@ function SettingsPage() {
           if (profile.bio) setBio(profile.bio)
           if (profile.email) setEmail(profile.email)
           if (profile.avatarUrl) setPhotoPreview(getImageUrl(profile.avatarUrl))
+          if (profile.hasPassword !== undefined) setHasPassword(profile.hasPassword)
         }
       } catch (err) {
         console.error('Gagal memuat profil:', err)
@@ -147,7 +149,7 @@ function SettingsPage() {
     const newPassword = newPasswordRef.current?.value ?? ''
     const confirmPassword = confirmPasswordRef.current?.value ?? ''
 
-    if (!currentPassword || !newPassword || !confirmPassword) {
+    if ((hasPassword && !currentPassword) || !newPassword || !confirmPassword) {
       setPasswordError('Semua kolom sandi wajib diisi.')
       return
     }
@@ -163,8 +165,9 @@ function SettingsPage() {
     setPasswordError('')
     setIsUpdatingPassword(true)
     try {
-      await changePassword(currentPassword, newPassword)
-      toast.success('Kata sandi berhasil diperbarui!')
+      await changePassword(hasPassword ? currentPassword : undefined, newPassword)
+      setHasPassword(true)
+      toast.success(hasPassword ? 'Kata sandi berhasil diperbarui!' : 'Kata sandi berhasil dibuat!')
       if (currentPasswordRef.current) currentPasswordRef.current.value = ''
       if (newPasswordRef.current) newPasswordRef.current.value = ''
       if (confirmPasswordRef.current) confirmPasswordRef.current.value = ''
@@ -354,28 +357,30 @@ function SettingsPage() {
           <section className={CARD_CLASS}>
             <h2 className={CARD_TITLE_CLASS}>Keamanan Sandi</h2>
 
-            <div className="mt-5 grid md:grid-cols-3 gap-4">
-              <div>
-                <label htmlFor="currentPassword" className={LABEL_CLASS}>
-                  Sandi Saat Ini
-                </label>
-                <div className="relative">
-                  <input
-                    id="currentPassword"
-                    type={showCurrentPassword ? 'text' : 'password'}
-                    ref={currentPasswordRef}
-                    className={INPUT_CLASS}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowCurrentPassword(!showCurrentPassword)}
-                    aria-label={showCurrentPassword ? 'Sembunyikan sandi' : 'Tampilkan sandi'}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[#6F6B6E] hover:text-[#121212] cursor-pointer"
-                  >
-                    {showCurrentPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                  </button>
+            <div className={`mt-5 grid ${hasPassword ? 'md:grid-cols-3' : 'md:grid-cols-2'} gap-4`}>
+              {hasPassword ? (
+                <div>
+                  <label htmlFor="currentPassword" className={LABEL_CLASS}>
+                    Sandi Saat Ini
+                  </label>
+                  <div className="relative">
+                    <input
+                      id="currentPassword"
+                      type={showCurrentPassword ? 'text' : 'password'}
+                      ref={currentPasswordRef}
+                      className={INPUT_CLASS}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                      aria-label={showCurrentPassword ? 'Sembunyikan sandi' : 'Tampilkan sandi'}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-[#6F6B6E] hover:text-[#121212] cursor-pointer"
+                    >
+                      {showCurrentPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                    </button>
+                  </div>
                 </div>
-              </div>
+              ) : null}
               <div>
                 <label htmlFor="newPassword" className={LABEL_CLASS}>
                   Sandi Baru
@@ -385,7 +390,7 @@ function SettingsPage() {
                     id="newPassword"
                     type={showNewPassword ? 'text' : 'password'}
                     ref={newPasswordRef}
-                    placeholder="Minimal 8 karakter"
+                    placeholder="Minimal 12 karakter"
                     className={INPUT_CLASS}
                   />
                   <button
@@ -407,7 +412,7 @@ function SettingsPage() {
                     id="confirmPassword"
                     type={showConfirmPassword ? 'text' : 'password'}
                     ref={confirmPasswordRef}
-                    placeholder="Minimal 8 karakter"
+                    placeholder="Minimal 12 karakter"
                     className={INPUT_CLASS}
                   />
                   <button
@@ -422,6 +427,12 @@ function SettingsPage() {
               </div>
             </div>
 
+            {!hasPassword && (
+              <p className="mt-3 text-sm text-[#6F6B6E]">
+                Akun Google Anda belum memiliki sandi. Buat sandi agar bisa masuk menggunakan email.
+              </p>
+            )}
+
             {passwordError && <p className="mt-3 text-xs text-[#C00000]">{passwordError}</p>}
 
             <button
@@ -430,7 +441,7 @@ function SettingsPage() {
               disabled={isUpdatingPassword}
               className="mt-5 h-9 rounded-lg bg-[#CDF178] px-4 text-sm font-heading font-semibold text-[#404F14] hover:bg-[#9AAD3E] transition-colors cursor-pointer disabled:opacity-50"
             >
-              {isUpdatingPassword ? 'Memperbarui...' : 'Perbarui Sandi'}
+              {isUpdatingPassword ? 'Menyimpan...' : hasPassword ? 'Perbarui Sandi' : 'Buat Sandi'}
             </button>
           </section>
           </DeferredSection>

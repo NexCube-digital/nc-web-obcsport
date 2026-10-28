@@ -1,55 +1,29 @@
 // pages/MembershipPage.tsx
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { ArrowRight, ArrowUpRight, Check } from 'lucide-react'
-import NavbarDashboard from '../../components/layout/Navbar'
-import DeferredSection from '../../components/layout/DeferredSection'
-import DeferredFooter from '../../components/layout/DeferredFooter'
-import ScrollReveal from '../../components/animation/ScrollReveal'
-import member from '../../assets/bfe838718c7f801119930d28d3d286f12b853b5e.jpg'
+import { toast } from 'sonner'
+import NavbarDashboard from '../../../components/layout/Navbar'
+import DeferredSection from '../../../components/layout/DeferredSection'
+import DeferredFooter from '../../../components/layout/DeferredFooter'
+import ScrollReveal from '../../../components/animation/ScrollReveal'
+import member from '../../../assets/bfe838718c7f801119930d28d3d286f12b853b5e.jpg'
+import { getApiErrorMessage } from '../../../services/apiService'
+import { getMembershipPackages, type MembershipPackage, type MembershipSchedule } from '../../../services/membershipService'
 
-/* -------------------------------------------------------------------------
-   Tipe data
-   ------------------------------------------------------------------------- */
-interface SportOption {
-  id: string
-  name: string
-  amount: string
-  unit: string
+const SPORT_LABELS: Record<string, string> = {
+  futsal: 'Futsal',
+  badminton: 'Badminton',
+  pickleball: 'Pickleball',
+  billiard: 'Billiard',
 }
-
-/* -------------------------------------------------------------------------
-   Teks section showcase (satu file, tanpa i18n)
-   ------------------------------------------------------------------------- */
-const SHOWCASE_COPY = {
-  badge: 'OBC Sports Membership',
-  title: 'Main Rutin,\nBayar Lebih Hemat',
-  description:
-    'Amankan jadwal lapangan favorit Anda setiap minggu. Dengan membership 4x pertemuan, Anda mendapatkan harga lebih hemat dan slot yang terjamin.',
-  benefits: [
-    'Diskon 20% untuk 4x pertemuan',
-    'Harga lebih hemat',
-    'Slot lapangan terjamin',
-    'Jadwal tetap untuk bermain',
-  ],
-  cardSubtitle: 'Sports Membership',
-  tagline: 'Play. Move. Connect.',
-  cta: 'Daftar Membership Sekarang',
-  terms: '*Syarat dan ketentuan berlaku',
-}
-
-/* -------------------------------------------------------------------------
-   Data (ganti dengan data dari API / services/membershipService.js)
-   ------------------------------------------------------------------------- */
-const SPORT_OPTIONS: SportOption[] = [
-  { id: 'futsal', name: 'Futsal', amount: 'Rp 500.000', unit: '4x Sesi' },
-  { id: 'badminton', name: 'Badminton', amount: 'Rp 240.000', unit: '4x Sesi' },
-  { id: 'basket', name: 'Basket', amount: 'Rp 600.000', unit: '4x Sesi' },
-]
 
 /* -------------------------------------------------------------------------
    Section showcase membership (menggantikan foto hero)
    ------------------------------------------------------------------------- */
 function MembershipShowcase() {
+  const { t } = useTranslation()
   return (
     <section
       id="membership"
@@ -74,16 +48,16 @@ function MembershipShowcase() {
         {/* Kolom kiri: headline & benefit */}
         <div className="flex min-w-0 flex-col items-start text-left">
           <span className="mb-1.5 block font-['Montserrat'] text-[12px] font-bold uppercase tracking-[1px] text-[#222222] md:text-[14px] md:font-medium xl:text-[15px]">
-            {SHOWCASE_COPY.badge}
+            {t('membership.showcase.badge')}
           </span>
           <h2 className="whitespace-pre-line font-['Montserrat'] text-[20px] font-semibold leading-[28px] tracking-normal text-[#000000] md:text-[30px] md:font-bold md:leading-[1.25] md:tracking-[1.5px] lg:text-[32px] xl:text-[36px]">
-            {SHOWCASE_COPY.title}
+            {t('membership.showcase.title')}
           </h2>
           <p className="mt-2 w-full text-left font-['Montserrat'] text-[13px] font-normal leading-[20px] text-[#444444] md:mt-3 md:max-w-[360px] md:text-[13.5px] md:leading-[24px] xl:text-[14.5px]">
-            {SHOWCASE_COPY.description}
+            {t('membership.showcase.description')}
           </p>
           <ul className="mt-4 w-full text-left md:mt-3 md:max-w-[360px]">
-            {SHOWCASE_COPY.benefits.map((benefit) => (
+            {(t('membership.showcase.benefits', { returnObjects: true }) as string[]).map((benefit) => (
               <li
                 className="mb-2.5 flex items-center gap-3 font-body text-[14px] text-[#1a1a1a] md:gap-2.5 md:text-[13px]"
                 key={benefit}
@@ -131,10 +105,10 @@ function MembershipShowcase() {
 
             <div className="-translate-y-8 flex flex-col items-center justify-center text-center md:-translate-y-14">
               <p className="whitespace-nowrap font-['Montserrat'] text-[16px] font-extrabold leading-tight tracking-[0.5px] text-white md:text-[14px] xl:text-[15px]">
-                {SHOWCASE_COPY.cardSubtitle}
+                  {t('membership.showcase.cardSubtitle')}
               </p>
               <p className="mt-1 font-['Montserrat'] text-[7.5px] font-semibold uppercase leading-tight tracking-[2px] text-[#FFFFF7] xl:text-[8px]">
-                {SHOWCASE_COPY.tagline}
+                {t('membership.showcase.tagline')}
               </p>
             </div>
           </div>
@@ -152,7 +126,7 @@ function MembershipShowcase() {
           </div>
 
           <p className="mt-3 -rotate-2 text-right font-['Caveat'] text-[30px] font-bold leading-tight tracking-[1px] text-[#222222] md:mt-2 md:rotate-0 md:text-center xl:text-right xl:text-[36px]">
-            {SHOWCASE_COPY.tagline}
+            {t('membership.showcase.tagline')}
           </p>
 
           <a
@@ -162,7 +136,7 @@ function MembershipShowcase() {
             rel="noreferrer"
           >
             <span className="min-w-0 text-left leading-[20px] tracking-[0.02em] text-[#1F3320] transition-colors duration-300 group-hover:!text-[#CDF178] md:whitespace-nowrap md:leading-[18px]">
-              {SHOWCASE_COPY.cta}
+              {t('membership.showcase.cta')}
             </span>
             <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-[#1F3320] text-[#CDF178] transition-colors duration-300 group-hover:bg-[#CDF178] group-hover:text-[#004000] md:h-[40px] md:w-[40px] xl:h-[46px] xl:w-[46px]">
               <ArrowRight size={22} className="transition-transform duration-300 group-hover:rotate-45 md:hidden" />
@@ -171,7 +145,7 @@ function MembershipShowcase() {
           </a>
 
           <small className="mt-11 text-right font-body text-[13px] italic text-[#6b7280] md:mt-2 md:text-center md:text-[10px] xl:text-right">
-            {SHOWCASE_COPY.terms}
+            {t('membership.showcase.terms')}
           </small>
         </div>
       </div>
@@ -183,11 +157,60 @@ function MembershipShowcase() {
    Halaman
    ------------------------------------------------------------------------- */
 function MembershipOptions() {
-  const [selectedSport, setSelectedSport] = useState('badminton')
+  const navigate = useNavigate()
+  const { t, i18n } = useTranslation()
+  const [packages, setPackages] = useState<MembershipPackage[]>([])
+  const [selectedPackageId, setSelectedPackageId] = useState<string | null>(null)
+  const [schedules, setSchedules] = useState<MembershipSchedule[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+
+  useEffect(() => {
+    let active = true
+    getMembershipPackages()
+      .then((items) => {
+        if (!active) return
+        setPackages(items)
+        setSelectedPackageId(items[0]?.id ?? null)
+        setSchedules(items[0] ? Array.from({ length: items[0].totalSessions }, () => ({
+          resourceId: items[0].resource?.id ?? '',
+          bookingDate: '',
+          startTime: '08:00',
+          endTime: '09:00',
+          sportType: items[0].sportType,
+        })) : [])
+      })
+      .catch((error: unknown) => {
+        if (active) toast.error(getApiErrorMessage(error, t('membership.loadError')))
+      })
+      .finally(() => { if (active) setIsLoading(false) })
+    return () => { active = false }
+  }, [t])
+
+  const selectedPackage = packages.find((item) => item.id === selectedPackageId) ?? null
+  const getPackageName = (membershipPackage: MembershipPackage) =>
+    i18n.resolvedLanguage?.startsWith('en')
+      ? membershipPackage.nameEn || membershipPackage.name
+      : membershipPackage.name
+
+  const selectPackage = (membershipPackage: MembershipPackage) => {
+    setSelectedPackageId(membershipPackage.id)
+    setSchedules(Array.from({ length: membershipPackage.totalSessions }, (_, index) => ({
+      resourceId: membershipPackage.resource?.id ?? schedules[index]?.resourceId ?? '',
+      bookingDate: schedules[index]?.bookingDate ?? '',
+      startTime: schedules[index]?.startTime ?? '08:00',
+      endTime: schedules[index]?.endTime ?? '09:00',
+      sportType: membershipPackage.sportType,
+    })))
+  }
 
   const handleSubmitMembership = () => {
-    // TODO: sambungkan ke services/membershipService.js (POST /membership)
-    console.log({ selectedSport })
+    if (!selectedPackage) {
+      toast.error(t('membership.selectPackageError'))
+      return
+    }
+    navigate('/membership/sessions', {
+      state: { package: selectedPackage, schedules },
+    })
   }
 
   return (
@@ -197,12 +220,11 @@ function MembershipOptions() {
             className="block w-full rounded-xl border-2 border-[#121212] bg-white p-4 text-left transition-colors hover:bg-[#F8FAF4] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#004000] md:rounded-2xl md:px-6 md:py-7"
           >
             <h2 className="font-heading text-[13px] font-bold leading-snug text-[#404F14] md:text-lg">
-              <span className="md:hidden">OBC Sports Membership</span>
-              <span className="hidden md:inline">Sports Membership (Sewa Rutin 4x Sesi)</span>
+              <span className="md:hidden">{t('membership.offerTitle')}</span>
+              <span className="hidden md:inline">{t('membership.offerTitleDesktop')}</span>
             </h2>
             <p className="mt-2 text-[10px] leading-snug text-[#121212] md:text-sm md:leading-relaxed">
-              Amankan jadwal dan jam langganan lapangan Anda setiap minggu. Nikmati garansi slot
-              utama dan diskon hemat 20% khusus pembayaran di muka.
+              {t('membership.offerDescription')}
             </p>
           </a>
 
@@ -213,64 +235,73 @@ function MembershipOptions() {
           >
             {/* Judul mobile */}
             <h3 className="font-heading text-xl font-bold leading-snug text-[#343133] md:hidden">
-              Amankan Jadwal Rutin Anda, Main Tanpa Khawatir
+              {t('membership.sectionTitleMobile')}
             </h3>
 
             {/* Judul & deskripsi desktop */}
             <h3 className="hidden font-heading text-xl font-bold text-[#121212] md:block">
-              Booking Rutin 4x Sesi, Slot Lapangan Dijamin Aman
+              {t('membership.sectionTitleDesktop')}
             </h3>
             <p className="mt-1 hidden text-sm text-[#6F6B6E] md:block">
-              Nikmati kemudahan bermain di hari dan jam yang sama setiap minggu dengan potongan
-              harga spesial.
+              {t('membership.sectionDescription')}
             </p>
 
-            <div className="mt-4 grid grid-cols-3 gap-3">
-              {SPORT_OPTIONS.map((sport) => {
-                const isSelected = selectedSport === sport.id
-                return (
-                  <button
-                    key={sport.id}
-                    type="button"
-                    onClick={() => setSelectedSport(sport.id)}
-                    className={`min-w-0 cursor-pointer rounded-lg p-3 text-left transition-colors md:h-[87px] md:p-0 md:text-center ${
-                      isSelected
-                        ? 'border-2 border-[#404F14] bg-[#F5FAF3]'
-                        : 'border border-[#E5E5E5] bg-white'
-                    }`}
-                  >
-                    <p className="font-heading text-sm font-bold text-[#121212] md:text-base">
-                      {sport.name}
-                    </p>
-                    <p className="mt-2 font-heading text-sm font-bold text-[#404F14] md:mt-1">
-                      {sport.amount}
-                      <span className="hidden md:inline"> / {sport.unit}</span>
-                    </p>
-                    <p className="mt-0.5 text-[11px] text-[#6F6B6E] md:hidden">
-                      /{sport.unit.toLowerCase()}
-                    </p>
-                  </button>
-                )
-              })}
-            </div>
+            {isLoading ? (
+              <p className="mt-4 text-sm text-[#6F6B6E]">{t('membership.loading')}</p>
+            ) : packages.length === 0 ? (
+              <p className="mt-4 rounded-lg border border-[#E5E5E5] p-4 text-sm text-[#6F6B6E]">
+                {t('membership.empty')}
+              </p>
+            ) : (
+              <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3">
+                {packages.map((membershipPackage) => {
+                  const isSelected = selectedPackageId === membershipPackage.id
+                  return (
+                    <button
+                      key={membershipPackage.id}
+                      type="button"
+                      onClick={() => selectPackage(membershipPackage)}
+                      className={`min-w-0 cursor-pointer rounded-lg p-3 text-left transition-colors md:min-h-[87px] md:text-center ${
+                        isSelected
+                          ? 'border-2 border-[#404F14] bg-[#F5FAF3]'
+                          : 'border border-[#E5E5E5] bg-white'
+                      }`}
+                    >
+                      <p className="font-heading text-sm font-bold text-[#121212] md:text-base">
+                        {getPackageName(membershipPackage)}
+                      </p>
+                      <p className="mt-0.5 text-[11px] text-[#6F6B6E]">
+                        {SPORT_LABELS[membershipPackage.sportType] ?? membershipPackage.sportType}
+                      </p>
+                      <p className="mt-2 font-heading text-sm font-bold text-[#404F14] md:mt-1">
+                        {membershipPackage.memberPriceFormatted}
+                        <span className="hidden md:inline"> / {t('membership.sessions', { count: membershipPackage.totalSessions })}</span>
+                      </p>
+                      <p className="mt-0.5 text-[11px] text-[#6F6B6E] md:hidden">
+                        {t('membership.packageDuration', { sessions: membershipPackage.totalSessions, days: membershipPackage.validityDays })}
+                      </p>
+                    </button>
+                  )
+                })}
+              </div>
+            )}
 
             {/* Kotak keuntungan member */}
+
             <div className="mt-5 flex gap-2 rounded-lg border border-dashed border-[#404F14] bg-[#EFF6EC] px-3 py-3">
               <span aria-hidden="true">💳</span>
               <p className="text-sm leading-relaxed text-[#404F14]">
-                <span className="font-heading font-bold">Keuntungan Member:</span> Garansi slot
-                jam utama tidak direbut orang lain, serta diskon langsung 20% untuk pembayaran
-                penuh di muka (<em>full payment</em>).
+                <span className="font-heading font-bold">{t('membership.memberBenefitTitle')}</span> {t('membership.memberBenefitDescription')}
               </p>
             </div>
 
             <button
               type="button"
               onClick={handleSubmitMembership}
-              className="mt-5 h-12 w-full cursor-pointer rounded-xl bg-[#CDF178] font-heading text-base font-bold text-[#404F14] transition-colors hover:bg-[#9AAD3E] md:h-[42px] md:rounded-lg md:text-sm"
+              disabled={isLoading || !selectedPackageId}
+              className="mt-5 h-12 w-full cursor-pointer rounded-xl bg-[#CDF178] font-heading text-base font-bold text-[#404F14] transition-colors hover:bg-[#9AAD3E] disabled:cursor-not-allowed disabled:opacity-50 md:h-[42px] md:rounded-lg md:text-sm"
             >
-              <span className="md:hidden">Daftar Membership</span>
-              <span className="hidden md:inline">Lanjutkan Pembayaran Membership</span>
+              <span>{t('membership.selectSchedule', { count: selectedPackage?.totalSessions ?? 0 })}</span>
             </button>
           </section>
         </div>

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ChevronLeft, ChevronRight, Zap } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Search, X, Zap } from 'lucide-react'
 import { toast } from 'sonner'
 import NavbarDashboard from '../../components/layout/Navbar'
 import MobileHeader from '../../components/layout/MobileHeader'
@@ -8,6 +8,7 @@ import DeferredFooter from '../../components/layout/DeferredFooter'
 import DeferredSection from '../../components/layout/DeferredSection'
 import { getBookings, type BookingSummary } from '../../services/bookingService'
 import { getApiErrorMessage } from '../../services/apiService'
+import { getMyMemberships, type MyMembership } from '../../services/membershipService'
 
 /* -------------------------------------------------------------------------
    Tipe data
@@ -18,6 +19,7 @@ const PAGE_SIZE = 10
 
 interface Transaction {
   id: string
+  kind: 'booking' | 'membership'
   code: string
   paymentMethod: string | null
   date: string
@@ -28,6 +30,7 @@ interface Transaction {
 
 interface MobileTransaction {
   id: string
+  kind: 'booking' | 'membership'
   paymentMethod: string | null
   date: string
   title: string
@@ -113,6 +116,7 @@ function mapBooking(booking: BookingSummary): { desktop: Transaction; mobile: Mo
   return {
     desktop: {
       id: booking.id,
+      kind: 'booking',
       code,
       paymentMethod: booking.latestPayment?.method ?? null,
       date,
@@ -122,6 +126,7 @@ function mapBooking(booking: BookingSummary): { desktop: Transaction; mobile: Mo
     },
     mobile: {
       id: booking.id,
+      kind: 'booking',
       paymentMethod: booking.latestPayment?.method ?? null,
       date,
       title: `${booking.resource.name} - ${booking.sportType}`,
@@ -132,9 +137,50 @@ function mapBooking(booking: BookingSummary): { desktop: Transaction; mobile: Mo
   }
 }
 
+function membershipStatus(status: MyMembership['status']): TransactionStatus {
+  if (status === 'active') return 'pending'
+  if (status === 'depleted' || status === 'expired') return 'success'
+  return 'failed'
+}
+
+function mapMembership(membership: MyMembership): { desktop: Transaction; mobile: MobileTransaction } {
+  const date = new Date(`${membership.purchaseDate}T00:00:00`).toLocaleDateString('id-ID', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  })
+  const status = membershipStatus(membership.status)
+  const code = `MEM-${membership.id.slice(-8).toUpperCase()}`
+
+  return {
+    desktop: {
+      id: membership.id,
+      kind: 'membership',
+      code,
+      paymentMethod: 'Midtrans',
+      date,
+      facility: membership.package.name,
+      total: `Rp ${membership.package.memberPrice.toLocaleString('id-ID')}`,
+      status,
+    },
+    mobile: {
+      id: membership.id,
+      kind: 'membership',
+      paymentMethod: 'Midtrans',
+      date,
+      title: membership.package.name,
+      time: `${membership.remainingSessions}/${membership.totalSessions} sesi tersisa`,
+      total: `Rp ${membership.package.memberPrice.toLocaleString('id-ID')}`,
+      status,
+    },
+  }
+}
+
 function HistoryPage() {
   const navigate = useNavigate()
   const [activeFilter, setActiveFilter] = useState<FilterType>('all')
+  const [searchQuery, setSearchQuery] = useState('')
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
   const [transactions, setTransactions] = useState<Transaction[]>([])
   const [mobileTransactions, setMobileTransactions] = useState<MobileTransaction[]>([])
@@ -142,24 +188,40 @@ function HistoryPage() {
 
   useEffect(() => {
     let active = true
-    const loadBookings = (showError: boolean) => {
-      getBookings({ page: 1, limit: 100 })
-        .then(({ bookings }) => {
-          if (!active) return
-          const mapped = bookings.map(mapBooking)
-          setTransactions(mapped.map((item) => item.desktop))
-          setMobileTransactions(mapped.map((item) => item.mobile))
-        })
-        .catch((error: unknown) => {
-          if (active && showError) {
-            toast.error(getApiErrorMessage(error, 'Riwayat booking tidak dapat dimuat.'))
-          }
-        })
-        .finally(() => { if (active) setIsLoading(false) })
+    const loadHistory = async (showError: boolean) => {
+      const [bookingResult, membershipResult] = await Promise.allSettled([
+        getBookings({ page: 1, limit: 100 }),
+        getMyMemberships(),
+      ])
+      if (!active) return
+
+      const bookingTransactions = bookingResult.status === 'fulfilled'
+        ? bookingResult.value.bookings.map(mapBooking)
+        : []
+      const membershipTransactions = membershipResult.status === 'fulfilled'
+        ? membershipResult.value.map(mapMembership)
+        : []
+
+      setTransactions([
+        ...bookingTransactions.map((item) => item.desktop),
+        ...membershipTransactions.map((item) => item.desktop),
+      ])
+      setMobileTransactions([
+        ...bookingTransactions.map((item) => item.mobile),
+        ...membershipTransactions.map((item) => item.mobile),
+      ])
+
+      if (showError) {
+        const failedResult = bookingResult.status === 'rejected' ? bookingResult : membershipResult.status === 'rejected' ? membershipResult : null
+        if (failedResult && failedResult.status === 'rejected') {
+          toast.error(getApiErrorMessage(failedResult.reason, 'Sebagian riwayat tidak dapat dimuat.'))
+        }
+      }
+      setIsLoading(false)
     }
 
-    loadBookings(true)
-    const refreshTimer = window.setInterval(() => loadBookings(false), 30_000)
+    loadHistory(true)
+    const refreshTimer = window.setInterval(() => loadHistory(false), 30_000)
 
     return () => {
       active = false
@@ -167,16 +229,42 @@ function HistoryPage() {
     }
   }, [])
 
+  useEffect(() => {
+    const debounceTimer = window.setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery.trim())
+      setCurrentPage(1)
+    }, 300)
+
+    return () => window.clearTimeout(debounceTimer)
+  }, [searchQuery])
+
   // Filter sesuai tombol (desktop: Semua / Berhasil / Menunggu)
+  const normalizedSearch = debouncedSearchQuery.toLocaleLowerCase('id-ID')
   const filteredTransactions = transactions.filter((trx) => {
-    if (activeFilter === 'all') return true
-    return trx.status === activeFilter
+    const matchesStatus = activeFilter === 'all' || trx.status === activeFilter
+    const matchesSearch = !normalizedSearch || [
+      trx.id,
+      trx.code,
+      trx.date,
+      trx.facility,
+      trx.paymentMethod,
+      trx.total,
+    ].some((value) => value?.toLocaleLowerCase('id-ID').includes(normalizedSearch))
+    return matchesStatus && matchesSearch
   })
 
   // Filter untuk kartu mobile (Semua / Aktif / Selesai / Gagal)
   const filteredMobile = mobileTransactions.filter((trx) => {
-    if (activeFilter === 'all') return true
-    return trx.status === activeFilter
+    const matchesStatus = activeFilter === 'all' || trx.status === activeFilter
+    const matchesSearch = !normalizedSearch || [
+      trx.id,
+      trx.date,
+      trx.title,
+      trx.time,
+      trx.paymentMethod,
+      trx.total,
+    ].some((value) => value?.toLocaleLowerCase('id-ID').includes(normalizedSearch))
+    return matchesStatus && matchesSearch
   })
   const totalPages = Math.max(1, Math.ceil(filteredTransactions.length / PAGE_SIZE))
   const displayedPage = Math.min(currentPage, totalPages)
@@ -193,22 +281,16 @@ function HistoryPage() {
   const hasNoTransactions = transactions.length === 0 && !isLoading
   const hasNoMobileTransactions = mobileTransactions.length === 0 && !isLoading
 
-  const handleDetail = (transaction: Pick<Transaction, 'id' | 'status' | 'paymentMethod'>) => {
-    if (transaction.status === 'pending' && transaction.paymentMethod === 'credit_card') {
-      navigate(`/credit-card-payment?bookingId=${encodeURIComponent(transaction.id)}`, {
-        state: { bookingId: transaction.id },
-      })
-      return
-    }
-
+  const handleDetail = (transaction: Pick<Transaction, 'id' | 'kind' | 'status' | 'paymentMethod'>) => {
     const pathByStatus: Record<TransactionStatus, string> = {
-      pending: '/information-order',
+      pending: '/finalisasi-order',
       success: '/success-order',
       failed: '/failed-order',
     }
 
-    navigate(`${pathByStatus[transaction.status]}?bookingId=${encodeURIComponent(transaction.id)}`, {
-      state: { bookingId: transaction.id },
+    const detailParam = transaction.kind === 'membership' ? 'membershipId' : 'bookingId'
+    navigate(`${pathByStatus[transaction.status]}?${detailParam}=${encodeURIComponent(transaction.id)}`, {
+      state: { [detailParam]: transaction.id },
     })
   }
 
@@ -314,6 +396,27 @@ function HistoryPage() {
         {/* ================= Judul & filter (mobile) ================= */}
         <div className="md:hidden">
           <p className="text-sm text-[#6F6B6E]">Daftar pemesanan lapangan Anda</p>
+          <label className="mt-3 flex h-10 items-center gap-2 rounded-lg border border-[#D4D4D4] bg-white px-3 focus-within:border-[#404F14]">
+            <Search size={16} className="shrink-0 text-[#6F6B6E]" aria-hidden="true" />
+            <input
+              type="search"
+              value={searchQuery}
+              onChange={(event) => setSearchQuery(event.target.value)}
+              placeholder="Cari kode, fasilitas, metode..."
+              aria-label="Cari transaksi"
+              className="min-w-0 flex-1 bg-transparent text-sm text-[#343133] outline-none placeholder:text-[#9A9698]"
+            />
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => setSearchQuery('')}
+                aria-label="Hapus pencarian"
+                className="grid h-7 w-7 shrink-0 place-items-center rounded-md text-[#6F6B6E] hover:bg-[#F1F2EE]"
+              >
+                <X size={15} aria-hidden="true" />
+              </button>
+            )}
+          </label>
           <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
             {MOBILE_FILTERS.map((filter) => {
               const isActive = activeFilter === filter.id
@@ -346,24 +449,47 @@ function HistoryPage() {
             </p>
           </div>
 
-          <div className="flex shrink-0 flex-wrap items-center gap-2">
-            {FILTERS.map((filter) => {
-              const isActive = activeFilter === filter.id
-              return (
+          <div className="flex shrink-0 flex-col items-stretch gap-3 lg:items-end">
+            <label className="flex h-10 min-w-[280px] items-center gap-2 rounded-lg border border-[#D4D4D4] bg-white px-3 focus-within:border-[#404F14]">
+              <Search size={16} className="shrink-0 text-[#6F6B6E]" aria-hidden="true" />
+              <input
+                type="search"
+                value={searchQuery}
+                onChange={(event) => setSearchQuery(event.target.value)}
+                placeholder="Cari booking, fasilitas, metode..."
+                aria-label="Cari transaksi"
+                className="min-w-0 flex-1 bg-transparent text-sm text-[#343133] outline-none placeholder:text-[#9A9698]"
+              />
+              {searchQuery && (
                 <button
-                  key={filter.id}
                   type="button"
-                  onClick={() => handleFilterChange(filter.id)}
-                  className={`rounded-full border px-4 py-1.5 text-xs font-heading font-bold transition-colors cursor-pointer ${
-                    isActive
-                      ? 'bg-[#404F14] border-[#404F14] text-white'
-                      : 'bg-white border-[#404F14] text-[#404F14] hover:bg-[#F5FAF3]'
-                  }`}
+                  onClick={() => setSearchQuery('')}
+                  aria-label="Hapus pencarian"
+                  className="grid h-7 w-7 shrink-0 place-items-center rounded-md text-[#6F6B6E] hover:bg-[#F1F2EE]"
                 >
-                  {filter.label}
+                  <X size={15} aria-hidden="true" />
                 </button>
-              )
-            })}
+              )}
+            </label>
+            <div className="flex flex-wrap items-center gap-2">
+              {FILTERS.map((filter) => {
+                const isActive = activeFilter === filter.id
+                return (
+                  <button
+                    key={filter.id}
+                    type="button"
+                    onClick={() => handleFilterChange(filter.id)}
+                    className={`rounded-full border px-4 py-1.5 text-xs font-heading font-bold transition-colors cursor-pointer ${
+                      isActive
+                        ? 'bg-[#404F14] border-[#404F14] text-white'
+                        : 'bg-white border-[#404F14] text-[#404F14] hover:bg-[#F5FAF3]'
+                    }`}
+                  >
+                    {filter.label}
+                  </button>
+                )
+              })}
+            </div>
           </div>
         </div>
 

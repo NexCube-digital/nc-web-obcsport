@@ -1,19 +1,20 @@
 import { useEffect, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { ChevronDown, CircleX } from 'lucide-react'
-import NavbarDashboard from '../../components/layout/Navbar'
-import MobileHeader from '../../components/layout/MobileHeader'
-import DeferredFooter from '../../components/layout/DeferredFooter'
-import ScrollReveal from '../../components/animation/ScrollReveal'
-import { useIsMobile } from '../../hooks/useIsMobile'
-import { getBookingDetails, type BookingDetails } from '../../services/bookingService'
-import lapangF1 from '../../assets/layanan/Lapang F1.png'
+import NavbarDashboard from '../../../components/layout/Navbar'
+import MobileHeader from '../../../components/layout/MobileHeader'
+import DeferredFooter from '../../../components/layout/DeferredFooter'
+import ScrollReveal from '../../../components/animation/ScrollReveal'
+import { useIsMobile } from '../../../hooks/useIsMobile'
+import { getBookingDetails, type BookingDetails } from '../../../services/bookingService'
+import lapangF1 from '../../../assets/layanan/Lapang F1.png'
 
 /* -------------------------------------------------------------------------
    Tipe data
    ------------------------------------------------------------------------- */
 interface FailedState {
   bookingId?: string
+  bookingIds?: string[]
   bookingCode?: string
   facility?: string
   schedule?: string
@@ -47,7 +48,9 @@ function FailedOrder() {
   const location = useLocation()
   const isMobile = useIsMobile()
   const state = (location.state as FailedState | null) ?? {}
-  const bookingId = state.bookingId ?? new URLSearchParams(location.search).get('bookingId') ?? ''
+  const queryBookingIds = new URLSearchParams(location.search).get('bookingIds')?.split(',').filter(Boolean) ?? []
+  const bookingIds = state.bookingIds?.length ? state.bookingIds : queryBookingIds.length ? queryBookingIds : [state.bookingId ?? new URLSearchParams(location.search).get('bookingId') ?? ''].filter(Boolean)
+  const bookingId = bookingIds[0] ?? ''
   const [booking, setBooking] = useState<BookingDetails | null>(null)
 
   const [isOrderDetailsOpen, setIsOrderDetailsOpen] = useState(false)
@@ -117,11 +120,9 @@ function FailedOrder() {
       {isMobile && <MobileHeader variant="title" title="Pesanan Gagal" showBottomNav={false} />}
       {isMobile && (
         <div
-          className={`flex h-[calc(100dvh-4rem)] flex-col bg-white px-4 pb-5 pt-3 font-body text-[#343133] overscroll-contain ${
-          isOrderDetailsOpen ? 'overflow-y-auto' : 'overflow-hidden'
-          }`}
+          className="fixed inset-x-0 bottom-0 top-14 flex min-h-0 flex-col overflow-hidden bg-white font-body text-[#343133]"
         >
-        <ScrollReveal className="flex min-h-0 flex-1 flex-col">
+        <ScrollReveal className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-4 pt-3">
         <div
           role="img"
           aria-label="Pembayaran gagal"
@@ -143,6 +144,11 @@ function FailedOrder() {
           <h1 className={`${FONT_MONTSERRAT} mt-2 text-lg font-bold leading-6 text-[#343133]`}>
             Pembayaran Tidak Berhasil
           </h1>
+          {bookingIds.length > 1 && (
+            <p className="mt-1 font-heading text-[11px] font-bold text-[#E02424]">
+              {bookingIds.length} pesanan perlu diperiksa
+            </p>
+          )}
           <p className="mt-1.5 font-heading text-[11px] leading-4 text-[#343133]">
             Transaksi tidak berhasil diselesaikan. Silakan pilih jadwal lain untuk membuat
             booking baru. Jika saldo telah terpotong, hubungi Admin OBC.
@@ -223,7 +229,7 @@ function FailedOrder() {
         </ol>
 
         {/* Tombol, menempel di bawah layar */}
-        <div className="mt-auto space-y-2 pt-4">
+        <div className="shrink-0 space-y-2 border-t border-[#E5E5E5] bg-white px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-2">
           <button
             type="button"
             onClick={handleRetry}

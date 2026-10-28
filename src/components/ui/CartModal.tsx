@@ -14,6 +14,11 @@ export interface CartItem {
   /** Contoh: "08:00 - 12:00, 12 Mar 2026" */
   schedule: string
   price: number
+  resourceId?: string
+  bookingDate?: string
+  startTime?: string
+  endTime?: string
+  sportType?: string
 }
 
 interface CartModalProps {

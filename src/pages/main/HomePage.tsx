@@ -11,10 +11,7 @@ import type { FacilityCard } from './home/Court'
 import { getSportsFacilities } from '../../services/facilityService'
 import { useAuth } from '../../hooks/useAuth'
 import type { SportsFacility } from '../../services/facilityService'
-import lapangF1 from '../../assets/layanan/Lapang F1.png'
-import lapangF2 from '../../assets/layanan/Lapang F2.png'
-import mejaBilliard from '../../assets/layanan/Meja Billiard.png'
-import pickleballImage from '../../assets/layanan/pickleball-mockup.png'
+import { getImageUrl } from '../../utils/imageUrl'
 
 const Court = lazy(() => import('./home/Court'))
 const Information = lazy(() => import('./home/Information'))
@@ -24,52 +21,27 @@ const OrderModal = lazy(() => import('../../components/ui/OrderModal'))
 /* -------------------------------------------------------------------------
    Tipe data
    ------------------------------------------------------------------------- */
-// Fasilitas pendukung yang tampil di modal
-const AMENITIES = [
-  { id: 'toilet', label: 'Toilet T3-T5', icon: 'toilet' },
-  { id: 'led', label: 'LED Light', icon: 'led' },
-  { id: 'foodcourt', label: 'Foodcourt', icon: 'foodcourt' },
-  { id: 'mushola', label: 'Mushola', icon: 'mushola' },
-  { id: 'parkir', label: 'Parkir', icon: 'parkir' },
-] as const
+const AMENITY_LABELS: Record<string, string> = {
+  toilet: 'Toilet',
+  led: 'Lampu LED',
+  foodcourt: 'Foodcourt',
+  mushola: 'Mushola',
+  musholla: 'Mushola',
+  parkir: 'Parkir',
+  parkir_luas: 'Parkir Luas',
+  shower: 'Kamar Mandi',
+  loker: 'Loker',
+  wifi: 'Wi-Fi',
+}
 
-// TODO: ganti dengan data detail dari API
-const MODAL_DETAIL: Record<string, Omit<OrderModalFacility, 'id' | 'name' | 'image'>> = {
-  'lapangan-f1': {
-    // Voli dihapus: status harga masih pending konfirmasi OBC (lihat PRD)
-    sports: [
-      { id: 'futsal-1', label: 'Futsal 1', icon: 'futsal' },
-      { id: 'badminton', label: 'Badminton', icon: 'badminton' },
-      { id: 'pickleball', label: 'Pickleball', icon: 'pickleball' },
-    ],
-    specification:
-      'Lantai interlock standar turnamen internasional, pencahayaan LED anti-silau, tribun penonton, serta akses ruang ganti eksklusif.',
-    amenities: [...AMENITIES],
-  },
-  'lapangan-f2': {
-    sports: [
-      { id: 'futsal-2', label: 'Futsal 2', icon: 'futsal' },
-      { id: 'basket', label: 'Basket', icon: 'basket' },
-    ],
-    specification:
-      'Lantai interlock standar turnamen, pencahayaan LED anti-silau, dan akses ruang ganti.',
-    amenities: [...AMENITIES],
-  },
-  'lapang-sepak-bola': {
-    sports: [{ id: 'sepak-bola', label: 'Sepak Bola', icon: 'sepakbola' }],
-    specification: 'Lapangan sepak bola dengan pencahayaan malam dan akses ruang ganti.',
-    amenities: [...AMENITIES],
-  },
-  'ruang-tenis-meja': {
-    sports: [{ id: 'tenis-meja', label: 'Tenis Meja', icon: 'tenismeja' }],
-    specification: 'Ruang tenis meja dalam ruangan dengan meja standar turnamen.',
-    amenities: [...AMENITIES],
-  },
-  'ruang-biliard': {
-    sports: [{ id: 'biliard', label: 'Biliard', icon: 'biliard' }],
-    specification: 'Meja biliard standar dengan pencahayaan khusus dan area santai.',
-    amenities: [...AMENITIES],
-  },
+const AMENITY_ICONS: Record<string, 'toilet' | 'led' | 'foodcourt' | 'mushola' | 'parkir'> = {
+  toilet: 'toilet',
+  led: 'led',
+  foodcourt: 'foodcourt',
+  mushola: 'mushola',
+  musholla: 'mushola',
+  parkir: 'parkir',
+  parkir_luas: 'parkir',
 }
 
 function HomePage() {
@@ -131,11 +103,15 @@ function HomePage() {
         id: selectedFacility.id,
         name: selectedFacility.name,
         image: selectedFacility.image,
-        sports: selectedFacility.sportTypes?.map(toSportOption).filter((sport) => sport.id !== 'volleyball')
-          ?? MODAL_DETAIL[selectedFacility.id]?.sports
-          ?? [],
-        specification: selectedFacility.description || MODAL_DETAIL[selectedFacility.id]?.specification || '',
-        amenities: MODAL_DETAIL[selectedFacility.id]?.amenities ?? [...AMENITIES],
+        sports: selectedFacility.sportTypes?.map(toSportOption).filter((sport) => sport.id !== 'volleyball') ?? [],
+        specification: selectedFacility.description || '',
+        amenities: selectedFacility.amenities?.length
+          ? selectedFacility.amenities.map((amenity, index) => ({
+              id: `${amenity}-${index}`,
+              label: AMENITY_LABELS[amenity] ?? amenity.replaceAll('_', ' '),
+              icon: AMENITY_ICONS[amenity] ?? 'parkir',
+            }))
+          : [],
       }
     : null
 
@@ -270,13 +246,7 @@ function toFacilityCard(resource: SportsFacility): FacilityCard {
   const sportNames = resource.sportTypes
     .filter((sport) => sport !== 'volleyball')
     .map((sport) => SPORT_LABELS[sport] ?? sport)
-  const image = resource.sportTypes.includes('billiard')
-    ? mejaBilliard
-    : resource.sportTypes.includes('pickleball')
-      ? pickleballImage
-      : resource.name.toLowerCase().includes('f2')
-        ? lapangF2
-        : lapangF1
+  const image = getImageUrl(resource.imageUrl ?? resource.gallery?.[0]) ?? ''
 
   return {
     id: resource.id,
@@ -289,6 +259,7 @@ function toFacilityCard(resource: SportsFacility): FacilityCard {
     slotMinutes: resource.slotMinutes,
     fromPrice: resource.fromPrice,
     fromPriceFormatted: resource.fromPriceFormatted,
+    amenities: resource.amenities ?? [],
     location: resource.location,
   }
 }

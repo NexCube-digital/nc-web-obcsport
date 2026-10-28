@@ -9,6 +9,7 @@ export interface CustomerProfileData {
 	email?: string
 	phone?: string | null
 	avatarUrl?: string | null
+	hasPassword?: boolean
 }
 
 function unwrap<T>(body: unknown): T {
@@ -61,7 +62,10 @@ export async function uploadAvatar(file: File): Promise<{ avatarUrl?: string }> 
 	return unwrap<{ avatarUrl?: string }>(response.data)
 }
 
-export async function changePassword(currentPassword: string, newPassword: string) {
-	const response = await api.post('/customer/password', { currentPassword, newPassword })
+export async function changePassword(currentPassword: string | undefined, newPassword: string) {
+	const response = await api.post('/customer/password', {
+		...(currentPassword ? { currentPassword } : {}),
+		newPassword,
+	})
 	return unwrap<{ message?: string }>(response.data)
 }

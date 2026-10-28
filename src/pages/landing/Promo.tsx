@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
-import promoBanner from '../../../assets/slider/Rectangle 48.png'
+import promoBanner from '../../assets/slider/Rectangle 48.png'
 
 interface PromoSlide {
 	id: string

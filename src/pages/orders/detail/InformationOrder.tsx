@@ -1,15 +1,14 @@
 import { useEffect, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { Clock } from 'lucide-react'
-import NavbarDashboard from '../../components/layout/Navbar'
-import MobileHeader from '../../components/layout/MobileHeader'
-import DeferredFooter from '../../components/layout/DeferredFooter'
-import ScrollReveal from '../../components/animation/ScrollReveal'
-import { useIsMobile } from '../../hooks/useIsMobile'
-import PaymentInstructionCard from './payment/PaymentInstructionCard'
-import { getBookingDetails, type BookingDetails } from '../../services/bookingService'
-import { getApiErrorMessage } from '../../services/apiService'
-import { parsePersistedDirectPayment } from '../../services/paymentService'
+import { CheckCircle2, Clock } from 'lucide-react'
+import NavbarDashboard from '../../../components/layout/Navbar'
+import MobileHeader from '../../../components/layout/MobileHeader'
+import DeferredFooter from '../../../components/layout/DeferredFooter'
+import ScrollReveal from '../../../components/animation/ScrollReveal'
+import { useIsMobile } from '../../../hooks/useIsMobile'
+import { cancelBooking, getBookingDetails, type BookingDetails } from '../../../services/bookingService'
+import { getApiErrorMessage } from '../../../services/apiService'
+import { getMembershipDetail } from '../../../services/membershipService'
 
 /* -------------------------------------------------------------------------
    Tipe data
@@ -17,6 +16,8 @@ import { parsePersistedDirectPayment } from '../../services/paymentService'
 // Data yang dikirim dari PaymentPage lewat navigate('/pembayaran/qris', { state })
 interface InformationState {
   bookingId?: string
+  membershipId?: string
+  bookingIds?: string[]
 }
 
 /* -------------------------------------------------------------------------
@@ -25,6 +26,12 @@ interface InformationState {
 const FONT_MONTSERRAT = "font-['Montserrat',sans-serif]"
 
 const formatRupiah = (value: number) => `Rp ${value.toLocaleString('id-ID')}`
+const isPaidBooking = (booking: BookingDetails | null) => {
+  const bookingStatus = booking?.status.toLowerCase()
+  const paymentStatus = booking?.payments[0]?.status.toLowerCase()
+  return ['fully_paid', 'completed', 'paid'].includes(bookingStatus ?? '')
+    || ['paid', 'settlement', 'capture'].includes(paymentStatus ?? '')
+}
 
 function PaymentCountdown({ expiresAt }: { expiresAt?: string }) {
   const [secondsLeft, setSecondsLeft] = useState(() =>
@@ -62,13 +69,19 @@ function InformationOrder() {
   const location = useLocation()
   const isMobile = useIsMobile()
   const state = (location.state as InformationState | null) ?? {}
-  const bookingId = state.bookingId ?? new URLSearchParams(location.search).get('bookingId') ?? ''
+  const queryBookingIds = new URLSearchParams(location.search).get('bookingIds')?.split(',').filter(Boolean) ?? []
+  const bookingIds = state.bookingIds?.length ? state.bookingIds : queryBookingIds.length ? queryBookingIds : [state.bookingId ?? new URLSearchParams(location.search).get('bookingId') ?? ''].filter(Boolean)
+  const bookingIdsKey = bookingIds.join('|')
+  const bookingId = bookingIds[0] ?? ''
+  const membershipId = state.membershipId ?? new URLSearchParams(location.search).get('membershipId') ?? ''
   const [booking, setBooking] = useState<BookingDetails | null>(null)
   const [errorMessage, setErrorMessage] = useState('')
   const [isChecking, setIsChecking] = useState(false)
+  const [isChangingPaymentMethod, setIsChangingPaymentMethod] = useState(false)
   const [copied, setCopied] = useState(false)
   const payment = booking?.payments[0]
-  const directPayment = parsePersistedDirectPayment(payment?.paymentDetails)
+  const isPaid = isPaidBooking(booking)
+  const canChangePaymentMethod = booking?.status === 'unpaid' && !isPaid
   const paymentChannel = payment?.paymentDetails?.obc_payment_channel
   const canPayByCreditCard = Boolean(
     booking?.status === 'unpaid'
@@ -81,27 +94,89 @@ function InformationOrder() {
   const redirectUrl = payment?.redirectUrl
 
   useEffect(() => {
-    if (!bookingId) {
+    if (!bookingId && !membershipId) {
       navigate('/home', { replace: true })
       return
     }
 
     let active = true
     let timeout: number | undefined
+    if (membershipId) {
+      const refreshMembership = async () => {
+        try {
+          const detail = await getMembershipDetail(membershipId)
+          if (!active) return
+          setErrorMessage('')
+
+          const payment = detail.payments[0]
+          const storedPayment = payment?.paymentDetails as { chargeResponse?: unknown } | null | undefined
+          const bookingLike = {
+            id: detail.id,
+            status: payment?.status ?? detail.status,
+            bookingDate: detail.purchaseDate,
+            startTime: '',
+            endTime: '',
+            durationMinutes: 0,
+            sportType: detail.package.sportType,
+            bookingType: 'membership',
+            resource: { id: detail.package.id, name: detail.package.name, slug: detail.package.id, resourceType: 'membership' },
+            pricing: {
+              basePrice: payment?.totalAmount ?? detail.package.memberPrice,
+              discountAmount: 0,
+              adminFee: 0,
+              totalPrice: payment?.totalAmount ?? detail.package.memberPrice,
+              formatted: { basePrice: '', adminFee: '', totalPrice: '' },
+            },
+            payments: payment ? [{
+              id: payment.id,
+              midtransOrderId: payment.midtransOrderId,
+              paymentType: payment.paymentType,
+              method: payment.method ?? null,
+              amount: payment.totalAmount,
+              amountFormatted: '',
+              status: payment.status,
+              paymentDetails: storedPayment?.chargeResponse ?? payment.paymentDetails ?? null,
+              paidAt: null,
+              createdAt: payment.createdAt,
+              redirectUrl: payment.redirectUrl ?? null,
+              expiredAt: null,
+            }] : [],
+            lockedUntil: detail.expiryDate,
+            paidAt: null,
+            cancelledAt: null,
+            completedAt: null,
+          } as BookingDetails
+          setBooking(bookingLike)
+          if (['paid', 'settlement', 'capture'].includes(payment?.status ?? '')) {
+            navigate(`/success-order?membershipId=${encodeURIComponent(detail.id)}`, { replace: true, state: { membershipId: detail.id } })
+            return
+          }
+          if (['cancelled', 'expired', 'refunded', 'deny', 'failure', 'failed'].includes(payment?.status ?? '') || detail.status === 'cancelled') {
+            navigate(`/failed-order?membershipId=${encodeURIComponent(detail.id)}`, { replace: true, state: { membershipId: detail.id } })
+            return
+          }
+        } catch (error) {
+          if (active) setErrorMessage(getApiErrorMessage(error, 'Status membership tidak dapat dimuat.'))
+        }
+        if (active) timeout = window.setTimeout(() => void refreshMembership(), 4000)
+      }
+      void refreshMembership()
+      return () => {
+        active = false
+        if (timeout) window.clearTimeout(timeout)
+      }
+    }
+
     const refresh = async () => {
       try {
-        const latest = await getBookingDetails(bookingId)
-        if (!active) return
+        const effectBookingIds = bookingIdsKey.split('|').filter(Boolean)
+        const latestBookings = await Promise.all(effectBookingIds.map((id) => getBookingDetails(id)))
+        const latest = latestBookings[0]
+        if (!active || !latest) return
         setBooking(latest)
-        setErrorMessage('')
+          setErrorMessage('')
 
-        if (latest.status === 'fully_paid' || latest.status === 'completed') {
-          navigate(`/success-order?bookingId=${encodeURIComponent(bookingId)}`, {
-            replace: true,
-            state: { bookingId },
-          })
-          return
-        }
+        if (isPaidBooking(latest)) return
         if (['cancelled', 'expired', 'refunded'].includes(latest.status)) {
           navigate(`/failed-order?bookingId=${encodeURIComponent(bookingId)}`, {
             replace: true,
@@ -121,7 +196,7 @@ function InformationOrder() {
       active = false
       if (timeout) window.clearTimeout(timeout)
     }
-  }, [bookingId, navigate])
+  }, [bookingId, bookingIdsKey, membershipId, navigate])
 
   /* ---------- Handler ---------- */
   const handleCreditCardPayment = () => {
@@ -129,6 +204,53 @@ function InformationOrder() {
     navigate(`/credit-card-payment?bookingId=${encodeURIComponent(booking.id)}`, {
       state: { bookingId: booking.id },
     })
+  }
+
+  const handleChangePaymentMethod = async () => {
+    if (!booking || !canChangePaymentMethod || isChangingPaymentMethod) return
+
+    const confirmed = window.confirm(
+      'Pesanan pending saat ini akan dibatalkan dan slotnya dilepas sebelum Anda memilih metode pembayaran baru. Lanjutkan?',
+    )
+    if (!confirmed) return
+
+    setIsChangingPaymentMethod(true)
+    setErrorMessage('')
+    try {
+      await cancelBooking(booking.id, 'Pelanggan mengganti metode pembayaran')
+      const bookingDate = booking.bookingDate.slice(0, 10)
+      const displayDate = new Intl.DateTimeFormat('id-ID', {
+        weekday: 'long',
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+      }).format(new Date(`${bookingDate}T12:00:00`))
+
+      navigate('/payment', {
+        replace: true,
+        state: {
+          resourceId: booking.resource.id,
+          sportType: booking.sportType,
+          bookingDate,
+          facility: { id: booking.resource.id, name: booking.resource.name },
+          date: displayDate,
+          time: booking.startTime,
+          endTime: booking.endTime,
+          durationMinutes: booking.durationMinutes,
+          total: booking.pricing.totalPrice,
+          price: {
+            basePrice: booking.pricing.basePrice,
+            discountAmount: booking.pricing.discountAmount,
+            adminFee: booking.pricing.adminFee,
+            totalPrice: booking.pricing.totalPrice,
+          },
+        },
+      })
+    } catch (error) {
+      setErrorMessage(getApiErrorMessage(error, 'Metode pembayaran belum dapat diganti. Silakan coba lagi.'))
+    } finally {
+      setIsChangingPaymentMethod(false)
+    }
   }
 
   const handleCopy = async () => {
@@ -142,18 +264,32 @@ function InformationOrder() {
   }
 
   const handleRefresh = async () => {
-    if (!bookingId) return
+    if (!bookingId && !membershipId) return
     setIsChecking(true)
     try {
-      const latest = await getBookingDetails(bookingId)
+      if (membershipId) {
+        const detail = await getMembershipDetail(membershipId)
+        const payment = detail.payments[0]
+        setErrorMessage('')
+        if (['paid', 'settlement', 'capture'].includes(payment?.status ?? '')) {
+          navigate(`/success-order?membershipId=${encodeURIComponent(detail.id)}`, {
+            replace: true,
+            state: { membershipId: detail.id },
+          })
+        } else if (['cancelled', 'expired', 'refunded', 'deny', 'failure', 'failed'].includes(payment?.status ?? '') || detail.status === 'cancelled') {
+          navigate(`/failed-order?membershipId=${encodeURIComponent(detail.id)}`, {
+            replace: true,
+            state: { membershipId: detail.id },
+          })
+        }
+        return
+      }
+      const latestBookings = await Promise.all(bookingIdsKey.split('|').filter(Boolean).map((id) => getBookingDetails(id)))
+      const latest = latestBookings[0]
+      if (!latest) return
       setBooking(latest)
       setErrorMessage('')
-      if (latest.status === 'fully_paid' || latest.status === 'completed') {
-        navigate(`/success-order?bookingId=${encodeURIComponent(bookingId)}`, {
-          replace: true,
-          state: { bookingId },
-        })
-      } else if (['cancelled', 'expired', 'refunded'].includes(latest.status)) {
+      if (['cancelled', 'expired', 'refunded'].includes(latest.status)) {
         navigate(`/failed-order?bookingId=${encodeURIComponent(bookingId)}`, {
           replace: true,
           state: { bookingId },
@@ -166,20 +302,50 @@ function InformationOrder() {
     }
   }
 
-  if (directPayment) {
+  if (isPaid) {
     return (
       <div className="flex min-h-screen flex-col bg-white font-body text-[#343133]">
         {isMobile ? (
-          <MobileHeader variant="title" title="Selesaikan Pembayaran" showBottomNav={false} />
+          <MobileHeader variant="title" title="Status Pembayaran" showBottomNav={false} />
         ) : (
           <NavbarDashboard showDesktopNavigation={false} showMobileHeader={false} />
         )}
-        <main className="mx-auto w-full max-w-[560px] flex-1 px-4 pt-6 pb-16">
-          <PaymentInstructionCard
-            info={directPayment}
-            totalLabel={formatRupiah(directPayment.grossAmount ?? total)}
-            onCheckStatus={() => { void handleRefresh() }}
-          />
+        <main className="mx-auto flex w-full max-w-[620px] flex-1 flex-col justify-center px-4 py-10">
+          <section className="rounded-xl border border-[#DCE8D6] bg-[#F7FAF5] p-6 text-center md:p-10">
+            <CheckCircle2 size={58} strokeWidth={1.8} className="mx-auto text-[#39712F]" aria-hidden="true" />
+            <p className="mt-4 inline-flex rounded-full bg-[#E6F0E0] px-3 py-1.5 font-heading text-xs font-bold text-[#265021]">
+              PEMBAYARAN BERHASIL
+            </p>
+            <h1 className={`${FONT_MONTSERRAT} mt-3 text-2xl font-bold text-[#252920]`}>
+              Pesanan sudah dibayar
+            </h1>
+            <p className="mt-2 text-sm text-[#686D60]">
+              Pembayaran Anda telah dikonfirmasi. Detail pesanan tercatat di riwayat booking.
+            </p>
+            <div className="mt-6 border-t border-[#DCE8D6] pt-5 text-left">
+              <div className="flex justify-between gap-4 text-sm">
+                <span className="text-[#686D60]">Total dibayar</span>
+                <strong>{formatRupiah(total)}</strong>
+              </div>
+              <div className="mt-3 flex justify-between gap-4 text-sm">
+                <span className="text-[#686D60]">ID transaksi</span>
+                <strong className="break-all text-right">{transactionId}</strong>
+              </div>
+              {booking?.paidAt && (
+                <div className="mt-3 flex justify-between gap-4 text-sm">
+                  <span className="text-[#686D60]">Waktu pembayaran</span>
+                  <strong className="text-right">{new Date(booking.paidAt).toLocaleString('id-ID')}</strong>
+                </div>
+              )}
+            </div>
+          </section>
+          <button
+            type="button"
+            onClick={() => navigate('/history')}
+            className="mt-5 min-h-11 rounded-lg bg-[#354B24] px-5 font-heading text-sm font-bold text-white hover:bg-[#26391A]"
+          >
+            Buka Riwayat Pesanan
+          </button>
         </main>
         {!isMobile && <DeferredFooter />}
       </div>
@@ -199,7 +365,7 @@ function InformationOrder() {
           showBottomNav={false}
         />
       )}
-      {isMobile && <div className="flex h-[calc(100dvh-4rem)] flex-col overflow-hidden bg-white font-body text-[#343133] pb-24 overscroll-none">
+      {isMobile && <div className="fixed inset-x-0 bottom-0 top-14 flex min-h-0 flex-col overflow-hidden bg-white font-body text-[#343133]">
         {/* Banner batas waktu */}
         <div
           role="timer"
@@ -253,8 +419,23 @@ function InformationOrder() {
               Masukkan Detail Kartu
             </button>
           )}
+          {canChangePaymentMethod && (
+            <button
+              type="button"
+              onClick={() => { void handleChangePaymentMethod() }}
+              disabled={isChangingPaymentMethod}
+              className="mt-3 h-10 w-full rounded-lg border border-[#404F14] bg-white font-heading text-xs font-bold text-[#404F14] disabled:opacity-60"
+            >
+              {isChangingPaymentMethod ? 'Membatalkan pesanan...' : 'Ganti Metode Pembayaran'}
+            </button>
+          )}
 
           {/* Petunjuk scan */}
+          {bookingIds.length > 1 && (
+            <p className="mt-3 font-heading text-[11px] font-bold text-[#404F14]">
+              Menampilkan {bookingIds.length} pesanan
+            </p>
+          )}
           <h2 className="mt-3 font-heading text-xs font-bold text-[#121212]">Status Pembayaran</h2>
           {errorMessage && <p role="alert" className="mt-1 text-xs text-red-700">{errorMessage}</p>}
           <p className="mt-1 font-heading text-[11px] leading-4 text-[#6F6B6E]">
@@ -264,7 +445,7 @@ function InformationOrder() {
           </ScrollReveal>
 
         {/* Tombol cek status (fixed di bawah) */}
-        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-[#D4D4D4] bg-white px-3 pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
+        <div className="shrink-0 border-t border-[#D4D4D4] bg-white px-3 pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
           <button
             type="button"
             onClick={handleRefresh}
@@ -288,6 +469,11 @@ function InformationOrder() {
             <h1 className={`${FONT_MONTSERRAT} text-[26px] font-bold leading-9 text-[#343133]`}>
               Status Pembayaran
             </h1>
+            {bookingIds.length > 1 && (
+              <p className="mt-1 font-heading text-xs font-bold text-[#404F14]">
+                Menampilkan {bookingIds.length} pesanan
+              </p>
+            )}
             <span
               className="mt-0.5 inline-block rounded-full border border-[#E02424] bg-[#FDF2F2] px-3 py-0.5 font-heading text-xs font-bold text-[#E02424]"
               role="timer"
@@ -349,6 +535,16 @@ function InformationOrder() {
                   className="mt-4 h-11 w-full rounded-lg bg-[#CDF178] font-heading text-sm font-bold text-[#404F14]"
                 >
                   Masukkan Detail Kartu
+                </button>
+              )}
+              {canChangePaymentMethod && (
+                <button
+                  type="button"
+                  onClick={() => { void handleChangePaymentMethod() }}
+                  disabled={isChangingPaymentMethod}
+                  className="mt-4 h-10 w-full rounded-lg border border-[#404F14] bg-white font-heading text-xs font-bold text-[#404F14] disabled:opacity-60"
+                >
+                  {isChangingPaymentMethod ? 'Membatalkan pesanan...' : 'Ganti Metode Pembayaran'}
                 </button>
               )}
 

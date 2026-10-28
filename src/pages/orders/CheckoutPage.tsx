@@ -8,8 +8,9 @@ import DeferredSection from '../../components/layout/DeferredSection'
 import type { CartItem } from '../../components/ui/CartModal'
 import { COURT_FACILITIES } from '../../data/facilitiesData'
 import type { FacilityCard } from '../main/home/Court'
-import { getFacilityAvailability, type FacilityAvailability } from '../../services/facilityService'
+import { getFacilityAvailability, getFacilityPriceTiers, type FacilityAvailability, type FacilityPriceTier } from '../../services/facilityService'
 import { previewBookingPrice, type BookingPrice } from '../../services/bookingService'
+import { addBackendCartItem, cartService, getBackendCart, removeBackendCartItem } from '../../services/cart'
 import { getApiErrorMessage } from '../../services/apiService'
 import FacilityDetails from './checkout/FacilityDetails'
 import { useIsMobile } from '../../hooks/useIsMobile'
@@ -121,17 +122,70 @@ function DetailOrder() {
   const [isConfirmed, setIsConfirmed] = useState(false)
   const [isCheckoutModalOpen, setIsCheckoutModalOpen] = useState(false)
   const [isCartOpen, setIsCartOpen] = useState(false)
-  const [cartItems, setCartItems] = useState<CartItem[]>([])
+  const [cartItems, setCartItems] = useState<CartItem[]>(() => cartService.getItems())
   const [conflictMessage, setConflictMessage] = useState<string | null>(null)
   const [availability, setAvailability] = useState<FacilityAvailability | null>(null)
   const [isAvailabilityLoading, setIsAvailabilityLoading] = useState(true)
   const [pricePreview, setPricePreview] = useState<BookingPrice | null>(null)
   const [isPriceLoading, setIsPriceLoading] = useState(false)
+  const [apiPriceTiers, setApiPriceTiers] = useState<Array<{ id: string; range: string; price: string }>>([])
+  const [isApiPriceLoading, setIsApiPriceLoading] = useState(true)
 
   useEffect(() => {
     const timer = window.setInterval(() => setCurrentTime(new Date()), 30_000)
     return () => window.clearInterval(timer)
   }, [])
+
+  useEffect(() => {
+    let active = true
+    getBackendCart()
+      .then((items) => {
+        if (!active) return
+        const formatMinute = (minute: number) => `${String(Math.floor(minute / 60)).padStart(2, '0')}:${String(minute % 60).padStart(2, '0')}`
+        const mapped = items.map((item): CartItem => ({
+          id: item.id,
+          code: item.resource?.name?.split('-').at(-1)?.toUpperCase() ?? 'OBC',
+          facilityName: item.resource?.name ?? 'Fasilitas OBC Sport',
+          sportName: item.sportType,
+          schedule: `${formatMinute(item.startMinute)} - ${formatMinute(item.endMinute)}, ${item.bookingDate}`,
+          price: 0,
+          resourceId: item.resourceId,
+          bookingDate: item.bookingDate,
+          startTime: formatMinute(item.startMinute),
+          endTime: formatMinute(item.endMinute),
+          sportType: item.sportType,
+        }))
+        setCartItems(mapped)
+        cartService.replaceItems(mapped)
+      })
+      .catch(() => undefined)
+    return () => { active = false }
+  }, [])
+
+  useEffect(() => {
+    if (!resourceId) return
+    let active = true
+    Promise.resolve().then(() => getFacilityPriceTiers(resourceId))
+      .then((tiers: FacilityPriceTier[]) => {
+        if (!active) return
+        const formatTime = (minutes: number) =>
+          `${String(Math.floor(minutes / 60)).padStart(2, '0')}:${String(minutes % 60).padStart(2, '0')}`
+        const weekdayTiers = tiers.filter((tier) => tier.dayType === 'weekday')
+        setApiPriceTiers(weekdayTiers.map((tier) => ({
+          id: tier.id,
+          range: `${formatTime(tier.tierStart)}-${formatTime(tier.tierEnd)}`,
+          price: `${Math.round(tier.pricePerHour / 1000)}k/jam`,
+        })))
+      })
+      .catch((error: unknown) => {
+        if (active) {
+          setApiPriceTiers([])
+          toast.error(getApiErrorMessage(error, 'Harga fasilitas tidak dapat dimuat.'))
+        }
+      })
+      .finally(() => { if (active) setIsApiPriceLoading(false) })
+    return () => { active = false }
+  }, [resourceId])
 
   useEffect(() => {
     if (!resourceId) navigate('/home', { replace: true })
@@ -209,7 +263,7 @@ function DetailOrder() {
     ? minutesToTime(timeToMinutes(selectedStartTime) + durationMinutes)
     : ''
   const durationLabel = formatDuration(durationMinutes)
-  const totalPrice = pricePreview?.totalPrice ?? 0
+  const totalPrice = pricePreview?.basePrice ?? 0
 
   useEffect(() => {
     if (!resourceId || !selectedDate || !startTime || !endTime) {
@@ -275,7 +329,7 @@ function DetailOrder() {
   }
 
   const handleChangeDuration = (durationMinutes: number) => {
-    if (durationMinutes < 60 || durationMinutes > MAX_SESSION_HOURS * 60 || durationMinutes % 15 !== 0) return
+    if (durationMinutes < 60 || durationMinutes > MAX_SESSION_HOURS * 60 || durationMinutes % 60 !== 0) return
     setSelectedDurationMinutes(durationMinutes)
     setSelectedStartTime((current) =>
       current && canBookWindow(timeToMinutes(current), durationMinutes) ? current : null,
@@ -376,7 +430,7 @@ function DetailOrder() {
     setIsSheetOpen(true)
   }
 
-  const handleAddToCart = () => {
+  const handleAddToCart = async () => {
     if (!selectedDate || sessionCount === 0) {
       openMobileSheetForSelection()
       return
@@ -388,6 +442,10 @@ function DetailOrder() {
       setIsSheetOpen(true)
       return
     }
+    if (!resourceId) {
+      toast.error('Fasilitas belum dipilih.')
+      return
+    }
 
     const cartItem: CartItem = {
       id: `${facility.id}-${selectedDate}-${startTime}-${endTime}`,
@@ -396,11 +454,32 @@ function DetailOrder() {
       sportName: facility.name,
       schedule: `${startTime} - ${endTime}, ${selectedDateLabel}`,
       price: totalPrice,
+      resourceId,
+      bookingDate: selectedDate,
+      startTime,
+      endTime,
+      sportType,
     }
 
-    setCartItems((items) =>
-      items.some((item) => item.id === cartItem.id) ? items : [...items, cartItem],
-    )
+    try {
+      const backendItem = await addBackendCartItem({
+        resourceId,
+        bookingDate: selectedDate,
+        startTime,
+        endTime,
+        sportType,
+      })
+      const persistedCartItem = { ...cartItem, id: backendItem.id }
+      setCartItems((items) => {
+        if (items.some((item) => item.resourceId === resourceId && item.bookingDate === selectedDate && item.startTime === startTime && item.endTime === endTime)) return items
+        cartService.addItem(persistedCartItem)
+        return [...items, persistedCartItem]
+      })
+      toast.success('Jadwal berhasil ditambahkan ke keranjang.')
+    } catch (error) {
+      toast.error(getApiErrorMessage(error, 'Jadwal gagal ditambahkan ke keranjang.'))
+      return
+    }
     setIsCheckoutModalOpen(false)
     setIsCartOpen(true)
   }
@@ -421,6 +500,8 @@ function DetailOrder() {
               facilityName={facility.name}
               image={facility.image}
               locationName={facility.location?.name}
+              priceTiers={apiPriceTiers}
+              isPriceLoading={isApiPriceLoading}
             />
             <DeferredSection placeholderClassName="min-h-[240px]">
               <ReviewSection variant="mobile" resourceId={resourceId ?? ''} />
@@ -470,6 +551,8 @@ function DetailOrder() {
                   facilityName={facility.name}
                   image={facility.image}
                   locationName={facility.location?.name}
+                  priceTiers={apiPriceTiers}
+                  isPriceLoading={isApiPriceLoading}
                 />
                 <DeferredSection placeholderClassName="min-h-[240px]">
                   <ReviewSection variant="desktop" resourceId={resourceId ?? ''} />
@@ -561,17 +644,47 @@ function DetailOrder() {
             isOpen={isCartOpen}
             onClose={() => setIsCartOpen(false)}
             items={cartItems}
-            onRemove={(id) => setCartItems((items) => items.filter((item) => item.id !== id))}
+            onRemove={async (id) => {
+              try {
+                await removeBackendCartItem(id)
+                cartService.removeItem(id)
+                setCartItems((items) => items.filter((item) => item.id !== id))
+                toast.success('Booking berhasil dihapus dari keranjang.')
+              } catch (error) {
+                toast.error(getApiErrorMessage(error, 'Item keranjang gagal dihapus.'))
+              }
+            }}
             onCheckout={(items) => {
+              const invalidItems = items.filter((item) =>
+                !item.resourceId || !item.bookingDate || !item.startTime || !item.endTime || !item.sportType,
+              )
+              if (invalidItems.length > 0) {
+                toast.error('Data jadwal keranjang tidak lengkap. Tambahkan ulang jadwal tersebut.')
+                return
+              }
+
+              const firstItem = items[0]
+              if (!firstItem) {
+                toast.error('Keranjang masih kosong.')
+                return
+              }
+
+              const paymentState = {
+                resourceId: firstItem.resourceId,
+                sportType: firstItem.sportType,
+                bookingDate: firstItem.bookingDate,
+                facility: { id: firstItem.resourceId, name: firstItem.facilityName },
+                date: firstItem.bookingDate,
+                time: firstItem.startTime,
+                endTime: firstItem.endTime,
+                total: items.reduce((sum, item) => sum + item.price, 0),
+                durationMinutes: timeToMinutes(firstItem.endTime!) - timeToMinutes(firstItem.startTime!),
+                cartItems: items,
+              }
+
+              sessionStorage.setItem('obc-cart-payment-state', JSON.stringify(paymentState))
               setIsCartOpen(false)
-              navigate('/payment', {
-                state: {
-                  date: selectedDateLabel,
-                  time: startTime,
-                  endTime,
-                  total: items.reduce((sum, item) => sum + item.price, 0),
-                },
-              })
+              navigate('/payment', { state: paymentState })
             }}
           />
         )}

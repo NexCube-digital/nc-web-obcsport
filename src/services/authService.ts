@@ -35,9 +35,7 @@ export async function loginCustomer(email: string, password: string, rememberMe:
 }
 
 export async function loginGoogleCustomer(credential: string) {
-	// CATATAN BACKEND: sportApi lama mengirim { idToken }, di sini { credential }.
-	// Sesuaikan dengan nama field yang diterima endpoint /auth/customer/google.
-	const response = await api.post('/auth/customer/google', { credential })
+	const response = await api.post('/auth/customer/google', { idToken: credential })
 	const result = ensureAuthResponse(unwrap<AuthResponse>(response.data))
 	saveSession(result.customer, toTokens(result), true)
 	return result.customer

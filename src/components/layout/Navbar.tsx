@@ -1,11 +1,14 @@
 import { lazy, Suspense, useEffect, useRef, useState } from 'react'
 import { ChevronDown, CircleHelp, History, LogOut, Settings, ShoppingCart } from 'lucide-react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
+import { toast } from 'sonner'
 import logo from '../../assets/logo/unit bisnis/LOGO OBC SPORT CENTER.png'
 import { useIsMobile } from '../../hooks/useIsMobile'
 import { useAuth } from '../../hooks/useAuth'
 import { logoutCustomer } from '../../services/authService'
 import { getImageUrl } from '../../utils/imageUrl'
+import { cartService, removeBackendCartItem, syncBackendCart } from '../../services/cart'
 import NotificationDropdown from './NotificationDropdown'
 
 const CartModal = lazy(() => import('../ui/CartModal'))
@@ -36,9 +39,9 @@ interface NavbarDashboardProps {
    Data menu navbar & bahasa
    ------------------------------------------------------------------------- */
 const NAV_LINKS: NavLink[] = [
-  { id: 'beranda', label: 'Beranda', href: '/home' },
-  { id: 'sewa-event', label: 'Sewa Event', href: '/event' },
-  { id: 'membership', label: 'Membership', href: '/membership' },
+  { id: 'beranda', label: 'common.home', href: '/home' },
+  { id: 'sewa-event', label: 'common.eventRental', href: '/event' },
+  { id: 'membership', label: 'common.membership', href: '/membership' },
 ]
 
 const LANGUAGES: Language[] = [
@@ -48,9 +51,9 @@ const LANGUAGES: Language[] = [
 
 /* Menu dropdown profil */
 const USER_MENU_ITEMS = [
-  { id: 'pengaturan', label: 'Pengaturan', href: '/pengaturan', icon: Settings },
-  { id: 'riwayat', label: 'Riwayat Transaksi', href: '/history', icon: History },
-  { id: 'bantuan', label: 'Bantuan', href: '/bantuan', icon: CircleHelp },
+  { id: 'pengaturan', label: 'common.settings', href: '/pengaturan', icon: Settings },
+  { id: 'riwayat', label: 'common.transactionHistory', href: '/history', icon: History },
+  { id: 'bantuan', label: 'common.help', href: '/bantuan', icon: CircleHelp },
 ] as const
 
 
@@ -58,6 +61,11 @@ const EASE = 'ease-[cubic-bezier(0.22,1,0.36,1)]'
 const dropdownBase = `transition-[opacity,transform,visibility] duration-200 ${EASE} motion-reduce:transition-none`
 const dropdownOpen = 'visible opacity-100 scale-100 translate-y-0'
 const dropdownClosed = 'invisible opacity-0 scale-95 -translate-y-1 pointer-events-none'
+
+const timeToMinutes = (time: string) => {
+  const [hours, minutes] = time.split(':').map(Number)
+  return hours * 60 + minutes
+}
 
 function getInitials(name: string): string {
   return name
@@ -102,15 +110,17 @@ function Navbar({
   const location = useLocation()
   const navigate = useNavigate()
   const isMobile = useIsMobile()
+  const { t, i18n } = useTranslation()
   const { user } = useAuth()
   const displayName = user?.name ?? userName ?? 'Akun OBC'
   const displayImage = profileImage ?? user?.avatarUrl
 
   // State dropdown bahasa dan menu user
-  const [activeLang, setActiveLang] = useState<Language>(LANGUAGES[0])
+  const activeLang = i18n.resolvedLanguage?.startsWith('en') ? LANGUAGES[1] : LANGUAGES[0]
   const [isLangOpen, setIsLangOpen] = useState(false)
   const [isUserOpen, setIsUserOpen] = useState(false)
   const [isCartOpen, setIsCartOpen] = useState(false)
+  const [cartItems, setCartItems] = useState(() => cartService.getItems())
   const langMenuRef = useRef<HTMLDivElement>(null)
   const userMenuRef = useRef<HTMLDivElement>(null)
   const userTriggerRef = useRef<HTMLButtonElement>(null)
@@ -158,9 +168,16 @@ function Navbar({
     setIsUserOpen(false)
   }, [location.pathname])
 
+  useEffect(() => {
+    const unsubscribe = cartService.subscribe(() => setCartItems(cartService.getItems()))
+    syncBackendCart()
+      .then(setCartItems)
+      .catch(() => setCartItems(cartService.getItems()))
+    return unsubscribe
+  }, [])
+
   const handleSelectLang = (lang: Language) => {
-    // Catatan: sambungkan ke i18n / context bahasa jika sudah tersedia
-    setActiveLang(lang)
+    void i18n.changeLanguage(lang.code === 'ENG' ? 'en' : 'id')
     setIsLangOpen(false)
   }
 
@@ -230,7 +247,7 @@ function Navbar({
                             : 'font-normal text-[#343133] hover:text-[#004000] after:scale-x-0'
                         }`}
                     >
-                      {link.label}
+                      {t(link.label)}
                     </Link>
                   )
                 })}
@@ -254,7 +271,7 @@ function Navbar({
                 aria-label="Keranjang"
                 aria-haspopup="dialog"
                 aria-expanded={isCartOpen}
-                className={`group flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[#404F14] transition-[background-color,color,transform] duration-200 ${EASE} hover:bg-[#F1F4EA] hover:text-[#004000] active:scale-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#004000] motion-reduce:transition-none`}
+                className={`group relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[#404F14] transition-[background-color,color,transform] duration-200 ${EASE} hover:bg-[#F1F4EA] hover:text-[#004000] active:scale-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#004000] motion-reduce:transition-none`}
               >
                 {/* Ikon bergerak tipis ke atas saat hover */}
                 <ShoppingCart
@@ -263,6 +280,11 @@ function Navbar({
                   aria-hidden="true"
                   className={`transition-transform duration-200 ${EASE} group-hover:-translate-y-px group-hover:scale-110 motion-reduce:transition-none`}
                 />
+                {cartItems.length > 0 && (
+                  <span className="absolute right-0 top-0 grid min-h-4 min-w-4 -translate-y-1/3 translate-x-1/3 place-items-center rounded-full bg-[#9AAD3E] px-1 text-[9px] font-bold leading-none text-white" aria-label={`${cartItems.length} booking dalam keranjang`}>
+                    {cartItems.length > 99 ? '99+' : cartItems.length}
+                  </span>
+                )}
               </button>
             )}
 
@@ -317,7 +339,7 @@ function Navbar({
                     <p className="truncate text-sm font-heading font-semibold text-[#343133]">
                       {displayName}
                     </p>
-                    <p className="text-xs font-heading text-[#6B6B6B]">Akun saya</p>
+                    <p className="text-xs font-heading text-[#6B6B6B]">{t('common.myAccount')}</p>
                   </div>
                 </div>
 
@@ -358,7 +380,7 @@ function Navbar({
                       aria-hidden="true"
                       className={`shrink-0 transition-transform duration-200 ${EASE} group-hover:translate-x-0.5 motion-reduce:transition-none`}
                     />
-                    Keluar
+                    {t('common.logout')}
                   </button>
                 </div>
               </div>
@@ -443,7 +465,40 @@ function Navbar({
 
       {isCartOpen && (
         <Suspense fallback={null}>
-          <CartModal isOpen onClose={() => setIsCartOpen(false)} />
+          <CartModal
+            isOpen
+            items={cartItems}
+            onClose={() => setIsCartOpen(false)}
+            onRemove={async (id) => {
+              try {
+                await removeBackendCartItem(id)
+                const items = await syncBackendCart()
+                setCartItems(items)
+                toast.success('Booking berhasil dihapus dari keranjang.')
+              } catch (error) {
+                toast.error(error instanceof Error ? error.message : 'Item keranjang gagal dihapus.')
+              }
+            }}
+            onCheckout={(items) => {
+              const firstItem = items[0]
+              if (!firstItem?.resourceId || !firstItem.bookingDate || !firstItem.startTime || !firstItem.endTime || !firstItem.sportType) return
+              setIsCartOpen(false)
+              navigate('/payment', {
+                state: {
+                  resourceId: firstItem.resourceId,
+                  sportType: firstItem.sportType,
+                  bookingDate: firstItem.bookingDate,
+                  facility: { id: firstItem.resourceId, name: firstItem.facilityName },
+                  date: firstItem.bookingDate,
+                  time: firstItem.startTime,
+                  endTime: firstItem.endTime,
+                  total: firstItem.price,
+                  durationMinutes: ((timeToMinutes(firstItem.endTime) - timeToMinutes(firstItem.startTime)) || 60),
+                  cartItems: items,
+                },
+              })
+            }}
+          />
         </Suspense>
       )}
     </>

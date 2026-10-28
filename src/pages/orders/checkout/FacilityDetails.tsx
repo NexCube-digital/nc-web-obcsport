@@ -17,12 +17,6 @@ const COURT_NAME = 'Lapangan F1'
 const COURT_RATING = '4.8 / 5.0'
 const COURT_REVIEW_COUNT = '(120 Ulasan Terverifikasi)'
 
-const PRICE_TIERS: PriceTier[] = [
-  { id: 'pagi', range: '07:00-15:00', price: '125k/jam' },
-  { id: 'sore', range: '15:00-18:00', price: '150k/jam' },
-  { id: 'malam', range: '18:00-00:00', price: '175k/jam' },
-]
-
 const FACILITY_CHIPS: FacilityChip[] = [
   { id: 'toilet', label: 'Toilet T3-T5', icon: <Bath size={11} /> },
   { id: 'led', label: 'LED Light', icon: <Lightbulb size={11} /> },
@@ -42,9 +36,11 @@ interface FacilityDetailsProps {
   facilityName?: string
   image?: string
   locationName?: string
+  priceTiers?: PriceTier[]
+  isPriceLoading?: boolean
 }
 
-function FacilityDetails({ variant, facilityName = COURT_NAME, image = lapangF1, locationName = 'OBC Sport Center' }: FacilityDetailsProps) {
+function FacilityDetails({ variant, facilityName = COURT_NAME, image = lapangF1, locationName = 'OBC Sport Center', priceTiers = [], isPriceLoading = false }: FacilityDetailsProps) {
   return (
     variant === 'mobile' ? (
       <div>
@@ -53,14 +49,16 @@ function FacilityDetails({ variant, facilityName = COURT_NAME, image = lapangF1,
         <p className="mt-1 text-xs text-[#6F6B6E]">{locationName} - {facilityName}</p>
 
         <div className="mt-4 grid grid-cols-3 gap-2">
-          {PRICE_TIERS.map((tier) => (
+          {isPriceLoading && (
+            <p className="col-span-3 text-center text-[10px] text-[#6F6B6E]">Memuat harga...</p>
+          )}
+          {!isPriceLoading && priceTiers.length === 0 && (
+            <p className="col-span-3 text-center text-[10px] text-[#6F6B6E]">Harga belum tersedia.</p>
+          )}
+          {priceTiers.map((tier) => (
             <div key={tier.id} className="rounded-md border border-[#D4D4D4] bg-white px-2 py-1.5">
-              <p className="font-heading text-[10px] font-bold leading-tight text-[#121212]">
-                {tier.range}
-              </p>
-              <p className="font-heading text-[11px] font-bold leading-tight text-[#265021]">
-                {tier.price}
-              </p>
+              <p className="font-heading text-[10px] font-bold leading-tight text-[#121212]">{tier.range}</p>
+              <p className="font-heading text-[11px] font-bold leading-tight text-[#265021]">{tier.price}</p>
             </div>
           ))}
         </div>
@@ -107,14 +105,16 @@ function FacilityDetails({ variant, facilityName = COURT_NAME, image = lapangF1,
         </div>
 
         <div className="mt-6 grid grid-cols-3 gap-1.5">
-          {PRICE_TIERS.map((tier) => (
+          {isPriceLoading && (
+            <p className="col-span-3 text-center text-[10px] text-[#6F6B6E]">Memuat harga...</p>
+          )}
+          {!isPriceLoading && priceTiers.length === 0 && (
+            <p className="col-span-3 text-center text-[10px] text-[#6F6B6E]">Harga belum tersedia.</p>
+          )}
+          {priceTiers.map((tier) => (
             <div key={tier.id} className="rounded-md border border-[#D4D4D4] bg-white px-1.5 py-1">
-              <p className="font-heading text-[10px] font-bold leading-tight text-[#121212]">
-                {tier.range}
-              </p>
-              <p className="font-heading text-[11px] font-bold leading-tight text-[#265021]">
-                {tier.price}
-              </p>
+              <p className="font-heading text-[10px] font-bold leading-tight text-[#121212]">{tier.range}</p>
+              <p className="font-heading text-[11px] font-bold leading-tight text-[#265021]">{tier.price}</p>
             </div>
           ))}
         </div>

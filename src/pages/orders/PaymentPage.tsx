@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { CalendarDays } from 'lucide-react'
 import { toast } from 'sonner'
@@ -7,15 +7,27 @@ import MobileHeader from '../../components/layout/MobileHeader'
 import DeferredSection from '../../components/layout/DeferredSection'
 import DeferredFooter from '../../components/layout/DeferredFooter'
 import ScrollReveal from '../../components/animation/ScrollReveal'
+import PendingOrderModal from '../../components/ui/PendingOrderModal'
 import { useIsMobile } from '../../hooks/useIsMobile'
-import { createBooking, previewBookingPrice, type BookingPrice, type PaymentChannel } from '../../services/bookingService'
+import { checkoutCart, createBooking, previewBookingPrice, type BookingPrice, type PaymentChannel } from '../../services/bookingService'
+import type { CartItem } from '../../components/ui/CartModal'
+import { cartService, syncBackendCart } from '../../services/cart'
 import { getApiErrorMessage } from '../../services/apiService'
-import { isDirectChannel, openMidtransCheckout } from '../../services/paymentService'
+import { isDirectChannel, parseMidtransCharge, type DirectPaymentInfo } from '../../services/paymentService'
 
 /* -------------------------------------------------------------------------
    Tipe data
    ------------------------------------------------------------------------- */
 type PaymentMethodId = PaymentChannel
+
+interface PendingOrderModalData {
+  bookingId: string
+  bookingIds?: string[]
+  transactionId: string
+  amount: number
+  paymentInfo?: DirectPaymentInfo | null
+  paymentUrl?: string
+}
 
 // Metode pembayaran khusus tampilan mobile (lebih lengkap sesuai desain)
 type MobileMethodId = PaymentChannel
@@ -64,6 +76,7 @@ interface CheckoutState {
   total?: number
   durationMinutes?: number
   price?: { basePrice: number; discountAmount: number; adminFee: number; totalPrice: number }
+  cartItems?: CartItem[]
 }
 
 /* -------------------------------------------------------------------------
@@ -183,7 +196,21 @@ function PaymentPage() {
   const navigate = useNavigate()
   const location = useLocation()
   const isMobile = useIsMobile()
-  const state = (location.state as CheckoutState | null) ?? {}
+  const state = useMemo(() => {
+    const routeState = location.state as CheckoutState | null
+    if (routeState) return routeState
+    try {
+      const stored = sessionStorage.getItem('obc-cart-payment-state')
+      return stored ? JSON.parse(stored) as CheckoutState : {}
+    } catch {
+      return {}
+    }
+  }, [location.state])
+  const cartItems = useMemo(() =>
+    state.cartItems?.filter((item) => item.resourceId && item.bookingDate && item.startTime && item.endTime && item.sportType) ?? [],
+  [state.cartItems])
+  const isCartCheckout = cartItems.length > 0
+  const cartItemsKey = cartItems.map((item) => `${item.resourceId}:${item.bookingDate}:${item.startTime}:${item.endTime}:${item.sportType}`).join('|')
 
   const [method, setMethod] = useState<PaymentMethodId | null>(null)
 
@@ -191,6 +218,7 @@ function PaymentPage() {
   const [mobileMethod, setMobileMethod] = useState<MobileMethodId | null>(null)
   const [selectedExtras] = useState<string[]>(['raket'])
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [pendingOrderModal, setPendingOrderModal] = useState<PendingOrderModalData | null>(null)
   const [pricePreview, setPricePreview] = useState<Pick<BookingPrice, 'basePrice' | 'discountAmount' | 'adminFee' | 'totalPrice'> | null>(state.price ?? null)
 
   useEffect(() => {
@@ -198,6 +226,9 @@ function PaymentPage() {
   }, [navigate, state.bookingDate, state.resourceId])
 
   const selectedChannel: PaymentChannel | null = isMobile ? mobileMethod : method
+  const selectedMethodLabel = [...PAYMENT_GROUPS, ...MOBILE_METHOD_GROUPS]
+    .flatMap((group) => group.methods)
+    .find((item) => item.id === selectedChannel)?.name ?? 'Pembayaran Midtrans'
   const paymentMethod = !selectedChannel
     ? undefined
     : selectedChannel === 'qris'
@@ -211,26 +242,40 @@ function PaymentPage() {
             : 'bank_transfer'
 
   useEffect(() => {
-    if (!state.resourceId || !state.bookingDate || !state.sportType || !state.time || !state.endTime) return
     let active = true
-    previewBookingPrice({
-      resourceId: state.resourceId,
-      bookingDate: state.bookingDate,
-      startTime: state.time,
-      endTime: state.endTime,
-      sportType: state.sportType,
+    const items = isCartCheckout
+      ? cartItems
+      : [{ resourceId: state.resourceId, bookingDate: state.bookingDate, startTime: state.time, endTime: state.endTime, sportType: state.sportType }]
+
+    if (items.some((item) => !item.resourceId || !item.bookingDate || !item.startTime || !item.endTime || !item.sportType)) return
+
+    Promise.all(items.map((item) => previewBookingPrice({
+      resourceId: item.resourceId!,
+      bookingDate: item.bookingDate!,
+      startTime: item.startTime!,
+      endTime: item.endTime!,
+      sportType: item.sportType!,
       ...(paymentMethod ? { paymentMethod } : {}),
       bookingType: 'regular',
-    })
-      .then((price) => {
+    })))
+      .then((prices) => {
         if (!active) return
-        setPricePreview(price)
+        if (prices.length === 1) {
+          setPricePreview(prices[0])
+          return
+        }
+        setPricePreview({
+          basePrice: prices.reduce((sum, price) => sum + price.basePrice, 0),
+          discountAmount: prices.reduce((sum, price) => sum + price.discountAmount, 0),
+          adminFee: prices.reduce((sum, price) => sum + price.adminFee, 0),
+          totalPrice: prices.reduce((sum, price) => sum + price.totalPrice, 0),
+        })
       })
       .catch((error: unknown) => {
         if (active) toast.error(getApiErrorMessage(error, 'Rincian harga tidak dapat diperbarui.'))
       })
     return () => { active = false }
-  }, [state.bookingDate, state.endTime, state.resourceId, state.sportType, state.time, paymentMethod])
+  }, [cartItems, cartItemsKey, isCartCheckout, paymentMethod, state.bookingDate, state.endTime, state.resourceId, state.sportType, state.time])
 
   /* ---------- Turunan data pesanan ---------- */
   const date = state.date ?? DEFAULT_DATE
@@ -238,20 +283,30 @@ function PaymentPage() {
   const endTime = state.endTime ?? DEFAULT_END
   const facilityName = state.facility?.name ?? 'Lapangan Futsal Premium'
   const facilityLocation = state.facility?.location?.name ?? 'OBC Sport Center'
+  const pendingBookings = isCartCheckout
+    ? cartItems.map((item) => ({
+        id: item.id,
+        name: item.facilityName,
+        date: item.bookingDate ?? '-',
+        time: `${item.startTime ?? '-'} - ${item.endTime ?? '-'}`,
+      }))
+    : [{ id: state.resourceId ?? 'booking', name: facilityName, date, time: `${startTime} - ${endTime}` }]
   const subtotal = pricePreview?.basePrice ?? state.total ?? DEFAULT_SUBTOTAL
 
   const hours = Math.max((state.durationMinutes ?? (hourOf(endTime) - hourOf(startTime)) * 60) / 60, 1)
   const pricePerHour = Math.round(subtotal / hours / 1000)
-  const promo = pricePreview?.discountAmount ?? 0
-  const serviceFee = pricePreview?.adminFee ?? 0
-  const total = pricePreview?.totalPrice ?? state.total ?? DEFAULT_SUBTOTAL
+  const promo = selectedChannel ? pricePreview?.discountAmount ?? 0 : 0
+  const serviceFee = selectedChannel ? pricePreview?.adminFee ?? 0 : 0
+  const total = selectedChannel
+    ? pricePreview?.totalPrice ?? subtotal
+    : subtotal
 
   /* ---------- Turunan data mobile ---------- */
   const extrasTotal = EXTRA_ITEMS.filter((item) => selectedExtras.includes(item.id)).reduce(
     (sum, item) => sum + item.price,
     0,
   )
-  const mobileTotal = total
+  const mobileTotal = selectedChannel ? subtotal + serviceFee + extrasTotal : subtotal + extrasTotal
 
   /* ---------- Handler ---------- */
   const handlePay = async () => {
@@ -266,18 +321,40 @@ function PaymentPage() {
 
     setIsSubmitting(true)
     try {
-      const booking = await createBooking({
-        resourceId: state.resourceId,
-        bookingDate: state.bookingDate,
-        startTime,
-        endTime,
-        sportType: state.sportType,
-        bookingType: 'regular',
-        paymentChannel: selectedChannel,
-        notes: selectedExtras.length > 0
-          ? `Tambahan yang dipilih: ${EXTRA_ITEMS.filter((item) => selectedExtras.includes(item.id)).map((item) => item.name).join(', ')}`
-          : undefined,
-      })
+      const booking = isCartCheckout
+        ? await (async () => {
+          const result = await checkoutCart(cartItems.map((item) => ({
+            resourceId: item.resourceId!,
+            bookingDate: item.bookingDate!,
+            startTime: item.startTime!,
+            endTime: item.endTime!,
+            sportType: item.sportType!,
+          })), paymentMethod, selectedChannel ?? undefined)
+          cartService.clearCart()
+          await syncBackendCart().catch(() => undefined)
+          return {
+            bookingId: result.bookingIds[0] ?? result.orderId,
+            bookingIds: result.bookingIds,
+            status: 'pending',
+            totalPrice: result.totalAmount,
+            totalPriceFormatted: result.totalAmountFormatted,
+            payment: result.payment,
+            holdExpiresAt: null,
+            message: result.message,
+          }
+        })()
+        : await createBooking({
+          resourceId: state.resourceId,
+          bookingDate: state.bookingDate,
+          startTime,
+          endTime,
+          sportType: state.sportType,
+          bookingType: 'regular',
+          paymentChannel: selectedChannel,
+          notes: selectedExtras.length > 0
+            ? `Tambahan yang dipilih: ${EXTRA_ITEMS.filter((item) => selectedExtras.includes(item.id)).map((item) => item.name).join(', ')}`
+            : undefined,
+        })
 
       // Pembayaran langsung (Core API Midtrans): tampilkan instruksi di halaman ini, tanpa modal Snap
       const payment = booking.payment
@@ -298,7 +375,7 @@ function PaymentPage() {
 
       if (payment && 'cardPayment' in payment) {
         const bookingId = booking.bookingId
-        navigate(`/information-order?bookingId=${encodeURIComponent(bookingId)}`, {
+        navigate(`/credit-card-payment?bookingId=${encodeURIComponent(bookingId)}`, {
           replace: true,
           state: { bookingId },
         })
@@ -307,10 +384,15 @@ function PaymentPage() {
 
       if (payment && 'chargeResponse' in payment && isDirectChannel(selectedChannel)) {
         const bookingId = booking.bookingId
-        navigate(`/information-order?bookingId=${encodeURIComponent(bookingId)}`, {
-          replace: true,
-          state: { bookingId },
+        const bookingIds = 'bookingIds' in booking ? booking.bookingIds : [booking.bookingId]
+        setPendingOrderModal({
+          bookingId,
+          bookingIds,
+          transactionId: payment.chargeResponse.order_id ?? bookingId,
+          amount: Number(payment.chargeResponse.gross_amount) || total,
+          paymentInfo: parseMidtransCharge(payment.chargeResponse, selectedChannel),
         })
+        setIsSubmitting(false)
         return
       }
 
@@ -323,29 +405,30 @@ function PaymentPage() {
         return
       }
 
-      // OVO remains on Snap, but its booking instructions stay on our status page.
+      // OVO uses its redirect URL; other Snap channels show the order modal after checkout.
       if (booking.payment && 'redirectUrl' in booking.payment) {
         const bookingId = booking.bookingId
-        const informationOrderPath = `/information-order?bookingId=${encodeURIComponent(bookingId)}`
+        const bookingIds = 'bookingIds' in booking ? booking.bookingIds : [booking.bookingId]
         if (selectedChannel === 'ovo') {
-          navigate(informationOrderPath, { replace: true, state: { bookingId } })
+          setPendingOrderModal({
+            bookingId,
+            bookingIds,
+            transactionId: bookingId,
+            amount: total,
+            paymentUrl: booking.payment.redirectUrl,
+          })
+          setIsSubmitting(false)
           return
         }
-        try {
-          await openMidtransCheckout(booking.payment.token, {
-            onSuccess: () => navigate(informationOrderPath, { replace: true, state: { bookingId } }),
-            onPending: () => navigate(informationOrderPath, { replace: true, state: { bookingId } }),
-            onError: () => navigate(informationOrderPath, { replace: true, state: { bookingId } }),
-            onClose: () => navigate(informationOrderPath, { replace: true, state: { bookingId } }),
-          })
-        } catch {
-          window.location.assign(booking.payment.redirectUrl)
-        }
+
+        setPendingOrderModal({ bookingId, bookingIds, transactionId: bookingId, amount: total })
+        setIsSubmitting(false)
         return
       }
-      navigate(`/success-order?bookingId=${encodeURIComponent(booking.bookingId)}`, {
+      const bookingIds = 'bookingIds' in booking ? booking.bookingIds : [booking.bookingId]
+      navigate(`/success-order?bookingId=${encodeURIComponent(booking.bookingId)}&bookingIds=${encodeURIComponent(bookingIds.join(','))}`, {
         replace: true,
-        state: { bookingId: booking.bookingId },
+        state: { bookingId: booking.bookingId, bookingIds },
       })
     } catch (error) {
       toast.error(getApiErrorMessage(error, 'Booking gagal dibuat. Periksa jadwal dan coba lagi.'))
@@ -357,9 +440,46 @@ function PaymentPage() {
 
   const handlePayMobile = () => { void handlePay() }
 
+  if (pendingOrderModal) {
+    return (
+      <PendingOrderModal
+        date={date}
+        time={`${startTime} - ${endTime}`}
+        paymentMethod={selectedMethodLabel}
+        amount={pendingOrderModal.amount}
+        transactionId={pendingOrderModal.transactionId}
+        paymentInfo={pendingOrderModal.paymentInfo}
+        paymentUrl={pendingOrderModal.paymentUrl}
+        bookings={pendingBookings}
+        onReturnHome={() => navigate('/home')}
+        onOpenOrderStatus={() => {
+          const bookingId = pendingOrderModal.bookingId
+          const bookingIds = pendingOrderModal.bookingIds ?? [bookingId]
+          const bookingIdsParam = bookingIds.join(',')
+          navigate(`/finalisasi-order?bookingId=${encodeURIComponent(bookingId)}&bookingIds=${encodeURIComponent(bookingIdsParam)}`, {
+            state: { bookingId, bookingIds },
+          })
+        }}
+        onContinuePayment={() => {
+          if (pendingOrderModal.paymentUrl) window.location.assign(pendingOrderModal.paymentUrl)
+        }}
+      />
+    )
+  }
+
+  if (isSubmitting) {
+    return (
+      <main className="grid h-[100dvh] w-screen place-items-center bg-[#F4F6F0]" role="status" aria-live="polite">
+        <div className="text-center">
+          <span className="mx-auto block h-9 w-9 animate-spin rounded-full border-4 border-[#DCE5D3] border-t-[#354B24]" />
+          <p className="mt-4 font-heading text-sm font-semibold text-[#354B24]">Menyiapkan pembayaran...</p>
+        </div>
+      </main>
+    )
+  }
+
   return (
     <>
-      
       {isMobile && (
         <>
         <MobileHeader
@@ -387,6 +507,12 @@ function PaymentPage() {
                 <p className="mt-0.5 text-xs text-[#6F6B6E]">
                   {startTime} - {endTime}
                 </p>
+                {isCartCheckout && (
+                  <div className="mt-2 space-y-1 border-t border-[#E5E5E5] pt-2">
+                    <p className="text-[11px] font-semibold text-[#404F14]">{cartItems.length} booking dalam keranjang</p>
+                    {cartItems.map((item) => <p key={item.id} className="text-[11px] leading-4 text-[#6F6B6E]">{item.facilityName} · {item.startTime}-{item.endTime}</p>)}
+                  </div>
+                )}
               </div>
             </div>
 
@@ -609,8 +735,14 @@ function PaymentPage() {
                   </div>
                   <div className="flex items-center justify-between gap-3">
                     <dt className="text-[#6F6B6E]">Tanggal</dt>
-                    <dd className="font-bold text-[#121212]">{date}</dd>
+                    <dd className="font-bold text-[#121212]">{isCartCheckout ? `${cartItems.length} paket booking` : date}</dd>
                   </div>
+                  {isCartCheckout && cartItems.map((item) => (
+                    <div key={item.id} className="flex items-start justify-between gap-3">
+                      <dt className="max-w-[55%] text-[#6F6B6E]">{item.facilityName}</dt>
+                      <dd className="text-right text-[11px] font-bold text-[#121212]">{item.bookingDate}<br />{item.startTime}-{item.endTime}</dd>
+                    </div>
+                  ))}
                   <div className="flex items-center justify-between gap-3">
                     <dt className="text-[#6F6B6E]">Waktu</dt>
                     <dd className="font-bold text-[#404F14]">
