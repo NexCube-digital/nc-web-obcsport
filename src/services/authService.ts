@@ -10,6 +10,7 @@ interface AuthResponse {
 	accessToken: string
 	refreshToken: string
 	expiresIn: number
+	sessionExpiresAt: string
 	customer: CustomerProfile
 }
 
@@ -21,7 +22,7 @@ function unwrap<T>(body: unknown): T {
 }
 
 function ensureAuthResponse(result: AuthResponse | undefined): AuthResponse {
-	if (!result?.accessToken || !result?.customer) {
+	if (!result?.accessToken || !result?.customer || !result.sessionExpiresAt) {
 		throw new Error('Respons login tidak valid dari server.')
 	}
 	return result
@@ -83,5 +84,6 @@ function toTokens(response: AuthResponse): AuthTokens {
 		accessToken: response.accessToken,
 		refreshToken: response.refreshToken,
 		expiresIn: response.expiresIn,
+		sessionExpiresAt: response.sessionExpiresAt,
 	}
 }

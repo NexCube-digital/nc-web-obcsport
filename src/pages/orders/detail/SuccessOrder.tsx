@@ -1,9 +1,6 @@
 import { lazy, Suspense, useEffect, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { ChevronDown, CircleCheck } from 'lucide-react'
-import NavbarDashboard from '../../../components/layout/Navbar'
-import MobileHeader from '../../../components/layout/MobileHeader'
-import DeferredFooter from '../../../components/layout/DeferredFooter'
 import ScrollReveal from '../../../components/animation/ScrollReveal'
 import lapangF1 from '../../assets/layanan/Lapang F1.png'
 import { useIsMobile } from '../../../hooks/useIsMobile'
@@ -149,10 +146,9 @@ function SuccesOrder() {
           TAMPILAN MOBILE (< md): layout mengikuti desain mobile,
           isi & teks mengikuti versi PC.
           =================================================================== */}
-      {isMobile && <MobileHeader variant="title" title="Pesanan Berhasil" showBottomNav={false} />}
       {isMobile && (
         <div
-          className="fixed inset-x-0 bottom-0 top-14 flex min-h-0 flex-col overflow-hidden bg-white font-body text-[#343133]"
+          className="fixed inset-x-0 bottom-0 top-0 flex min-h-0 flex-col overflow-hidden bg-white font-body text-[#343133]"
         >
         <ScrollReveal className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-4 pt-3">
         <div
@@ -323,8 +319,6 @@ function SuccesOrder() {
 
       {!isMobile && (
         <div className="min-h-screen flex flex-col bg-white font-body text-[#343133]">
-        <NavbarDashboard showDesktopNavigation={false} showMobileHeader={false} />
-
         <main className="mx-auto flex w-full max-w-[1068px] flex-1 items-center px-6 py-12">
           <ScrollReveal className="w-full">
           <div className="grid w-full items-center gap-12 lg:grid-cols-[1fr_480px]">
@@ -465,7 +459,6 @@ function SuccesOrder() {
           </ScrollReveal>
         </main>
 
-        <DeferredFooter />
         </div>
       )}
 

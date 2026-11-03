@@ -63,9 +63,7 @@ function SettingsPage() {
 
   // State profil
   const [fullName, setFullName] = useState(user?.name ?? '')
-  const [username, setUsername] = useState(user?.email?.split('@')[0] ?? '')
   const [phone, setPhone] = useState('')
-  const [bio, setBio] = useState('')
   const [email, setEmail] = useState(user?.email ?? '')
   const [photoPreview, setPhotoPreview] = useState<string | null>(null)
   const [cropSource, setCropSource] = useState<File | null>(null)
@@ -91,9 +89,7 @@ function SettingsPage() {
         const profile = await getProfile()
         if (isMounted && profile) {
           if (profile.name) setFullName(profile.name)
-          if (profile.username) setUsername(profile.username)
           if (profile.phone) setPhone(profile.phone)
-          if (profile.bio) setBio(profile.bio)
           if (profile.email) setEmail(profile.email)
           if (profile.avatarUrl) setPhotoPreview(getImageUrl(profile.avatarUrl))
           if (profile.hasPassword !== undefined) setHasPassword(profile.hasPassword)
@@ -185,9 +181,7 @@ function SettingsPage() {
     try {
       await updateProfile({
         name: fullName,
-        username: username || undefined,
         phone: phone || undefined,
-        bio: bio || undefined,
       })
       toast.success('Perubahan profil berhasil disimpan!')
     } catch (err) {
@@ -257,7 +251,7 @@ function SettingsPage() {
               </div>
             </div>
 
-            {/* Nama & username */}
+            {/* Nama, telepon, dan email akun */}
             <div className="mt-5 grid md:grid-cols-2 gap-4">
               <div>
                 <label htmlFor="fullName" className={LABEL_CLASS}>
@@ -272,45 +266,36 @@ function SettingsPage() {
                 />
               </div>
               <div>
-                <label htmlFor="username" className={LABEL_CLASS}>
-                  Username
+                <label htmlFor="phone" className={LABEL_CLASS}>
+                  Nomor Telepon (Opsional)
                 </label>
                 <input
-                  id="username"
-                  type="text"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
+                  id="phone"
+                  type="tel"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  placeholder="+62812345678"
                   className={INPUT_CLASS}
                 />
               </div>
-            </div>
-
-            {/* Phone */}
-            <div className="mt-6">
-              <label htmlFor="phone" className={LABEL_CLASS}>
-                Nomor Telepon (Opsional)
-              </label>
-              <input
-                id="phone"
-                type="tel"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                placeholder="+62812345678 atau 08123456789"
-                className={INPUT_CLASS}
-              />
-            </div>
-
-            {/* Bio */}
-            <div className="mt-6">
-              <label htmlFor="bio" className={LABEL_CLASS}>
-                Bio Singkat (Opsional)
-              </label>
-              <textarea
-                id="bio"
-                value={bio}
-                onChange={(e) => setBio(e.target.value)}
-                className="w-full h-20 resize-none rounded-lg border border-[#E5E5E5] bg-white px-4 py-3 text-sm text-[#121212] focus:outline-none focus:border-[#404F14]"
-              />
+              <div>
+                <label htmlFor="email" className={LABEL_CLASS}>
+                  Alamat Email
+                </label>
+                <div className="flex items-center gap-2.5">
+                  <input
+                    id="email"
+                    type="email"
+                    value={email}
+                    readOnly
+                    className={`${INPUT_CLASS} flex-1 bg-gray-50`}
+                  />
+                  <span className="inline-flex h-[39px] shrink-0 items-center gap-1.5 rounded-lg border border-[#DCEFE0] bg-[#EEF8F0] px-4 text-sm font-heading font-semibold text-[#004000]">
+                    <Check size={12} strokeWidth={3} />
+                    Terverifikasi
+                  </span>
+                </div>
+              </div>
             </div>
 
             {/* Tombol simpan profil */}
@@ -325,32 +310,6 @@ function SettingsPage() {
               </button>
             </div>
           </section>
-
-          {/* ================= Email akun ================= */}
-          <DeferredSection placeholderClassName="min-h-[112px]">
-          <section className={CARD_CLASS}>
-            <h2 className={CARD_TITLE_CLASS}>Email Akun</h2>
-
-            <div className="mt-5">
-              <label htmlFor="email" className={LABEL_CLASS}>
-                Alamat Email
-              </label>
-              <div className="flex items-center gap-2.5">
-                <input
-                  id="email"
-                  type="email"
-                  value={email}
-                  readOnly
-                  className={`${INPUT_CLASS} flex-1 bg-gray-50`}
-                />
-                <span className="inline-flex h-[39px] shrink-0 items-center gap-1.5 rounded-lg border border-[#DCEFE0] bg-[#EEF8F0] px-4 text-sm font-heading font-semibold text-[#004000]">
-                  <Check size={12} strokeWidth={3} />
-                  Terverifikasi
-                </span>
-              </div>
-            </div>
-          </section>
-          </DeferredSection>
 
           {/* ================= Keamanan sandi ================= */}
           <DeferredSection placeholderClassName="min-h-[270px]">

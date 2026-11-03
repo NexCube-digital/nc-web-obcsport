@@ -62,9 +62,20 @@ export function SessionMembership({ selectedPackage, schedules, facilities, onUp
     getFacilityAvailability(schedule.resourceId, selectedDate, schedule.sportType ?? selectedPackage.sportType)
       .then((availability) => {
         if (!active) return
-        const available = availability.slots.filter((slot) => slot.available).map((slot) => slot.startTime)
-        setAvailableSlots(available)
-        setBookedSlots(availability.slots.filter((slot) => !slot.available).map((slot) => slot.startTime))
+        const hourlyStarts = availability.slots.filter((slot) => slot.startMinute % 60 === 0)
+        const intervalMinutes = availability.slots[0]
+          ? availability.slots[0].endMinute - availability.slots[0].startMinute
+          : 15
+        const available = hourlyStarts.filter((startSlot) => {
+          const endMinute = startSlot.startMinute + 60
+          const coveredSlots = availability.slots.filter(
+            (slot) => slot.startMinute >= startSlot.startMinute && slot.endMinute <= endMinute,
+          )
+          return coveredSlots.length === 60 / intervalMinutes && coveredSlots.every((slot) => slot.available)
+        })
+        const availableTimes = available.map((slot) => slot.startTime)
+        setAvailableSlots(availableTimes)
+        setBookedSlots(hourlyStarts.filter((slot) => !availableTimes.includes(slot.startTime)).map((slot) => slot.startTime))
       })
       .catch(() => {
         if (!active) return

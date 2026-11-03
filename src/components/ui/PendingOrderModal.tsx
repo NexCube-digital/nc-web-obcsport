@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Check, Copy } from 'lucide-react'
+import { Check, ChevronDown, Copy, House } from 'lucide-react'
 import type { DirectPaymentInfo } from '../../services/paymentService'
 
 export interface PendingBookingItem {
@@ -41,6 +41,7 @@ function PendingOrderModal({
   onContinuePayment,
 }: PendingOrderModalProps) {
   const [copiedValue, setCopiedValue] = useState<string | null>(null)
+  const [isInstructionsOpen, setIsInstructionsOpen] = useState(false)
 
   useEffect(() => {
     const previousOverflow = document.body.style.overflow
@@ -60,6 +61,37 @@ function PendingOrderModal({
     }
   }
 
+  const canContinuePayment = Boolean((paymentUrl || paymentInfo?.deeplinkUrl) && onContinuePayment)
+  const paymentSteps = paymentInfo?.vaNumber
+    ? [
+        `Buka aplikasi atau ATM ${paymentInfo.bankName ?? 'bank'} dan pilih menu Virtual Account.`,
+        `Masukkan nomor Virtual Account ${paymentInfo.vaNumber}.`,
+        `Periksa nama penerima dan nominal ${formatRupiah(paymentInfo.grossAmount ?? amount)}, lalu selesaikan transfer.`,
+      ]
+    : paymentInfo?.billerCode && paymentInfo.billKey
+      ? [
+          'Buka menu pembayaran e-channel Mandiri pada aplikasi Livin atau ATM Mandiri.',
+          `Masukkan kode perusahaan ${paymentInfo.billerCode} dan kode pembayaran ${paymentInfo.billKey}.`,
+          `Periksa nominal ${formatRupiah(paymentInfo.grossAmount ?? amount)}, lalu konfirmasi pembayaran.`,
+        ]
+      : paymentInfo?.paymentCode
+        ? [
+            `Datangi gerai ${paymentInfo.storeName ?? 'minimarket'} dan sampaikan bahwa Anda ingin membayar.`,
+            `Tunjukkan kode pembayaran ${paymentInfo.paymentCode} kepada kasir.`,
+            `Bayar sesuai nominal ${formatRupiah(paymentInfo.grossAmount ?? amount)} dan simpan bukti pembayaran.`,
+          ]
+        : paymentInfo?.qrUrl
+          ? [
+              'Buka aplikasi pembayaran yang mendukung QRIS, lalu pilih menu Scan/Bayar.',
+              'Pindai kode QR di bawah dan periksa nama merchant serta nominal pembayaran.',
+              'Konfirmasi pembayaran di aplikasi; status pesanan akan diperbarui setelah pembayaran diterima.',
+            ]
+          : [
+              'Tekan tombol Lanjutkan Pembayaran untuk membuka aplikasi atau halaman penyedia pembayaran.',
+              `Periksa nominal ${formatRupiah(paymentInfo?.grossAmount ?? amount)} sebelum menyelesaikan pembayaran.`,
+              'Kembali ke halaman informasi pembayaran untuk melihat pembaruan status.',
+            ]
+
   return (
     <div className="fixed inset-0 z-[70] flex h-[100dvh] w-screen items-center justify-center overflow-hidden bg-[#343133]/55 p-0 sm:p-4">
       <section
@@ -68,7 +100,16 @@ function PendingOrderModal({
         aria-labelledby="pending-order-title"
         className="flex h-full w-full max-w-[620px] flex-col overflow-hidden bg-white px-4 py-3 sm:h-auto sm:max-h-[calc(100dvh-32px)] sm:rounded-2xl sm:border sm:border-[#D4D4D4] sm:px-7 sm:py-5"
       >
-        <header className="shrink-0 text-center">
+        <header className="relative shrink-0 px-8 text-center">
+          <button
+            type="button"
+            onClick={onReturnHome}
+            aria-label="Kembali ke beranda"
+            title="Kembali ke beranda"
+            className="absolute left-0 top-0 grid h-9 w-9 place-items-center rounded-lg border border-[#D4D4D4] bg-white text-[#404F14] transition-colors hover:bg-[#F5FAF3]"
+          >
+            <House size={18} aria-hidden="true" />
+          </button>
           <div className="flex justify-center">
             <svg width="42" height="42" viewBox="0 0 56 56" fill="none" role="img" aria-label="Memproses pembayaran" className="motion-safe:animate-[spin_2s_linear_infinite]">
               <path d="M48.8 16 A24 24 0 1 1 36.2 5.4" stroke="#404F14" strokeWidth="5" strokeLinecap="round" />
@@ -85,7 +126,7 @@ function PendingOrderModal({
 
         <hr className="my-3 shrink-0 border-[#D4D4D4]" />
 
-        <main className="min-h-0 flex-1 overflow-hidden">
+        <main className={`min-h-0 flex-1 overscroll-contain ${isInstructionsOpen ? 'overflow-y-auto' : 'overflow-hidden'}`}>
           <dl className="grid grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] gap-x-3 gap-y-1.5 rounded-lg bg-[#FDFCF7] px-3 py-2.5 font-heading text-[11px] sm:gap-y-2 sm:px-4 sm:py-3 sm:text-xs">
             <dt className="text-[#343133]">Status Transaksi</dt>
             <dd className="justify-self-end rounded bg-[#FDEBC8] px-2 py-1 text-[9px] font-bold leading-none text-[#D97706]">PENDING / VERIFIKASI</dd>
@@ -119,30 +160,46 @@ function PendingOrderModal({
           )}
 
           <section className="mt-2 rounded-lg border border-[#E5E5E5] bg-white px-3 py-2 sm:mt-3 sm:px-4 sm:py-3">
-            <h3 className="font-heading text-[11px] font-bold text-[#121212] sm:text-xs">Instruksi Pembayaran</h3>
-            <div className="mt-1.5 space-y-1.5">
-              {paymentInfo?.vaNumber && (
-                <PaymentCode label={`Nomor Virtual Account ${paymentInfo.bankName ?? ''}`.trim()} value={paymentInfo.vaNumber} onCopy={handleCopy} copied={copiedValue === paymentInfo.vaNumber} />
-              )}
-              {paymentInfo?.billerCode && (
-                <PaymentCode label="Kode Perusahaan" value={paymentInfo.billerCode} onCopy={handleCopy} copied={copiedValue === paymentInfo.billerCode} />
-              )}
-              {paymentInfo?.billKey && (
-                <PaymentCode label="Kode Pembayaran" value={paymentInfo.billKey} onCopy={handleCopy} copied={copiedValue === paymentInfo.billKey} />
-              )}
-              {paymentInfo?.paymentCode && (
-                <PaymentCode label={`Kode Pembayaran ${paymentInfo.storeName ?? ''}`.trim()} value={paymentInfo.paymentCode} onCopy={handleCopy} copied={copiedValue === paymentInfo.paymentCode} />
-              )}
-              {paymentInfo?.qrUrl && (
-                <img src={paymentInfo.qrUrl} alt="QR pembayaran" className="mx-auto max-h-[min(16dvh,120px)] max-w-full object-contain sm:max-h-[min(18dvh,150px)]" />
-              )}
-              {!paymentInfo && paymentUrl && (
-                <p className="text-[10px] leading-4 text-[#6F6B6E]">Lanjutkan ke halaman penyedia pembayaran untuk menyelesaikan transaksi.</p>
-              )}
-              {!paymentInfo && !paymentUrl && (
-                <p className="text-[10px] leading-4 text-[#6F6B6E]">Detail status dan instruksi tersedia di informasi pembayaran.</p>
-              )}
-            </div>
+            <button
+              type="button"
+              onClick={() => setIsInstructionsOpen((open) => !open)}
+              aria-expanded={isInstructionsOpen}
+              aria-controls="pending-payment-instructions"
+              className="flex w-full items-center justify-between gap-3 text-left"
+            >
+              <span>
+                <span className="block font-heading text-[11px] font-bold text-[#121212] sm:text-xs">Instruksi Pembayaran</span>
+                {!isInstructionsOpen && <span className="mt-0.5 block text-[10px] text-[#6F6B6E]">Ketuk untuk melihat langkah pembayaran</span>}
+              </span>
+              <ChevronDown size={18} aria-hidden="true" className={`shrink-0 text-[#404F14] transition-transform ${isInstructionsOpen ? 'rotate-180' : ''}`} />
+            </button>
+            {isInstructionsOpen && (
+              <div id="pending-payment-instructions" className="mt-3 space-y-3">
+                <ol className="list-decimal space-y-1.5 pl-5 text-[11px] leading-4 text-[#343133] sm:text-xs sm:leading-5">
+                  {paymentSteps.map((step) => <li key={step}>{step}</li>)}
+                </ol>
+                <div className="space-y-1.5">
+                  {paymentInfo?.vaNumber && (
+                    <PaymentCode label={`Nomor Virtual Account ${paymentInfo.bankName ?? ''}`.trim()} value={paymentInfo.vaNumber} onCopy={handleCopy} copied={copiedValue === paymentInfo.vaNumber} />
+                  )}
+                  {paymentInfo?.billerCode && (
+                    <PaymentCode label="Kode Perusahaan" value={paymentInfo.billerCode} onCopy={handleCopy} copied={copiedValue === paymentInfo.billerCode} />
+                  )}
+                  {paymentInfo?.billKey && (
+                    <PaymentCode label="Kode Pembayaran" value={paymentInfo.billKey} onCopy={handleCopy} copied={copiedValue === paymentInfo.billKey} />
+                  )}
+                  {paymentInfo?.paymentCode && (
+                    <PaymentCode label={`Kode Pembayaran ${paymentInfo.storeName ?? ''}`.trim()} value={paymentInfo.paymentCode} onCopy={handleCopy} copied={copiedValue === paymentInfo.paymentCode} />
+                  )}
+                  {paymentInfo?.qrUrl && (
+                    <img src={paymentInfo.qrUrl} alt="QR pembayaran" className="mx-auto max-h-[min(16dvh,120px)] max-w-full object-contain sm:max-h-[min(18dvh,150px)]" />
+                  )}
+                  {!paymentInfo && paymentUrl && (
+                    <p className="text-[10px] leading-4 text-[#6F6B6E]">Gunakan tombol Lanjutkan Pembayaran untuk membuka halaman penyedia.</p>
+                  )}
+                </div>
+              </div>
+            )}
           </section>
         </main>
 
@@ -155,10 +212,7 @@ function PendingOrderModal({
           <button type="button" onClick={onOpenOrderStatus} className="min-h-9 rounded-lg bg-[#354B24] px-3 font-heading text-[11px] font-bold text-white sm:min-h-10 sm:min-w-40 sm:text-xs">
             Informasi Pembayaran
           </button>
-          <button type="button" onClick={onReturnHome} className="min-h-9 rounded-lg border border-[#D4D4D4] bg-[#FDFCF7] px-3 font-heading text-[11px] font-bold text-[#404F14] sm:min-h-10 sm:min-w-40 sm:text-xs">
-            Kembali ke Beranda
-          </button>
-          <a href={ADMIN_WA_URL} target="_blank" rel="noreferrer" className="flex min-h-9 items-center justify-center rounded-lg bg-[#CDF178] px-3 text-center font-heading text-[11px] font-bold text-[#404F14] sm:min-h-10 sm:min-w-40 sm:text-xs">
+          <a href={ADMIN_WA_URL} target="_blank" rel="noreferrer" className={`flex min-h-9 items-center justify-center rounded-lg bg-[#CDF178] px-3 text-center font-heading text-[11px] font-bold text-[#404F14] sm:min-h-10 sm:min-w-40 sm:text-xs ${canContinuePayment ? 'col-span-2 sm:col-span-1' : ''}`}>
             Bantuan WhatsApp
           </a>
         </footer>

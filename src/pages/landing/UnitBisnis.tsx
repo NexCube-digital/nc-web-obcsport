@@ -1,13 +1,7 @@
-import { useState } from 'react'
-import { Link } from 'react-router-dom'
-import { Heart, ArrowRight } from 'lucide-react'
-import ObcLogo from '../../assets/logo/obclogo.webp'
-import guestHouseLogo from '../../assets/logo/unit bisnis/LOGO OBC SPORT CENTER (1).png'
-import villaLogo from '../../assets/logo/villa.png'
-import laundryLogo from '../../assets/logo/unit bisnis/LOGO OBC SPORT CENTER (4).png'
-import foodCourtLogo from '../../assets/logo/unit bisnis/LOGO OBC SPORT CENTER (5).png'
-import coffeeLogo from '../../assets/logo/unit bisnis/LOGO OBC SPORT CENTER (6).png'
-import agribusinessLogo from '../../assets/logo/unit bisnis/LOGO OBC SPORT CENTER (7).png'
+import { useEffect, useState } from 'react'
+import { ArrowRight, Building2 } from 'lucide-react'
+import { getPublicBusinessUnits } from '../../services/businessUnitPublicService'
+import { getImageUrl } from '../../utils/imageUrl'
 
 /* PERUBAHAN: teks ditulis langsung (tanpa i18n) supaya tidak muncul key mentah */
 const TEXT = {
@@ -15,117 +9,56 @@ const TEXT = {
 	title: 'Beragam Layanan dalam Satu Ekosistem',
 	booking: 'Booking Now',
 	detail: 'Detail Unit',
+	loading: 'Memuat unit bisnis...',
+	empty: 'Belum ada unit bisnis yang ditampilkan.',
+	error: 'Unit bisnis belum dapat dimuat.',
 }
 
 type Unit = {
+	id: string
+	slug: string
 	name: string
-	image: string
+	image: string | null
 	link: string
-	isExternal: boolean
 }
 
-const units: Unit[] = [
-	{ name: 'Onny Barber Center', image: ObcLogo, link: 'https://sport.obcgroup.id/', isExternal: true },
-	{ name: 'OBC Guest House', image: guestHouseLogo, link: '/unit-bisnis/guest-house', isExternal: false },
-	{ name: 'OBC Villa', image: villaLogo, link: '/unit-bisnis/villa', isExternal: false },
-	{ name: 'OBC Laundry', image: laundryLogo, link: '/unit-bisnis/laundry', isExternal: false },
-	{ name: 'OBC Food Court', image: foodCourtLogo, link: '/unit-bisnis/food-court', isExternal: false },
-	{ name: 'OBC Coffee', image: coffeeLogo, link: '/unit-bisnis/coffee', isExternal: false },
-	{ name: 'OBC Agribisnis', image: agribusinessLogo, link: '/unit-bisnis/agribisnis', isExternal: false },
-]
-
-/* PERUBAHAN: font Montserrat dipaksa lewat kelas (sesuai desain). Pastikan Montserrat sudah di-load di index.html */
 const FONT = "font-['Montserrat',sans-serif]"
-
-/* PERUBAHAN: gaya tombol inline. Mobile: tombol Booking Now selebar kartu, Detail Unit di bawahnya (rata tengah).
-   Mulai md: kembali berjajar dalam satu baris (ukuran otomatis). */
 const bookingClass = `${FONT} inline-flex h-8 w-full shrink-0 items-center justify-center whitespace-nowrap rounded-full bg-white px-3 text-[11px] font-bold text-black shadow-[0_2px_4px_rgba(0,0,0,0.25)] ring-1 ring-black/5 transition-colors hover:bg-[#004000] hover:text-white md:h-7 md:w-auto`
 const detailClass = `${FONT} inline-flex h-7 w-full shrink-0 items-center justify-center gap-1.5 whitespace-nowrap text-[12px] font-medium text-black transition-colors hover:text-[#004000] md:w-auto md:justify-start md:text-[13px]`
 
 type UnitCardProps = {
 	unit: Unit
-	isFavorite: boolean
-	onToggleFavorite: (name: string) => void
-	className?: string
 }
 
-function UnitCard({ unit, isFavorite, onToggleFavorite, className = '' }: UnitCardProps) {
-	const [isHeartHovered, setIsHeartHovered] = useState(false)
-	const stretchedClass = 'absolute inset-0 z-0 rounded-[20px]'
-
-	const BookingLink = unit.isExternal ? (
-		<a className={bookingClass} href={unit.link} target="_blank" rel="noreferrer">
-			{TEXT.booking}
-		</a>
-	) : (
-		<Link className={bookingClass} to={unit.link}>
-			{TEXT.booking}
-		</Link>
-	)
-
-	const DetailLink = unit.isExternal ? (
-		<a className={detailClass} href={unit.link} target="_blank" rel="noreferrer">
-			{TEXT.detail} <ArrowRight size={14} />
-		</a>
-	) : (
-		<Link className={detailClass} to={unit.link}>
-			{TEXT.detail} <ArrowRight size={14} />
-		</Link>
-	)
-
+function UnitCard({ unit }: UnitCardProps) {
 	return (
 		<article
-			className={`group relative flex cursor-pointer flex-col rounded-[20px] bg-white p-3 pb-4 shadow-[0_4px_16px_rgba(0,0,0,0.18)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_12px_28px_rgba(0,64,0,0.18)] md:p-4 md:pb-5 lg:p-3 lg:pb-4 ${className}`}
+			className="group relative flex flex-col items-center rounded-[14px] border border-transparent bg-white p-3 pt-[22px] text-center shadow-[0_4px_10px_rgba(0,0,0,0.12)] transition-all duration-300 hover:-translate-y-1 hover:border-[#b8e28a] hover:bg-[#f0f7e6] hover:shadow-[0_12px_28px_rgba(0,64,0,0.12)] md:rounded-[20px] md:p-5 md:pt-6"
 		>
-			{/* Stretched link ke halaman unit */}
-			{unit.isExternal ? (
-				<a className={stretchedClass} href={unit.link} target="_blank" rel="noreferrer" aria-label={`Buka ${unit.name}`} />
-			) : (
-				<Link className={stretchedClass} to={unit.link} aria-label={`Buka ${unit.name}`} />
-			)}
-
-			{/* Tombol favorit: ikon hati outline tanpa lingkaran (sesuai desain) */}
-			<button
-				type="button"
-				className="absolute right-3 top-3 z-10 grid h-8 w-8 cursor-pointer place-items-center bg-transparent text-black"
-				onMouseEnter={() => setIsHeartHovered(true)}
-				onMouseLeave={() => setIsHeartHovered(false)}
-				onClick={(e) => {
-					e.stopPropagation()
-					onToggleFavorite(unit.name)
-				}}
-				aria-label={isFavorite ? `Hapus ${unit.name} dari favorit` : `Tambah ${unit.name} ke favorit`}
-			>
-				<Heart
-					className={`h-[20px] w-[20px] ${
-						isFavorite ? 'fill-red-500 text-red-500' : isHeartHovered ? 'fill-[#004000] text-[#004000]' : ''
-					}`}
-				/>
-			</button>
-
-			{/* Logo di tengah */}
-			<div className="pointer-events-none relative z-10 mx-auto mt-4 grid h-[96px] w-[96px] place-items-center md:mt-3 md:h-[clamp(96px,17svh,144px)] md:w-[clamp(96px,17svh,144px)] lg:mt-2 lg:h-[clamp(88px,13svh,144px)] lg:w-[clamp(88px,13svh,144px)]">
-				<img
-					className={`block max-h-full max-w-full object-contain transition-transform duration-300 ${
-						unit.name === 'OBC Villa'
-							? 'scale-[0.83] group-hover:scale-[0.86]'
-							: 'group-hover:scale-105'
-					}`}
-					src={unit.image}
-					alt={`Logo ${unit.name}`}
-					loading="lazy"
-					decoding="async"
-				/>
+			<div className="pointer-events-none grid h-[78px] w-[78px] place-items-center md:h-[clamp(72px,13.5svh,108px)] md:w-[clamp(72px,13.5svh,108px)]">
+				{unit.image ? (
+					<img
+						className="block max-h-full max-w-full object-contain transition-transform duration-300 group-hover:scale-105"
+						src={unit.image}
+						alt={`Logo ${unit.name}`}
+						loading="lazy"
+						decoding="async"
+					/>
+				) : (
+					<Building2 size={38} aria-hidden="true" className="text-[#7B8A72]" />
+				)}
 			</div>
-
-			{/* Nama + tombol. Mobile: nama rata tengah, tombol bertumpuk. md+: rata kiri, tombol berjajar */}
-			<div className="relative z-10 mt-3 w-full px-0.5 md:mt-4 md:px-2 lg:mt-2">
-				<h3 className={`${FONT} text-center text-[14px] font-bold leading-tight text-black md:text-left md:text-[17px]`}>
+			<div className="mt-2 w-full text-center md:mt-3 md:text-left">
+				<h3 className={`${FONT} min-h-10 text-[14px] font-bold leading-tight text-[#111111] md:text-[16px]`}>
 					{unit.name}
 				</h3>
-				<div className="mt-3 flex flex-col items-stretch gap-1.5 md:mt-2 md:flex-row md:flex-wrap md:items-center md:justify-between md:gap-x-3 md:gap-y-1.5">
-					{BookingLink}
-					{DetailLink}
+				<div className="mt-1.5 flex w-full flex-col items-stretch gap-1.5 md:mt-2.5 md:flex-row md:items-center md:justify-between md:gap-2">
+					<a className={bookingClass} href={unit.link} target="_blank" rel="noreferrer">
+						{TEXT.booking}
+					</a>
+					<a className={detailClass} href={unit.link} target="_blank" rel="noreferrer">
+						{TEXT.detail} <ArrowRight size={14} />
+					</a>
 				</div>
 			</div>
 		</article>
@@ -133,50 +66,57 @@ function UnitCard({ unit, isFavorite, onToggleFavorite, className = '' }: UnitCa
 }
 
 export default function UnitBisnis() {
-	const [favorites, setFavorites] = useState<string[]>([])
+	const [units, setUnits] = useState<Unit[]>([])
+	const [isLoading, setIsLoading] = useState(true)
+	const [hasError, setHasError] = useState(false)
 
-	const toggleFavorite = (name: string) => {
-		setFavorites((prev) => (prev.includes(name) ? prev.filter((item) => item !== name) : [...prev, name]))
-	}
+	useEffect(() => {
+		let active = true
+
+		getPublicBusinessUnits()
+			.then((businessUnits) => {
+				if (!active) return
+				setUnits(businessUnits.flatMap((unit) => {
+					if (unit.config.showOnSport === false) return []
+					const imagePath = typeof unit.config.imageUrl === 'string' ? unit.config.imageUrl : null
+					const link = unit.slug === 'obc-sport'
+						? 'https://sport.obcgroup.id/'
+						: `https://obcgroup.id/unit-bisnis/${encodeURIComponent(unit.slug)}`
+					return [{ id: unit.id, slug: unit.slug, name: unit.name, image: getImageUrl(imagePath), link }]
+				}))
+			})
+			.catch(() => {
+				if (active) setHasError(true)
+			})
+			.finally(() => {
+				if (active) setIsLoading(false)
+			})
+
+		return () => { active = false }
+	}, [])
 
 	return (
 		<section
-			className="mx-auto flex w-[calc(100%-32px)] max-w-[1280px] flex-col py-10 md:w-[calc(100%-48px)] md:py-14 lg:py-8"
+			className="mx-auto flex w-[calc(100%-44px)] max-w-[1280px] flex-col bg-[#fffff7] py-10 md:w-[calc(100%-48px)] md:py-14"
 			id="layanan"
 		>
-			{/* Label kecil kapital abu-abu */}
-			<span className={`${FONT} mb-2 block text-center text-[14px] font-medium uppercase tracking-[2px] text-[#000000B3] md:text-[18px]`}>
+			<span className={`${FONT} mb-1 block text-center text-[16px] font-medium text-black md:mb-3 md:text-[18px] md:font-semibold md:uppercase md:tracking-[1.4px] md:text-[#000000CC]`}>
 				{TEXT.badge}
 			</span>
-			<h2 className={`${FONT} mx-auto w-full max-w-[1098px] text-center text-[24px] font-bold leading-[32px] tracking-[0.5px] text-black md:text-[36px] md:leading-[45px] md:tracking-[1.5px]`}>
+			<h2 className={`${FONT} mx-auto w-full max-w-[1098px] text-center text-[22px] font-semibold leading-[30px] text-black md:text-[28px] md:font-bold md:leading-[40px] md:tracking-[1px] lg:text-[36px] lg:leading-[45px] lg:tracking-[1.5px]`}>
 				{TEXT.title}
 			</h2>
-			<div className="mx-auto mt-4 w-full max-w-[812px] border-t-2 border-[#00000080]" aria-hidden="true" />
-
-			{/* Baris 1: 4 unit */}
-			<div className="mt-8 grid grid-cols-2 gap-3 md:gap-6 lg:grid-cols-4 lg:gap-4">
-				{units.slice(0, 4).map((unit) => (
-					<UnitCard
-						key={unit.name}
-						unit={unit}
-						isFavorite={favorites.includes(unit.name)}
-						onToggleFavorite={toggleFavorite}
-					/>
+			<div className="mx-auto mt-4 w-full max-w-[812px] border-t border-[#00000080] md:border-t-2" aria-hidden="true" />
+			<div className="mt-6 flex w-full flex-wrap justify-center gap-[14px] md:mt-[clamp(16px,3.5svh,28px)] md:gap-5">
+				{units.map((unit) => (
+					<div key={unit.id} className="w-[calc((100%_-_14px)/2)] max-w-[280px] md:w-[calc((100%_-_40px)/3)] lg:w-[calc((100%_-_60px)/4)]">
+						<UnitCard unit={unit} />
+					</div>
 				))}
 			</div>
-
-			{/* Baris 2: 3 unit, di tengah */}
-			<div className="mx-auto mt-3 grid w-full grid-cols-2 gap-3 md:mt-6 md:gap-6 lg:mt-4 lg:max-w-[calc(3*280px+2*1.5rem)] lg:grid-cols-3 lg:gap-4">
-				{units.slice(4).map((unit) => (
-					<UnitCard
-						key={unit.name}
-						unit={unit}
-						isFavorite={favorites.includes(unit.name)}
-						onToggleFavorite={toggleFavorite}
-						className="last:col-span-2 last:mx-auto last:w-[calc(50%-6px)] lg:last:col-span-1 lg:last:w-full"
-					/>
-				))}
-			</div>
+			{isLoading && <p className="mt-6 text-center text-sm text-[#62665f]">{TEXT.loading}</p>}
+			{!isLoading && hasError && <p role="status" className="mt-6 text-center text-sm text-[#62665f]">{TEXT.error}</p>}
+			{!isLoading && !hasError && units.length === 0 && <p className="mt-6 text-center text-sm text-[#62665f]">{TEXT.empty}</p>}
 		</section>
 	)
 }

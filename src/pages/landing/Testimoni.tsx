@@ -6,10 +6,10 @@ import TestimonialModal from '../../components/ui/TestimonialModal'
 import reviewIcon from '../../assets/icon/image.png'
 import { useAuth } from '../../hooks/useAuth'
 import { getSportsFacilities, type SportsFacility } from '../../services/facilityService'
-import { getResourceReviews, type ResourceReview } from '../../services/testimonialService'
+import { getPublishedTestimonials, type PublicTestimonial } from '../../services/testimonialService'
 
-interface FeaturedReview extends ResourceReview {
-	resourceId: string
+
+interface FeaturedReview extends PublicTestimonial {
 	facilityName: string
 }
 
@@ -42,36 +42,23 @@ function Testimoni() {
 
 	useEffect(() => {
 		let active = true
-		Promise.allSettled([getSportsFacilities()]).then(([facilitiesResult]) => {
+		Promise.allSettled([getSportsFacilities(), getPublishedTestimonials()]).then(([facilitiesResult, reviewsResult]) => {
 			if (!active) return
-			if (facilitiesResult.status === 'rejected') {
+			if (facilitiesResult.status === 'fulfilled') setFacilities(facilitiesResult.value)
+			if (reviewsResult.status === 'rejected') {
 				setLoadError('Testimoni gagal dimuat.')
 				setIsLoadingReviews(false)
 				return
 			}
 
-			const items = facilitiesResult.value
-			setFacilities(items)
-			Promise.allSettled(items.map((item) => getResourceReviews(item.id, { limit: 50 })))
-				.then((reviewResults) => {
-					if (!active) return
-					const featuredReviews = reviewResults.flatMap((result, index) => {
-						if (result.status === 'rejected') return []
-						return result.value.reviews.map((review) => ({
-							...review,
-							resourceId: items[index].id,
-							facilityName: items[index].name,
-						}))
-					})
-					featuredReviews.sort((left, right) =>
-						right.rating - left.rating || new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime())
-					setReviews(featuredReviews.slice(0, 12))
-					setActiveTesti(0)
-					setLoadError(featuredReviews.length ? '' : 'Belum ada ulasan untuk fasilitas ini.')
-				})
-				.finally(() => {
-					if (active) setIsLoadingReviews(false)
-				})
+			const featuredReviews: FeaturedReview[] = reviewsResult.value
+				.map((review) => ({ ...review, facilityName: review.company ?? 'OBC Sport Center' }))
+			featuredReviews.sort((left, right) =>
+				right.rating - left.rating || new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime())
+			setReviews(featuredReviews.slice(0, 12))
+			setActiveTesti(0)
+			setLoadError(featuredReviews.length ? '' : 'Belum ada ulasan untuk fasilitas ini.')
+			setIsLoadingReviews(false)
 		})
 		return () => { active = false }
 	}, [])
@@ -94,11 +81,11 @@ function Testimoni() {
 						<>
 							<div className="flex items-center gap-3 sm:gap-4">
 								<span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#9AAD3E] font-heading text-lg font-bold text-white sm:h-16 sm:w-16 sm:text-xl">
-									{testimonial.customer.name.charAt(0).toUpperCase()}
+									{testimonial.name.charAt(0).toUpperCase()}
 								</span>
 								<div className="min-w-0">
 									<p className="truncate font-heading text-base font-bold text-[#343133]">
-										{testimonial.customer.name}
+										{testimonial.name}
 									</p>
 									<p className="truncate text-xs text-[#343133]">
 										{testimonial.facilityName} · {testimonial.rating.toFixed(1)} ★
@@ -106,7 +93,7 @@ function Testimoni() {
 								</div>
 							</div>
 							<p className="mt-5 text-sm italic leading-relaxed text-[#343133] md:mt-8">
-								“{testimonial.comment}”
+								“{testimonial.text}”
 							</p>
 						</>
 					) : (
@@ -149,7 +136,7 @@ function Testimoni() {
 					<button
 						type="button"
 						onClick={handleWriteReview}
-						disabled={facilities.length === 0 || isLoadingReviews}
+						disabled={(facilities.length === 0 && !testimonial?.resourceId) || isLoadingReviews}
 						className="flex h-11 w-fit max-w-full cursor-pointer items-center justify-center gap-2 rounded-[45px] border-[0.67px] border-[#CDF178] bg-[#CDF178] px-2.5 py-1 font-['Montserrat'] text-[11px] font-semibold leading-[17px] text-[#000000] shadow-[0px_3px_5.8px_0px_#0000004D] transition-colors hover:bg-[#c0e85a] disabled:cursor-not-allowed disabled:opacity-60 sm:gap-2.5 sm:px-3 sm:text-[12px] md:h-11 md:px-3.5 md:text-[14px]"
 					>
 						<span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-[#004000] text-[#CDF178] md:h-8 md:w-8">

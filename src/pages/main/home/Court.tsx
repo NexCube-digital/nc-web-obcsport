@@ -1,11 +1,14 @@
 export interface FacilityCard {
 	id: string
+	key?: string
 	name: string
 	description: string
 	badge: string
 	buttonLabel: string
 	image: string
 	sportTypes?: string[]
+	bookingOptions?: Array<{ id: string; label: string; icon: 'futsal' | 'badminton' | 'pickleball' | 'basket' | 'sepakbola' | 'tenismeja' | 'biliard'; resourceId: string; sportType: string }>
+	selectionTitle?: string
 	slotMinutes?: number
 	fromPrice?: number | null
 	fromPriceFormatted?: string | null
@@ -45,7 +48,7 @@ function Court({ submittedSearch, onPreviewImage, onSelectFacility, facilities =
 			<div className="mt-3 grid grid-cols-1 gap-2 min-[300px]:grid-cols-2 min-[360px]:gap-3 sm:gap-4 lg:grid-cols-3">
 				{filteredFacilities.map((facility) => (
 					<div
-						key={facility.id}
+						key={facility.key ?? facility.id}
 						className="relative flex w-full min-w-0 flex-col overflow-hidden rounded-2xl bg-white shadow-[0_2px_10px_rgba(0,0,0,0.08)] min-[300px]:[&:last-child:nth-child(odd)]:col-span-2 lg:[&:last-child:nth-child(odd)]:col-span-1 sm:min-h-60 lg:min-h-52"
 					>
 						<button

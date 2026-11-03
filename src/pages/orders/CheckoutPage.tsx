@@ -18,7 +18,7 @@ import { useIsMobile } from '../../hooks/useIsMobile'
 const ScheduleConflict = lazy(() => import('./checkout/ScheduleConflict'))
 const ModalCheckout = lazy(() => import('../../components/ui/ModalCheckout'))
 const CartModal = lazy(() => import('../../components/ui/CartModal'))
-const ReviewSection = lazy(() => import('./checkout/ReviewSection'))
+const TopSportReviews = lazy(() => import('./checkout/TopSportReviews'))
 const BookingCalendar = lazy(() => import('./checkout/BookingCalendar'))
 const TimeSlotPicker = lazy(() => import('./checkout/TimeSlotPicker'))
 const MobileBookingSheet = lazy(() => import('./checkout/MobileBookingSheet'))
@@ -29,7 +29,7 @@ const MobileBookingSheet = lazy(() => import('./checkout/MobileBookingSheet'))
 /* -------------------------------------------------------------------------
    Data (ganti dengan data dari API / services/bookingService.js)
    ------------------------------------------------------------------------- */
-const MAX_SESSION_HOURS = 8
+const MAX_SESSION_HOURS = 5
 
 const BOOKED_DATES: string[] = []
 
@@ -227,10 +227,15 @@ function DetailOrder() {
   }
 
   /* ---------- Turunan data kalender ---------- */
-  const availableTimeSlots = availability?.slots.map((slot) => slot.startTime) ?? []
+  const availabilitySlotMinutes = availability?.slots[0]
+    ? availability.slots[0].endMinute - availability.slots[0].startMinute
+    : 15
+  const availableTimeSlots = availability?.slots
+    .filter((slot) => slot.startMinute % 60 === 0)
+    .map((slot) => slot.startTime) ?? []
   const canBookWindow = (startMinute: number, durationMinutes: number) => {
     if (!availability || !selectedDate) return false
-    const intervalMinutes = availability.startIntervalMinutes ?? 15
+    if (startMinute % 60 !== 0 || durationMinutes % 60 !== 0) return false
     const startTime = minutesToTime(startMinute)
     if (isPastSlot(selectedDate, startTime, currentTime)) return false
 
@@ -239,15 +244,26 @@ function DetailOrder() {
       (slot) => slot.startMinute >= startMinute && slot.endMinute <= endMinute,
     )
     return (
-      coveredSlots.length === durationMinutes / intervalMinutes &&
+      coveredSlots.length === durationMinutes / availabilitySlotMinutes &&
       coveredSlots.every((slot) => slot.available) &&
       coveredSlots[0]?.startMinute === startMinute &&
       coveredSlots.at(-1)?.endMinute === endMinute
     )
   }
   const bookedSlotsToday = availableTimeSlots.filter(
-    (time) => !canBookWindow(timeToMinutes(time), selectedDurationMinutes),
+    (time) => !canBookWindow(timeToMinutes(time), 60),
   )
+  const getMaxBookableHours = (time: string) => {
+    let hours = 0
+    for (let durationHours = 1; durationHours <= MAX_SESSION_HOURS; durationHours += 1) {
+      if (!canBookWindow(timeToMinutes(time), durationHours * 60)) break
+      hours = durationHours
+    }
+    return hours
+  }
+  const maxSessionHoursForSelection = selectedStartTime
+    ? Math.max(1, getMaxBookableHours(selectedStartTime))
+    : MAX_SESSION_HOURS
   const isDateBooked = Boolean(
     availability &&
       (availability.isClosed ||
@@ -322,18 +338,23 @@ function DetailOrder() {
 
   const handleSelectStartTime = (time: string) => {
     if (bookedSlotsToday.includes(time) || isPastSlot(selectedDate ?? '', time, new Date())) return
-    setSelectedStartTime((current) => (current === time ? null : time))
+    if (selectedStartTime === time) {
+      setSelectedStartTime(null)
+    } else {
+      const maxHours = getMaxBookableHours(time)
+      if (maxHours === 0) return
+      setSelectedStartTime(time)
+      setSelectedDurationMinutes((current) => Math.min(current, maxHours * 60))
+    }
     setPricePreview(null)
     setIsPriceLoading(selectedStartTime !== time)
     setIsConfirmed(false)
   }
 
   const handleChangeDuration = (durationMinutes: number) => {
-    if (durationMinutes < 60 || durationMinutes > MAX_SESSION_HOURS * 60 || durationMinutes % 60 !== 0) return
+    if (durationMinutes < 60 || durationMinutes > maxSessionHoursForSelection * 60 || durationMinutes % 60 !== 0) return
+    if (selectedStartTime && !canBookWindow(timeToMinutes(selectedStartTime), durationMinutes)) return
     setSelectedDurationMinutes(durationMinutes)
-    setSelectedStartTime((current) =>
-      current && canBookWindow(timeToMinutes(current), durationMinutes) ? current : null,
-    )
     setPricePreview(null)
     setIsPriceLoading(Boolean(selectedStartTime && canBookWindow(timeToMinutes(selectedStartTime), durationMinutes)))
     setIsConfirmed(false)
@@ -491,6 +512,7 @@ function DetailOrder() {
           <MobileHeader
             variant="title"
             title="Checkout"
+            showCart
             showShare
             showBottomNav={false}
           />
@@ -504,7 +526,7 @@ function DetailOrder() {
               isPriceLoading={isApiPriceLoading}
             />
             <DeferredSection placeholderClassName="min-h-[240px]">
-              <ReviewSection variant="mobile" resourceId={resourceId ?? ''} />
+              <TopSportReviews />
             </DeferredSection>
           </div>
           <Suspense fallback={null}>
@@ -535,13 +557,13 @@ function DetailOrder() {
               startTime={startTime}
               endTime={endTime}
               totalPrice={totalPrice}
-              maxSessionHours={MAX_SESSION_HOURS}
+              maxSessionHours={maxSessionHoursForSelection}
             />
           </Suspense>
         </>
       ) : (
         <div className="min-h-screen bg-white font-body text-[#343133]">
-          <NavbarDashboard showDesktopNavigation={false} showMobileHeader={false} />
+          <NavbarDashboard showDesktopNavigation={false} showMobileHeader={false} showCart />
 
           <main className="max-w-[1248px] mx-auto px-6 pt-6 pb-16">
             <div className="grid items-start gap-12 lg:grid-cols-[736px_1fr]">
@@ -555,7 +577,7 @@ function DetailOrder() {
                   isPriceLoading={isApiPriceLoading}
                 />
                 <DeferredSection placeholderClassName="min-h-[240px]">
-                  <ReviewSection variant="desktop" resourceId={resourceId ?? ''} />
+                  <TopSportReviews />
                 </DeferredSection>
               </div>
 
@@ -608,7 +630,7 @@ function DetailOrder() {
                         selectedDateLabel={selectedDateLabel}
                         startTime={startTime}
                         endTime={endTime}
-                        maxSessionHours={MAX_SESSION_HOURS}
+                        maxSessionHours={maxSessionHoursForSelection}
                         onToggleTime={handleSelectStartTime}
                         onChangeDuration={handleChangeDuration}
                         onConfirmSchedule={handleConfirmSchedule}

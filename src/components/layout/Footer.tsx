@@ -1,12 +1,13 @@
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { ArrowUp, Globe, Headphones, Mail, MapPin } from 'lucide-react'
+import { api } from '../../services/apiService'
 import logo from '../../assets/logo/obclogo.webp'
 import lapangF1Image from '../../assets/layanan/Lapang F1.webp'
 import whatsappIcon from '../../assets/icon/whatsapp2.svg'
 
 const NAVIGASI_LINKS = [
 	{ label: 'Beranda', to: '/' },
-	{ label: 'Booking Lapangan', to: '/home' },
 	{ label: 'Sewa Event', to: '/event' },
 	{ label: 'Membership', to: '/membership' },
 	{ label: 'Riwayat Transaksi', to: '/history' },
@@ -15,7 +16,7 @@ const NAVIGASI_LINKS = [
 ]
 
 const UNIT_LINKS = [
-	{ label: 'OBC Sport Center', to: '/unit-bisnis' },
+	{ label: 'OBC Group', to: '/unit-bisnis' },
 	{ label: 'OBC Guest House', to: '/unit-bisnis/guest-house' },
 	{ label: 'OBC Villa', to: '/unit-bisnis/villa' },
 	{ label: 'OBC Laundry', to: '/unit-bisnis/laundry' },
@@ -32,6 +33,16 @@ const CONTACT = {
 	tiktok: 'https://www.tiktok.com/@obcgroup.bdg',
 	address: 'Jl. Rancabentang, No.12, Ciumbuleuit, Kec. Cidadap, Kota Bandung, Jawa Barat 40142',
 	maps: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent('Jl. Rancabentang, No.12, Ciumbuleuit, Kec. Cidadap, Kota Bandung, Jawa Barat 40142')}`,
+}
+
+type ContactDetails = typeof CONTACT
+type PublicHomeContent = {
+	page?: { sections?: { sectionKey: string; content?: Partial<ContactDetails> }[] }
+}
+type ApiSuccess<T> = { data: T }
+
+function getContentValue(value: unknown, fallback: string): string {
+	return typeof value === 'string' && value.trim() ? value.trim() : fallback
 }
 
 function InstagramLogo({ className = 'h-[16px] w-[16px]' }: { className?: string }) {
@@ -103,7 +114,30 @@ const backTopClass =
 	'place-items-center rounded-full border-[0.5px] border-[#008C00] bg-[#004000] text-[#CDF178] shadow-lg transition-transform hover:-translate-y-1'
 
 function Footer() {
+	const [contact, setContact] = useState<ContactDetails>(CONTACT)
 	const scrollToTop = () => window.scrollTo({ top: 0, behavior: 'smooth' })
+
+	useEffect(() => {
+		let active = true
+		api.get<ApiSuccess<PublicHomeContent>>('/public/tenants/obc-barber/content', {
+			params: { page: 'home', lang: 'id' },
+		}).then((response) => {
+			if (!active) return
+			const sections = response.data.data.page?.sections ?? []
+			const socialContent = sections.find((section) => section.sectionKey === 'site-social')?.content
+			const contactContent = sections.find((section) => section.sectionKey === 'site-contact')?.content
+			setContact((current) => ({
+				...current,
+				whatsapp: getContentValue(socialContent?.whatsapp, current.whatsapp),
+				instagram: getContentValue(socialContent?.instagram, current.instagram),
+				tiktok: getContentValue(socialContent?.tiktok, current.tiktok),
+				email: getContentValue(contactContent?.email, current.email),
+				address: getContentValue(contactContent?.address, current.address),
+				maps: getContentValue(contactContent?.maps, current.maps),
+			}))
+		}).catch(() => undefined)
+		return () => { active = false }
+	}, [])
 
 	return (
 		/*
@@ -147,7 +181,7 @@ function Footer() {
 							</Link>
 							<div className="mt-[clamp(10px,2svh,20px)] flex items-center justify-center gap-3 md:mt-0 md:justify-end md:gap-4 lg:justify-start lg:pt-1 [@media(max-width:1023px)_and_(max-height:640px)]:mt-0 [@media(max-width:1023px)_and_(max-height:640px)]:gap-2">
 								<a
-									href={CONTACT.whatsapp}
+									href={contact.whatsapp}
 									target="_blank"
 									rel="noreferrer"
 									aria-label="WhatsApp OBC Group"
@@ -162,7 +196,7 @@ function Footer() {
 									/>
 								</a>
 								<a
-									href={CONTACT.instagram}
+									href={contact.instagram}
 									target="_blank"
 									rel="noreferrer"
 									aria-label="Instagram OBC Group"
@@ -171,7 +205,7 @@ function Footer() {
 									<InstagramLogo className="h-4 w-4" />
 								</a>
 								<a
-									href={CONTACT.tiktok}
+									href={contact.tiktok}
 									target="_blank"
 									rel="noreferrer"
 									aria-label="TikTok OBC Group"
@@ -236,22 +270,22 @@ function Footer() {
 								<li className="flex items-center gap-3 md:gap-2">
 									<Mail size={15} className="shrink-0" />
 									<a
-										href={`mailto:${CONTACT.email}`}
+										href={`mailto:${contact.email}`}
 										className="min-w-0 break-all transition-colors hover:text-[#CDF178]"
 									>
-										{CONTACT.email}
+										{contact.email}
 									</a>
 								</li>
 								<li className="flex items-start gap-3 md:gap-2">
 									<MapPin size={15} className="mt-[3px] shrink-0 md:mt-[2px] lg:mt-[3px]" />
 									{/* Rata kiri di tablet (kolom sempit), rata justify hanya di desktop seperti desain asli */}
 									<a
-										href={CONTACT.maps}
+										href={contact.maps}
 										target="_blank"
 										rel="noreferrer"
 										className="text-left transition-colors hover:text-[#CDF178] lg:text-justify"
 									>
-										{CONTACT.address}
+										{contact.address}
 									</a>
 								</li>
 							</ul>
@@ -323,13 +357,13 @@ function Footer() {
 								Bahasa Indonesia (ID)
 							</span>
 							<div className="flex items-center gap-5">
-								<a href={CONTACT.whatsapp} target="_blank" rel="noreferrer" aria-label="WhatsApp OBC Group" className="text-white transition-colors hover:text-[#CDF178]">
+								<a href={contact.whatsapp} target="_blank" rel="noreferrer" aria-label="WhatsApp OBC Group" className="text-white transition-colors hover:text-[#CDF178]">
 									<WhatsAppSocialIcon className="h-[16.5px] w-[16.5px]" />
 								</a>
-								<a href={CONTACT.tiktok} target="_blank" rel="noreferrer" aria-label="TikTok OBC Group" className="text-white transition-colors hover:text-[#CDF178]">
+								<a href={contact.tiktok} target="_blank" rel="noreferrer" aria-label="TikTok OBC Group" className="text-white transition-colors hover:text-[#CDF178]">
 									<TikTokLogo className="h-[14px] w-[14px] bg-white text-black" />
 								</a>
-								<a href={CONTACT.instagram} target="_blank" rel="noreferrer" aria-label="Instagram OBC Group" className="text-white transition-colors hover:text-[#CDF178]">
+								<a href={contact.instagram} target="_blank" rel="noreferrer" aria-label="Instagram OBC Group" className="text-white transition-colors hover:text-[#CDF178]">
 									<InstagramLogo className="h-[16.5px] w-[16.5px]" />
 								</a>
 							</div>

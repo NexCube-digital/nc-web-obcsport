@@ -4,7 +4,7 @@ import BtnStart from '../../components/ui/BtnStart'
 import DeferredSection from '../../components/layout/DeferredSection'
 import Hero from './Hero'
 
-const Footer = lazy(() => import('../../components/layout/LandingFooter'))
+const Footer = lazy(() => import('../../components/layout/Footer'))
 const Promo = lazy(() => import('./Promo'))
 const Highlight = lazy(() => import('./Highlight'))
 const Booking = lazy(() => import('./Booking'))
@@ -61,6 +61,7 @@ function LandingPage() {
         </DeferredSection>
 
         <DeferredSection
+          id="testimoni"
           placeholderClassName="min-h-[420px] md:min-h-[480px] lg:min-h-[500px]"
         >
           <Testimoni />

@@ -17,6 +17,8 @@ export interface SportOption {
   id: string
   label: string
   icon: SportIconKey
+  resourceId?: string
+  sportType?: string
 }
 
 export type FacilityIconKey = 'toilet' | 'led' | 'foodcourt' | 'mushola' | 'parkir'
@@ -32,9 +34,9 @@ export interface OrderModalFacility {
   name: string
   image: string
   sports: SportOption[]
-  /** Teks spesifikasi (setelah "Spesifikasi {name}:") */
   specification: string
   amenities: FacilityAmenity[]
+  selectionTitle?: string
 }
 
 interface OrderModalProps {
@@ -48,11 +50,7 @@ interface OrderModalProps {
    Token warna (dari desain)
    ------------------------------------------------------------------------- */
 const FONT_MONTSERRAT = "font-['Montserrat',sans-serif]"
-// #004000 Primary Green | #404F14 Secondary Green | #CDF178 Element
-// #9AAD3E hover | #343133 Text Dark | #FDFCF7 background modal
 
-/* Voli sudah dihapus. Filter ini berjaga-jaga bila data lama masih memuatnya.
-   TODO: hapus juga entri voli dari sumber data fasilitas. */
 const isVoli = (sport: SportOption): boolean =>
   sport.id === 'voli' || (sport.icon as string) === 'voli'
 
@@ -122,7 +120,7 @@ function SportIcon({ name, size = 24 }: { name: SportIconKey; size?: number }) {
 }
 
 function AmenityIcon({ name }: { name: FacilityIconKey }) {
-  const common = { width: 12, height: 12, viewBox: '0 0 24 24', ...svgProps, strokeWidth: 2 }
+  const common = { width: 14, height: 14, viewBox: '0 0 24 24', ...svgProps, strokeWidth: 2 }
   switch (name) {
     case 'toilet':
       return (
@@ -160,12 +158,7 @@ function AmenityIcon({ name }: { name: FacilityIconKey }) {
 
 
 function OrderModal({ facility, onClose, onOrder }: OrderModalProps): ReactNode {
-  const [selectedSport, setSelectedSport] = useState<string>('')
-
-  // Reset pilihan setiap kali fasilitas berganti
-  useEffect(() => {
-    if (facility) setSelectedSport(facility.sports.find((s) => !isVoli(s))?.id ?? '')
-  }, [facility])
+  const [selection, setSelection] = useState<{ facilityKey: string; optionId: string } | null>(null)
 
   // Tutup dengan Esc + kunci scroll halaman saat modal terbuka
   useEffect(() => {
@@ -182,7 +175,11 @@ function OrderModal({ facility, onClose, onOrder }: OrderModalProps): ReactNode 
 
   if (!facility) return null
 
+  const facilityKey = `${facility.id}:${facility.name}`
   const sports = facility.sports.filter((s) => !isVoli(s))
+  const selectedSport = selection?.facilityKey === facilityKey
+    ? selection.optionId
+    : sports[0]?.id ?? ''
 
   return (
     <div
@@ -213,7 +210,7 @@ function OrderModal({ facility, onClose, onOrder }: OrderModalProps): ReactNode 
               {facility.name}
             </h2>
             <p className="font-heading text-xs leading-4 text-black sm:text-sm">
-              Pilih kategori olahraga yang Anda mau
+              {facility.selectionTitle === 'Pilih Meja' ? 'Pilih meja yang ingin dipesan' : 'Pilih kategori olahraga yang Anda mau'}
             </p>
           </div>
           <button
@@ -226,10 +223,8 @@ function OrderModal({ facility, onClose, onOrder }: OrderModalProps): ReactNode 
           </button>
         </header>
 
-        {/* ================= Foto =================
-            Tinggi ideal mengikuti layar (clamp) dan menyusut lebih dulu
-            sebelum bagian lain, sampai batas min-h. */}
-        <div className="relative h-[clamp(180px,34dvh,420px)] min-h-[96px] shrink overflow-hidden md:h-[clamp(220px,52dvh,560px)] md:min-h-[150px]">
+        {/* ================= Gambar ================= */}
+        <div className="relative h-[clamp(180px,34dvh,420px)] min-h-[96px] shrink overflow-hidden md:h-[clamp(220px,52dvh,560px)] md:min-h-[150px] [@media(min-width:768px)_and_(max-height:800px)]:h-[clamp(140px,34dvh,280px)] [@media(min-width:768px)_and_(max-height:800px)]:min-h-[120px]">
           <img
             src={facility.image}
             alt={facility.name}
@@ -239,13 +234,12 @@ function OrderModal({ facility, onClose, onOrder }: OrderModalProps): ReactNode 
 
         {/* ================= Isi ================= */}
         <div className="shrink-0 px-5 pb-4 pt-3 sm:px-12 sm:pb-6 sm:pt-5 md:pb-5 md:pt-5 lg:px-14">
-          <h3 className="font-heading text-base text-black">Pilih Cabang Olahraga</h3>
+          <h3 className="font-heading text-base text-black">{facility.selectionTitle ?? 'Pilih Cabang Olahraga'}</h3>
 
-          {/* Pilihan cabang olahraga: 2 kolom di mobile, ukuran asli di >= sm */}
           <div
             className="mt-2.5 grid grid-cols-2 gap-2 sm:mt-3 sm:flex sm:flex-wrap sm:gap-2.5"
             role="radiogroup"
-            aria-label="Cabang olahraga"
+            aria-label={facility.selectionTitle === 'Pilih Meja' ? 'Pilih meja' : 'Cabang olahraga'}
           >
             {sports.map((sport) => {
               const active = sport.id === selectedSport
@@ -255,7 +249,7 @@ function OrderModal({ facility, onClose, onOrder }: OrderModalProps): ReactNode 
                   type="button"
                   role="radio"
                   aria-checked={active}
-                  onClick={() => setSelectedSport(sport.id)}
+                  onClick={() => setSelection({ facilityKey, optionId: sport.id })}
                   className={`flex h-10 w-full min-w-0 cursor-pointer items-center justify-center gap-3 rounded-xl bg-white font-heading text-sm text-[#343133] transition-shadow sm:h-[42px] sm:w-[156px] sm:gap-4 ${
                     active
                       ? 'border border-[#004000]'
@@ -278,14 +272,14 @@ function OrderModal({ facility, onClose, onOrder }: OrderModalProps): ReactNode 
           </div>
 
           {/* Fasilitas */}
-          <h4 className={`${FONT_MONTSERRAT} mt-3 text-xs font-bold text-[#265021] sm:mt-4`}>
+          <h4 className={`${FONT_MONTSERRAT} mt-3 text-sm font-bold text-[#265021] sm:mt-4`}>
             Fasilitas Lapangan
           </h4>
           <ul className="mt-2 flex flex-wrap gap-1.5 sm:gap-2">
             {facility.amenities.map((item) => (
               <li
                 key={item.id}
-                className="flex h-5 items-center gap-1.5 rounded-full border border-[#D4D4D4] bg-white px-2 font-heading text-[10px] text-[#343133]"
+                className="flex min-h-8 items-center gap-2 rounded-full border border-[#D4D4D4] bg-white px-3 py-1 font-heading text-[13px] text-[#343133]"
               >
                 <span className="text-[#265021]">
                   <AmenityIcon name={item.icon} />
@@ -298,7 +292,10 @@ function OrderModal({ facility, onClose, onOrder }: OrderModalProps): ReactNode 
           {/* Tombol pesan */}
           <button
             type="button"
-            onClick={() => onOrder(facility.id, selectedSport)}
+            onClick={() => {
+              const option = sports.find((sport) => sport.id === selectedSport)
+              onOrder(option?.resourceId ?? facility.id, option?.sportType ?? selectedSport)
+            }}
             disabled={!selectedSport}
             className="mx-auto mt-4 block h-10 w-full max-w-[370px] cursor-pointer rounded-md bg-[#CDF178] font-heading text-xs text-[#343133] transition-colors hover:bg-[#9AAD3E] disabled:cursor-not-allowed disabled:opacity-60 sm:mt-5"
           >

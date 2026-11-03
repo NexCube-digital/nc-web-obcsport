@@ -38,6 +38,9 @@ function TimeSlotPicker({
   onResetSearch,
 }: TimeSlotPickerProps) {
   const timeSlots = availableTimeSlots ?? []
+  const availableSlotStyle = variant === 'mobile'
+    ? 'border-[#E5E5E5] bg-white'
+    : 'border-[#E5E5E5] bg-[#FDFCF7]'
   const durationControl = (
     <label className="mt-3 flex items-center justify-between gap-3 text-sm text-[#343133]">
       <span>Durasi sewa</span>
@@ -54,12 +57,19 @@ function TimeSlotPicker({
       </select>
     </label>
   )
+  const statusLegend = (
+    <div className="mt-5 flex flex-wrap items-center gap-x-4 gap-y-2 text-[10px] text-[#6F6B6E] md:text-xs">
+      <span className="inline-flex items-center gap-1.5"><span className={`h-2.5 w-2.5 rounded-sm border ${availableSlotStyle}`} />Kosong / tersedia</span>
+      <span className="inline-flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-sm border border-[#E02424] bg-[#FDE8E8]" />Sudah dibooking</span>
+      <span className="inline-flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-sm border border-[#9AAD3E] bg-[#CDF178]" />Dipilih</span>
+    </div>
+  )
 
   if (variant === 'mobile') {
     return (
       <>
         <h3 className="mt-8 font-heading text-xs font-bold text-[#121212] md:text-sm">
-          Pilih Waktu Mulai (interval 15 menit)
+          Pilih Waktu Mulai (per jam)
         </h3>
         {durationControl}
         {isLoading ? (
@@ -73,9 +83,9 @@ function TimeSlotPicker({
             {timeSlots.map((time) => {
               const isBooked = bookedSlotsToday.includes(time)
               const isSelected = selectedStartTime === time
-              let style = 'bg-white border-[#E5E5E5] text-[#121212]'
-              if (isBooked) style = 'bg-[#C8C8C8] border-[#B5B5B5] text-[#121212] cursor-not-allowed'
-              if (isSelected) style = 'bg-[#265021] border-[#265021] text-white'
+              let style = `${availableSlotStyle} text-[#121212]`
+              if (isBooked) style = 'bg-[#FDE8E8] border-[#E02424] text-[#C00000]'
+              if (isSelected) style = 'bg-[#CDF178] border-[#9AAD3E] text-[#404F14]'
 
               return (
                 <button
@@ -83,7 +93,7 @@ function TimeSlotPicker({
                   type="button"
                   disabled={isBooked}
                   onClick={() => onToggleTime(time)}
-                  className={`h-10 min-w-0 rounded-md border text-xs font-heading font-bold transition-colors cursor-pointer md:h-11 md:text-sm ${style}`}
+                  className={`h-10 min-w-0 rounded-md border text-xs font-heading font-bold transition-colors md:h-11 md:text-sm ${style} ${isBooked ? 'cursor-not-allowed' : 'cursor-pointer'}`}
                 >
                   {time}
                 </button>
@@ -92,11 +102,7 @@ function TimeSlotPicker({
           </div>
         )}
 
-        <div className="mt-6 flex flex-wrap items-center gap-x-4 gap-y-2 text-[10px] text-[#6F6B6E] md:text-xs">
-          <span className="inline-flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-sm bg-[#265021]" />Tersedia</span>
-          <span className="inline-flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-sm bg-[#C8C8C8]" />Booked/Event</span>
-          <span className="inline-flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-sm border border-[#265021] bg-[#E6F2D6]" />Selected</span>
-        </div>
+        {statusLegend}
       </>
     )
   }
@@ -128,23 +134,24 @@ function TimeSlotPicker({
 
   return (
     <section className="mt-3 w-full min-w-0 rounded-2xl border border-[#D4D4D4] bg-white p-4 md:p-5">
-      <h3 className="font-heading text-base font-bold text-[#343133] md:text-lg">Pilih Waktu Mulai (interval 15 menit)</h3>
+      <h3 className="font-heading text-base font-bold text-[#343133] md:text-lg">Pilih Waktu Mulai (per jam)</h3>
       {durationControl}
       <div className="mt-4 grid grid-cols-[repeat(auto-fill,minmax(88px,1fr))] gap-2 md:gap-2.5">
           {timeSlots.map((time) => {
           const isBooked = bookedSlotsToday.includes(time)
           const isSelected = selectedStartTime === time
-          let style = 'bg-[#FDFCF7] border-[#E5E5E5] text-[#121212] hover:border-[#9AAD3E]'
+          let style = `${availableSlotStyle} text-[#121212] hover:border-[#9AAD3E]`
+          if (isBooked) style = 'bg-[#FDE8E8] border-[#E02424] text-[#C00000]'
           if (isSelected) style = 'bg-[#CDF178] border-[#9AAD3E] text-[#404F14] font-bold'
-          if (isBooked) style = 'bg-[#FDE8E8] border-[#E02424] text-[#E02424] cursor-not-allowed'
 
           return (
-            <button key={time} type="button" disabled={isBooked} onClick={() => onToggleTime(time)} className={`h-9 min-w-0 rounded-md border text-xs font-heading transition-colors cursor-pointer md:h-10 md:text-sm ${style}`}>
+            <button key={time} type="button" disabled={isBooked} onClick={() => onToggleTime(time)} className={`h-9 min-w-0 rounded-md border text-xs font-heading transition-colors md:h-10 md:text-sm ${style} ${isBooked ? 'cursor-not-allowed' : 'cursor-pointer'}`}>
               {time}
             </button>
           )
         })}
       </div>
+      {statusLegend}
 
       <div className="mt-6 space-y-3 border-t border-[#D4D4D4] pt-4 text-sm">
         <div className="flex items-center justify-between gap-3">

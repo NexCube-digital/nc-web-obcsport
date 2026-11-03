@@ -102,14 +102,6 @@ function LoginPage() {
       {isMobile && (
       <ScrollReveal className="h-[100dvh]">
       <div className="relative flex h-full flex-col justify-center overflow-hidden bg-[#FDFCF7] px-6 py-[clamp(8px,2.5vh,40px)] font-heading text-[#343133]">
-        <Link
-          to="/"
-          aria-label="Kembali ke Home"
-          className="absolute left-5 top-4 inline-flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-sm font-semibold text-[#404F14] transition-colors hover:bg-[#E8EDE3]"
-        >
-          <House size={17} aria-hidden="true" />
-          Home
-        </Link>
         <Link to="/" className="mx-auto flex shrink-0 items-center gap-3">
           <img
             src={logo}
@@ -130,6 +122,10 @@ function LoginPage() {
         </p>
 
         <form onSubmit={handleSubmit} className="mt-[clamp(10px,2.6vh,28px)]">
+          <Link to="/" aria-label="Kembali ke Home" className="-mt-4 mb-1 ml-auto flex w-fit items-center gap-1.5 rounded-lg px-2 py-1.5 text-sm font-semibold text-[#404F14] transition-colors hover:bg-[#E8EDE3]">
+            <House size={17} aria-hidden="true" />
+            Home
+          </Link>
           <label htmlFor="m-email" className="mb-[clamp(3px,0.9vh,8px)] block text-xs font-bold text-[#121212]">
             Alamat Email
           </label>
@@ -226,18 +222,6 @@ function LoginPage() {
       {/*  DESKTOP / TABLET (>= md) — satu layar, TANPA scroll  */}
       {!isMobile && (
       <div className="flex h-[100dvh] flex-col overflow-hidden bg-white font-body text-[#343133]">
-        {/* Header: tombol Home sejajar dengan tepi konten */}
-        <header className="mx-auto w-full max-w-[1400px] shrink-0 px-8 pt-[clamp(10px,2vh,24px)] md:px-12 lg:px-8">
-          <Link
-            to="/"
-            aria-label="Kembali ke Home"
-            className="-ml-2.5 inline-flex items-center gap-2 rounded-lg px-2.5 py-2 text-sm font-semibold leading-none text-[#404F14] transition-colors hover:bg-[#F5FAF3]"
-          >
-            <House size={18} className="shrink-0" aria-hidden="true" />
-            <span>Home</span>
-          </Link>
-        </header>
-
         <main className="min-h-0 flex-1">
           {/* Tablet: kolom flex setinggi main. Desktop (lg): grid 2 kolom */}
           <section className="mx-auto flex h-full w-full max-w-[1400px] flex-col gap-[clamp(12px,2.2vh,32px)] px-8 pb-[clamp(12px,2.5vh,32px)] pt-[clamp(4px,1vh,16px)] md:px-12 lg:grid lg:grid-cols-[1fr_clamp(460px,34vw,560px)] lg:items-center lg:gap-[clamp(40px,6vw,96px)] lg:px-8 lg:py-[clamp(8px,2vh,32px)]">
@@ -267,9 +251,15 @@ function LoginPage() {
             {/* Kolom kanan: kartu form */}
             <ScrollReveal className="w-full shrink-0" delay={140}>
             <div className="mx-auto w-full max-w-[560px] rounded-2xl border border-[#D4D4D4] bg-white p-[clamp(16px,3.2vh,40px)] shadow-[0_4px_20px_rgba(0,0,0,0.08)] lg:mx-0 lg:max-w-none lg:p-[clamp(16px,3.6vh,40px)]">
-              <h2 className="font-heading text-[clamp(20px,3.2vh,30px)] font-bold text-[#343133]">
-                Selamat Datang Kembali
-              </h2>
+              <div className="flex items-center justify-between gap-3">
+                <h2 className="font-heading text-[clamp(20px,3.2vh,30px)] font-bold text-[#343133]">
+                  Selamat Datang Kembali
+                </h2>
+                <Link to="/" aria-label="Kembali ke Home" className="flex shrink-0 items-center gap-2 rounded-lg px-2.5 py-2 text-sm font-semibold leading-none text-[#404F14] transition-colors hover:bg-[#F5FAF3]">
+                  <House size={18} className="shrink-0" aria-hidden="true" />
+                  <span>Home</span>
+                </Link>
+              </div>
               <p className="mt-1 text-[clamp(13px,1.9vh,17px)] text-[#343133]">
                 Masukkan akun Anda untuk melanjutkan booking
               </p>

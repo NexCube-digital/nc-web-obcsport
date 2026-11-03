@@ -9,7 +9,7 @@ import { createResourceReview } from '../../services/testimonialService'
    ------------------------------------------------------------------------- */
 export interface TestimonialPayload {
   rating: number
-  review: string
+  text: string
 }
 
 interface TestimonialModalProps {
@@ -28,6 +28,8 @@ interface TestimonialModalProps {
 const FONT_MONTSERRAT = "font-['Montserrat',sans-serif]"
 const STAR_VALUES = [1, 2, 3, 4, 5]
 const DEFAULT_RATING = 5
+const MIN_REVIEW_LENGTH = 20
+const MAX_REVIEW_LENGTH = 2000
 
 function TestimonialModal({
   isOpen,
@@ -78,7 +80,7 @@ function TestimonialModal({
         ...(bookingId ? { bookingId } : {}),
       })
       toast.success('Terima kasih, ulasan kamu berhasil dikirim.')
-      onSubmit?.({ rating, review: trimmedReview })
+      onSubmit?.({ rating, text: trimmedReview })
       onClose()
     } catch (error) {
       toast.error(getApiErrorMessage(error, 'Ulasan gagal dikirim. Silakan coba lagi.'))
@@ -89,7 +91,7 @@ function TestimonialModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-[#343133]/40 p-4"
+      className="fixed inset-0 z-[1001] flex items-end justify-center bg-black/70 p-0 backdrop-blur-sm sm:items-center sm:p-5"
       onClick={onClose}
     >
       {/* Ukuran PC pas: 556 x 525, tanpa scroll */}
@@ -98,37 +100,39 @@ function TestimonialModal({
         aria-modal="true"
         aria-labelledby="testimonial-modal-title"
         onClick={(event) => event.stopPropagation()}
-        className="relative flex max-h-[calc(100vh-32px)] w-full max-w-[556px] flex-col overflow-y-auto rounded-lg bg-[#FDFCF7] shadow-[0_8px_32px_rgba(0,0,0,0.2)]"
+        className="relative flex max-h-[92dvh] w-full max-w-[720px] flex-col overflow-y-auto rounded-t-[25px] border border-[#ececec] bg-white p-5 shadow-[0_5px_80px_0_rgba(0,0,0,0.25)] max-[400px]:p-4 sm:max-h-[calc(100dvh-40px)] sm:rounded-[25px] sm:p-6"
       >
         <button
           type="button"
           onClick={onClose}
           aria-label="Tutup modal ulasan"
-          className="absolute right-4 top-4 z-10 grid h-9 w-9 place-items-center rounded-full text-[#343133] transition-colors hover:bg-[#F0F0E8] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#404F14]"
+          className="absolute right-4 top-4 z-10 grid h-9 w-9 place-items-center rounded-full border-[0.67px] border-[#1F3320] bg-white text-[#1F3320] transition-colors hover:bg-[#f5f5f5] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#404F14]"
         >
           <X size={20} aria-hidden="true" />
         </button>
 
         {/* ================= Header ================= */}
-        <header className="flex h-[94px] shrink-0 flex-col justify-center border-b border-[#D4D4D4] bg-white px-[26px]">
+        <header className="shrink-0 border-b border-[#ececec] pb-4 pr-10">
+          <span className="block font-['Montserrat'] text-[13px] font-semibold uppercase tracking-[1.4px] text-[#000000CC]">
+            ULASAN SPORT
+          </span>
           <h2
             id="testimonial-modal-title"
-            className={`${FONT_MONTSERRAT} text-lg font-semibold leading-6 text-black`}
+            className={`${FONT_MONTSERRAT} mt-1 text-[22px] font-bold leading-[30px] text-[#1F3320] sm:text-[26px] sm:leading-[34px]`}
           >
-            Berikan Ulasan anda
+            Berikan ulasan pengalaman kamu
           </h2>
-          <p className="font-heading text-base leading-5 text-black">
-            {facilityName} - {dateLabel}
+          <p className="mt-2 font-['Montserrat'] text-[13px] leading-[20px] text-[#4b5563]">
+            {facilityName} · {dateLabel}
           </p>
         </header>
 
-        {/* ================= Isi ================= */}
-        <div className="flex flex-col px-[45px] pb-[18px] pt-[39px]">
+        <div className="flex flex-col pt-5">
           {/* Rating */}
-          <p className="text-center font-heading text-sm leading-5 text-black">
-            Bagaimana penlayanan kami secara keseluruhan?
+          <p className="font-['Montserrat'] text-[13px] font-semibold text-[#1F3320]">
+            Bagaimana pengalaman kamu?
           </p>
-          <div className="mt-2 flex items-center justify-center gap-2">
+          <div className="mt-2 flex items-center gap-1">
             <div className="flex gap-0.5" role="radiogroup" aria-label="Penilaian bintang">
               {STAR_VALUES.map((value) => {
                 const isFilled = value <= rating
@@ -140,30 +144,28 @@ function TestimonialModal({
                     aria-checked={value === rating}
                     aria-label={`${value} bintang`}
                     onClick={() => setRating(value)}
-                    className="cursor-pointer p-0"
+                    className="cursor-pointer p-0.5 transition-transform hover:scale-110"
                   >
                     <Star
-                      size={18}
+                      size={28}
                       strokeWidth={1.5}
                       className={
                         isFilled
-                          ? 'fill-[#FFF1B8] text-[#F5B301]'
-                          : 'fill-transparent text-[#BDBDBD]'
+                          ? 'fill-current text-[#f5a623]'
+                            : 'fill-transparent text-[#d1d5db]'
                       }
                     />
                   </button>
                 )
               })}
             </div>
-            <span className="font-heading text-sm font-medium text-black">
-              {rating.toFixed(1)} / 5.0
-            </span>
+            <span className="ml-2 font-['Montserrat'] text-[16px] font-semibold text-[#1F3320]">{rating}.0</span>
           </div>
 
           {/* Ulasan */}
           <label
             htmlFor="testimonial-review"
-            className="mt-[62px] font-heading text-xs leading-4 text-black"
+            className="mb-1.5 mt-5 font-['Montserrat'] text-[13px] font-semibold text-[#1F3320]"
           >
             Tulis Ulasan Anda
           </label>
@@ -171,23 +173,33 @@ function TestimonialModal({
             id="testimonial-review"
             value={review}
             onChange={(event) => setReview(event.target.value)}
-            className="mt-[7px] h-[93px] w-full resize-none rounded-lg border border-[#D4D4D4] bg-white px-3 py-2 font-heading text-sm text-[#343133] focus:border-[#404F14] focus:outline-none"
+            maxLength={MAX_REVIEW_LENGTH}
+            placeholder="Ceritakan pengalaman kamu menggunakan fasilitas kami..."
+            className="h-28 w-full resize-none rounded-[12px] border border-[#e5e5e5] bg-white px-4 py-3 font-['Montserrat'] text-[14px] text-[#000000] outline-none transition-colors placeholder:text-[#9ca3af] focus:border-[#004000] focus:ring-2 focus:ring-[#CDF178]"
           />
 
           {/* Kirim */}
-          <div className="mx-auto mt-[50px] flex w-full max-w-[379px] items-center gap-3">
+          <div className="mt-1 flex justify-between font-['Montserrat'] text-[12px]">
+            <p className={review.trim().length > 0 && review.trim().length < MIN_REVIEW_LENGTH ? 'text-red-500' : 'text-[#6b7280]'}>
+              {review.trim().length > 0 && review.trim().length < MIN_REVIEW_LENGTH
+                ? `Minimal ${MIN_REVIEW_LENGTH} karakter`
+                : ' '}
+            </p>
+            <span className="shrink-0 text-[#6b7280]">{review.length}/{MAX_REVIEW_LENGTH}</span>
+          </div>
+          <div className="mt-4 flex w-full items-center justify-end gap-3">
             <button
               type="button"
               onClick={onDefer}
-              className="h-10 shrink-0 cursor-pointer rounded-md border border-[#D4D4D4] bg-white px-4 font-heading text-xs font-bold text-[#343133] transition-colors hover:bg-[#F5FAF3]"
+              className="h-10 shrink-0 cursor-pointer rounded-[45px] border border-[#D4D4D4] bg-white px-5 font-['Montserrat'] text-[13px] font-semibold text-[#343133] transition-colors hover:bg-[#F5FAF3]"
             >
               Nanti
             </button>
             <button
               type="button"
               onClick={handleSubmit}
-              disabled={review.trim().length < 3 || isSubmitting}
-              className="h-10 flex-1 cursor-pointer rounded-md bg-[#CDF178] font-heading text-xs font-bold text-[#404F14] transition-colors hover:bg-[#9AAD3E] disabled:cursor-not-allowed disabled:opacity-60"
+              disabled={review.trim().length < MIN_REVIEW_LENGTH || isSubmitting}
+              className="h-11 cursor-pointer rounded-[45px] border-[0.67px] border-[#CDF178] bg-[#CDF178] px-5 font-['Montserrat'] text-[13px] font-semibold text-[#000000] shadow-[0px_3px_5.8px_0px_#0000004D] transition-colors hover:bg-[#c0e85a] disabled:cursor-not-allowed disabled:opacity-60"
             >
               {isSubmitting ? 'Mengirim...' : 'Konfirmasi Ulasan'}
             </button>

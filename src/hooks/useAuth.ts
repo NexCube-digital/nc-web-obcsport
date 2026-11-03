@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { AUTH_EVENT, getStoredUser, getStoredAccessToken, saveUser, type AuthUser } from '../utils/auth'
+import { AUTH_EVENT, clearUser, getStoredTokens, getStoredUser, getStoredAccessToken, saveUser, type AuthUser } from '../utils/auth'
 import type { CustomerProfileData } from '../services/accountService'
 
 let cachedProfileToken: string | null = null
@@ -43,6 +43,15 @@ function loadProfileOnce(token: string): Promise<CustomerProfileData | null> {
 
 export function useAuth() {
   const [user, setUser] = useState<AuthUser | null>(() => getStoredUser())
+  const token = getStoredAccessToken()
+
+  useEffect(() => {
+    const expiresAt = Date.parse(getStoredTokens()?.sessionExpiresAt ?? '')
+    if (!Number.isFinite(expiresAt)) return
+
+    const timeout = window.setTimeout(clearUser, Math.max(0, expiresAt - Date.now()))
+    return () => window.clearTimeout(timeout)
+  }, [token])
 
   useEffect(() => {
     const refreshUser = () => {
@@ -59,8 +68,6 @@ export function useAuth() {
       window.removeEventListener('storage', refreshUser)
     }
   }, [])
-
-  const token = getStoredAccessToken()
 
   // Fetch avatar once per token, shared by every component using this hook.
   useEffect(() => {

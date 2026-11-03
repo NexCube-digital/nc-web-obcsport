@@ -59,7 +59,7 @@ function HomePage() {
     let active = true
     getSportsFacilities()
       .then((resources) => {
-        if (active) setApiFacilities(resources.map(toFacilityCard))
+        if (active) setApiFacilities(toFacilityCards(resources))
       })
       .catch(() => {
         if (active) setApiFacilities(undefined)
@@ -103,8 +103,9 @@ function HomePage() {
         id: selectedFacility.id,
         name: selectedFacility.name,
         image: selectedFacility.image,
-        sports: selectedFacility.sportTypes?.map(toSportOption).filter((sport) => sport.id !== 'volleyball') ?? [],
+        sports: selectedFacility.bookingOptions ?? selectedFacility.sportTypes?.map(toSportOption).filter((sport) => sport.id !== 'volleyball') ?? [],
         specification: selectedFacility.description || '',
+        selectionTitle: selectedFacility.selectionTitle,
         amenities: selectedFacility.amenities?.length
           ? selectedFacility.amenities.map((amenity, index) => ({
               id: `${amenity}-${index}`,
@@ -216,6 +217,7 @@ const SPORT_LABELS: Record<string, string> = {
   pickleball: 'Pickleball',
   tennis: 'Tenis',
   billiard: 'Biliard',
+  sepakbola: 'Sepak Bola',
   swimming: 'Renang',
   event: 'Event',
   other: 'Lainnya',
@@ -229,6 +231,7 @@ const SPORT_ICONS = {
   pickleball: 'pickleball',
   tennis: 'sepakbola',
   billiard: 'biliard',
+  sepakbola: 'sepakbola',
   swimming: 'sepakbola',
   event: 'sepakbola',
   other: 'sepakbola',
@@ -262,6 +265,70 @@ function toFacilityCard(resource: SportsFacility): FacilityCard {
     amenities: resource.amenities ?? [],
     location: resource.location,
   }
+}
+
+function toFacilityCards(resources: SportsFacility[]): FacilityCard[] {
+  const resourcesBySlug = new Map(resources.map((resource) => [resource.slug, resource]))
+  const facilities: FacilityCard[] = []
+  const appendResource = (slug: string, name: string, sportTypes?: string[]) => {
+    const resource = resourcesBySlug.get(slug)
+    if (!resource) return
+    const card = toFacilityCard(resource)
+    card.name = name
+    if (sportTypes) {
+      card.sportTypes = sportTypes
+      card.description = sportTypes.map((sport) => SPORT_LABELS[sport] ?? sport).join(', ')
+    }
+    facilities.push(card)
+  }
+
+  appendResource('lapangan-f1', 'Lapang F1')
+
+  const f2 = resourcesBySlug.get('lapangan-f2')
+  let footballCard: FacilityCard | undefined
+  if (f2) {
+    const selectableSports = f2.sportTypes.filter((sport) => sport !== 'other' && sport !== 'sepakbola')
+    appendResource('lapangan-f2', 'Lapang F2', selectableSports)
+    if (f2.sportTypes.includes('sepakbola')) {
+      footballCard = toFacilityCard(f2)
+      footballCard.key = `${f2.id}-sepakbola`
+      footballCard.name = 'Lapang Sepakbola'
+      footballCard.description = 'Sepak bola di Lapang F2'
+      footballCard.sportTypes = ['sepakbola']
+    }
+  }
+
+  const appendTableRoom = (slugPrefix: 'biliard' | 'tenis-meja', name: string, sportType: string, icon: 'biliard' | 'tenismeja') => {
+    const tables = resources
+      .filter((resource) => resource.slug.startsWith(`${slugPrefix}-`))
+      .sort((left, right) => left.slug.localeCompare(right.slug, 'id'))
+    const firstTable = tables[0]
+    if (!firstTable) return
+
+    const tableNumber = (slug: string, index: number) => slug.match(/-(\d+)$/)?.[1] ?? String(index + 1)
+    const room = toFacilityCard(firstTable)
+    room.name = name
+    room.description = `${tables.length} meja tersedia`
+    room.sportTypes = [sportType]
+    room.selectionTitle = 'Pilih Meja'
+    room.bookingOptions = tables.map((table, index) => {
+      const number = tableNumber(table.slug, index)
+      return {
+        id: `meja-${number}`,
+        label: `Meja ${number}`,
+        icon,
+        resourceId: table.id,
+        sportType,
+      }
+    })
+    facilities.push(room)
+  }
+
+  appendTableRoom('biliard', 'Ruang Billiard', 'billiard', 'biliard')
+  appendTableRoom('tenis-meja', 'Ruang Tenis Meja', 'tennis', 'tenismeja')
+  if (footballCard) facilities.push(footballCard)
+
+  return facilities
 }
 
 export default HomePage

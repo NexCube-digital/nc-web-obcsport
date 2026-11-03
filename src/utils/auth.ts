@@ -9,6 +9,7 @@ export interface AuthTokens {
   accessToken: string
   refreshToken: string
   expiresIn: number
+  sessionExpiresAt: string
 }
 
 const AUTH_STORAGE_KEY = 'obc-sport-user'
@@ -31,11 +32,18 @@ function readStoredValue<T>(key: string): T | null {
 }
 
 export function getStoredUser(): AuthUser | null {
+  if (!getStoredTokens()) return null
   return readStoredValue<AuthUser>(AUTH_STORAGE_KEY)
 }
 
 export function getStoredTokens(): AuthTokens | null {
-  return readStoredValue<AuthTokens>(TOKEN_STORAGE_KEY)
+  const tokens = readStoredValue<AuthTokens>(TOKEN_STORAGE_KEY)
+  const sessionExpiresAt = Date.parse(tokens?.sessionExpiresAt ?? '')
+  if (!tokens || !Number.isFinite(sessionExpiresAt) || sessionExpiresAt <= Date.now()) {
+    if (tokens) clearUser()
+    return null
+  }
+  return tokens
 }
 
 export function getStoredAccessToken(): string | null {

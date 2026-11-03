@@ -1,6 +1,6 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { CircleCheck, Eye, EyeOff, House } from 'lucide-react'
+import { CircleCheck, Eye, EyeOff, House, X } from 'lucide-react'
 import { toast } from 'sonner'
 import logo from '../../assets/logo/unit bisnis/LOGO OBC SPORT CENTER.png'
 import { useIsMobile } from '../../hooks/useIsMobile'
@@ -57,6 +57,27 @@ const BENEFITS: string[] = [
   'Tracking Sesi Akademi & Modul Pelatihan',
 ]
 
+const REGISTRATION_POLICIES = [
+  {
+    title: 'Syarat dan Ketentuan',
+    items: [
+      'Informasi akun yang Anda berikan harus benar dan terbaru. Anda bertanggung jawab menjaga kerahasiaan kata sandi dan aktivitas pada akun Anda.',
+      'Ketersediaan lapangan mengikuti jadwal yang ditampilkan. Pemesanan dianggap berhasil setelah status transaksi menunjukkan berhasil di aplikasi.',
+      'Gunakan fasilitas sesuai jadwal, aturan lokasi, dan petunjuk keselamatan yang berlaku. Perubahan atau pembatalan mengikuti informasi yang ditampilkan pada proses pemesanan.',
+      'Jangan menggunakan akun atau layanan untuk mengganggu pengguna lain, merusak fasilitas, atau melakukan aktivitas yang melanggar hukum.',
+    ],
+  },
+  {
+    title: 'Kebijakan Privasi',
+    items: [
+      'OBC Sport menggunakan nama, email, dan nomor telepon yang Anda masukkan untuk membuat dan mengelola akun, memproses pemesanan, serta menyampaikan informasi layanan.',
+      'Informasi akun tidak ditampilkan sebagai informasi publik. Data hanya digunakan untuk menjalankan layanan dan komunikasi yang berkaitan dengan akun atau pemesanan Anda.',
+      'Anda dapat menghubungi admin OBC Sport untuk meminta bantuan terkait informasi akun. Jangan membagikan kata sandi atau kode keamanan kepada siapa pun.',
+      'Dengan melanjutkan pendaftaran, Anda menyatakan telah membaca syarat layanan dan pemberitahuan penggunaan data di atas.',
+    ],
+  },
+]
+
 /* Desktop: padding input fluid mengikuti tinggi layar */
 const INPUT_CLASS =
   'w-full rounded-lg border border-[#D4D4D4] bg-[#FDFCF7] px-3 py-[clamp(6px,1.1vh,10px)] text-sm placeholder:text-[#343133] focus:outline-none focus:border-[#404F14]'
@@ -77,9 +98,51 @@ function Register() {
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [agreed, setAgreed] = useState(false)
+  const [isPolicyModalOpen, setIsPolicyModalOpen] = useState(false)
+  const [hasReadPolicy, setHasReadPolicy] = useState(false)
+  const [policyAccepted, setPolicyAccepted] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const policyContentRef = useRef<HTMLDivElement>(null)
   const navigate = useNavigate()
   const isMobile = useIsMobile()
+
+  useEffect(() => {
+    if (!isPolicyModalOpen) return
+    const previousOverflow = document.body.style.overflow
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setIsPolicyModalOpen(false)
+    }
+    document.body.style.overflow = 'hidden'
+    window.addEventListener('keydown', handleKeyDown)
+    return () => {
+      document.body.style.overflow = previousOverflow
+      window.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [isPolicyModalOpen])
+
+  const openPolicyModal = () => {
+    setHasReadPolicy(false)
+    setIsPolicyModalOpen(true)
+  }
+
+  const handleAgreementChange = (checked: boolean) => {
+    if (!checked) {
+      setAgreed(false)
+      setPolicyAccepted(false)
+      return
+    }
+    if (!policyAccepted) {
+      openPolicyModal()
+      return
+    }
+    setAgreed(true)
+  }
+
+  const acceptPolicies = () => {
+    setPolicyAccepted(true)
+    setAgreed(true)
+    setIsPolicyModalOpen(false)
+  }
 
   const submitRegistration = async (e: React.FormEvent, includePhone: boolean, requireAgreement: boolean) => {
     e.preventDefault()
@@ -126,10 +189,15 @@ function Register() {
   }
 
   const handleSubmitMobile = (e: React.FormEvent<HTMLFormElement>) => {
-    void submitRegistration(e, false, false)
+  void submitRegistration(e, false, true)
   }
 
   const handleGoogleLogin = () => {
+  if (!policyAccepted) {
+    openPolicyModal()
+    return
+  }
+
     if (typeof window !== 'undefined' && (window as any).google?.accounts?.id) {
       const google = (window as any).google
       const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || ''
@@ -165,15 +233,6 @@ function Register() {
       {isMobile && (
         <ScrollReveal className="min-h-screen">
           <div className="flex min-h-screen flex-col justify-center bg-[#FDFCF7] px-6 py-8 font-heading text-[#343133]">
-            <Link
-              to="/"
-              aria-label="Kembali ke Home"
-              className="inline-flex w-fit items-center gap-1.5 rounded-lg px-2 py-1.5 text-sm font-semibold text-[#404F14] transition-colors hover:bg-[#E8EDE3]"
-            >
-              <House size={17} aria-hidden="true" />
-              Home
-            </Link>
-
             <div className="mt-4 flex items-center justify-center gap-3">
               <img
                 src={logo}
@@ -194,6 +253,10 @@ function Register() {
             </p>
 
             <form onSubmit={handleSubmitMobile} className="mt-6 space-y-3">
+              <Link to="/" aria-label="Kembali ke Home" className="-mt-4 ml-auto flex w-fit items-center gap-1.5 rounded-lg px-2 py-1.5 text-sm font-semibold text-[#404F14] transition-colors hover:bg-[#E8EDE3]">
+                <House size={17} aria-hidden="true" />
+                Home
+              </Link>
               <div>
                 <label htmlFor="m-name" className={M_LABEL_CLASS}>
                   Nama Lengkap
@@ -274,6 +337,20 @@ function Register() {
                 </div>
               </div>
 
+              <div className="pt-1">
+                <label htmlFor="m-agreed" className="flex items-start gap-2 text-xs leading-5 text-[#343133]">
+                  <input
+                    id="m-agreed"
+                    type="checkbox"
+                    checked={agreed}
+                    onChange={(event) => handleAgreementChange(event.target.checked)}
+                    disabled={isSubmitting}
+                    className="mt-1 h-4 w-4 shrink-0 accent-[#404F14]"
+                  />
+                  <span>Saya menyetujui Syarat dan Ketentuan serta Kebijakan Privasi OBC Sport Center.</span>
+                </label>
+              </div>
+
               <button
                 type="submit"
                 disabled={isSubmitting}
@@ -314,17 +391,6 @@ function Register() {
       {/* ===================== DESKTOP / TABLET (>= md) ===================== */}
       {!isMobile && (
         <div className="flex h-[100dvh] flex-col overflow-hidden bg-white font-body text-[#343133]">
-          <header className="mx-auto w-full max-w-[1400px] shrink-0 px-8 pt-[clamp(8px,1.5vh,20px)] md:px-12 lg:px-8">
-            <Link
-              to="/"
-              aria-label="Kembali ke Home"
-              className="-ml-2.5 inline-flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-sm font-semibold leading-none text-[#404F14] transition-colors hover:bg-[#F5FAF3]"
-            >
-              <House size={18} className="shrink-0" aria-hidden="true" />
-              <span>Home</span>
-            </Link>
-          </header>
-
           <main className="min-h-0 flex-1">
             <section className="mx-auto flex h-full w-full max-w-[1400px] flex-col gap-6 px-8 pb-6 pt-2 md:px-12 lg:grid lg:grid-cols-[1fr_clamp(460px,36vw,560px)] lg:items-center lg:gap-12 lg:px-8">
               {/* Kolom Kiri */}
@@ -351,9 +417,15 @@ function Register() {
               {/* Kolom Kanan: Kartu Form */}
               <ScrollReveal delay={120}>
                 <div className="mx-auto w-full max-w-[520px] rounded-2xl border border-[#D4D4D4] bg-white p-6 shadow-[0_4px_20px_rgba(0,0,0,0.08)]">
-                  <h2 className="font-heading text-xl font-bold text-[#343133]">
-                    Buat Akun OBC
-                  </h2>
+                  <div className="flex items-center justify-between gap-3">
+                    <h2 className="font-heading text-xl font-bold text-[#343133]">
+                      Buat Akun OBC
+                    </h2>
+                    <Link to="/" aria-label="Kembali ke Home" className="flex shrink-0 items-center gap-2 rounded-lg px-2.5 py-1.5 text-sm font-semibold leading-none text-[#404F14] transition-colors hover:bg-[#F5FAF3]">
+                      <House size={18} className="shrink-0" aria-hidden="true" />
+                      <span>Home</span>
+                    </Link>
+                  </div>
                   <p className="mt-0.5 text-xs text-[#6F6B6E]">
                     Lengkapi formulir di bawah ini untuk memulai
                   </p>
@@ -459,7 +531,7 @@ function Register() {
                       <input
                         type="checkbox"
                         checked={agreed}
-                        onChange={(e) => setAgreed(e.target.checked)}
+                        onChange={(e) => handleAgreementChange(e.target.checked)}
                         disabled={isSubmitting}
                         className="mt-0.5 h-4 w-4 shrink-0 rounded border-[#404F14] accent-[#404F14] cursor-pointer"
                       />
@@ -467,7 +539,6 @@ function Register() {
                         Saya menyetujui Syarat dan Ketentuan serta Kebijakan Privasi OBC Sport Center.
                       </span>
                     </label>
-
                     <button
                       type="submit"
                       disabled={isSubmitting}
@@ -497,6 +568,52 @@ function Register() {
               </ScrollReveal>
             </section>
           </main>
+        </div>
+      )}
+
+      {isPolicyModalOpen && (
+        <div
+          className="fixed inset-0 z-[100] grid place-items-center bg-black/50 p-4"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) setIsPolicyModalOpen(false)
+          }}
+        >
+          <section role="dialog" aria-modal="true" aria-labelledby="registration-policy-title" className="flex max-h-[90dvh] w-full max-w-2xl flex-col overflow-hidden rounded-xl bg-white shadow-2xl">
+            <header className="flex items-start justify-between gap-4 border-b border-[#E5E5E5] px-5 py-4 sm:px-6">
+              <div>
+                <h2 id="registration-policy-title" className="font-heading text-lg font-bold text-[#343133]">Syarat dan Kebijakan Privasi</h2>
+                <p className="mt-1 text-sm text-[#6F6B6E]">Gulir sampai akhir untuk melanjutkan persetujuan.</p>
+              </div>
+              <button type="button" onClick={() => setIsPolicyModalOpen(false)} aria-label="Tutup" className="grid h-9 w-9 shrink-0 place-items-center rounded-lg border border-[#D4D4D4] text-[#343133] hover:bg-[#FDFCF7]">
+                <X size={18} aria-hidden="true" />
+              </button>
+            </header>
+            <div
+              ref={policyContentRef}
+              onScroll={(event) => {
+                const element = event.currentTarget
+                if (element.scrollTop + element.clientHeight >= element.scrollHeight - 8) setHasReadPolicy(true)
+              }}
+              className="min-h-0 max-h-[min(60dvh,560px)] flex-1 space-y-6 overflow-y-auto px-5 py-5 text-sm leading-6 text-[#343133] sm:px-6"
+            >
+              {REGISTRATION_POLICIES.map((section) => (
+                <section key={section.title}>
+                  <h3 className="font-heading text-base font-bold text-[#265021]">{section.title}</h3>
+                  <ol className="mt-3 list-decimal space-y-3 pl-5">
+                    {section.items.map((item) => <li key={item}>{item}</li>)}
+                  </ol>
+                </section>
+              ))}
+            </div>
+            <footer className="flex flex-col-reverse gap-2 border-t border-[#E5E5E5] px-5 py-4 sm:flex-row sm:justify-end sm:px-6">
+              <button type="button" onClick={() => setIsPolicyModalOpen(false)} className="h-10 rounded-lg border border-[#D4D4D4] px-4 text-sm font-semibold text-[#343133] hover:bg-[#FDFCF7]">
+                Tutup
+              </button>
+              <button type="button" onClick={acceptPolicies} disabled={!hasReadPolicy} className="h-10 rounded-lg bg-[#CDF178] px-4 text-sm font-bold text-[#404F14] hover:bg-[#9AAD3E] disabled:cursor-not-allowed disabled:opacity-50">
+                {hasReadPolicy ? 'Saya membaca dan setuju' : 'Gulir sampai akhir untuk setuju'}
+              </button>
+            </footer>
+          </section>
         </div>
       )}
     </>

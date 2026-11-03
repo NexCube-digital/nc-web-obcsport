@@ -9,11 +9,11 @@ import DeferredFooter from '../../components/layout/DeferredFooter'
 import ScrollReveal from '../../components/animation/ScrollReveal'
 import PendingOrderModal from '../../components/ui/PendingOrderModal'
 import { useIsMobile } from '../../hooks/useIsMobile'
-import { checkoutCart, createBooking, previewBookingPrice, type BookingPrice, type PaymentChannel } from '../../services/bookingService'
+import { checkoutCart, createBooking, getBookingDetails, previewBookingPrice, type BookingPrice, type PaymentChannel } from '../../services/bookingService'
 import type { CartItem } from '../../components/ui/CartModal'
 import { cartService, syncBackendCart } from '../../services/cart'
 import { getApiErrorMessage } from '../../services/apiService'
-import { isDirectChannel, parseMidtransCharge, type DirectPaymentInfo } from '../../services/paymentService'
+import { isDirectChannel, parseMidtransCharge, parsePersistedDirectPayment, type DirectPaymentInfo } from '../../services/paymentService'
 
 /* -------------------------------------------------------------------------
    Tipe data
@@ -27,6 +27,28 @@ interface PendingOrderModalData {
   amount: number
   paymentInfo?: DirectPaymentInfo | null
   paymentUrl?: string
+  date: string
+  time: string
+  paymentMethod: string
+  bookings: Array<{ id: string; name: string; date: string; time: string }>
+  expiresAt: string
+}
+
+const PENDING_ORDER_STORAGE_KEY = 'obc-pending-payment-state'
+const PENDING_ORDER_MAX_AGE_MS = 3 * 60 * 1000
+const PAID_STATUSES = ['paid', 'settlement', 'capture', 'fully_paid', 'completed']
+const FAILED_STATUSES = ['cancelled', 'expired', 'refunded', 'deny', 'failure', 'failed', 'cancel']
+
+function readPendingOrder(): PendingOrderModalData | null {
+  try {
+    const stored = sessionStorage.getItem(PENDING_ORDER_STORAGE_KEY)
+    if (!stored) return null
+    const pending = JSON.parse(stored) as PendingOrderModalData
+    if (!pending.bookingId || !pending.expiresAt || !Array.isArray(pending.bookings)) return null
+    return pending
+  } catch {
+    return null
+  }
 }
 
 // Metode pembayaran khusus tampilan mobile (lebih lengkap sesuai desain)
@@ -196,6 +218,12 @@ function PaymentPage() {
   const navigate = useNavigate()
   const location = useLocation()
   const isMobile = useIsMobile()
+  const pendingParams = useMemo(() => new URLSearchParams(location.search), [location.search])
+  const pendingBookingId = pendingParams.get('pendingBookingId') ?? ''
+  const pendingBookingIds = useMemo(
+    () => pendingParams.get('pendingBookingIds')?.split(',').filter(Boolean) ?? [],
+    [pendingParams],
+  )
   const state = useMemo(() => {
     const routeState = location.state as CheckoutState | null
     if (routeState) return routeState
@@ -218,12 +246,12 @@ function PaymentPage() {
   const [mobileMethod, setMobileMethod] = useState<MobileMethodId | null>(null)
   const [selectedExtras] = useState<string[]>(['raket'])
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [pendingOrderModal, setPendingOrderModal] = useState<PendingOrderModalData | null>(null)
+  const [pendingOrderModal, setPendingOrderModal] = useState<PendingOrderModalData | null>(readPendingOrder)
   const [pricePreview, setPricePreview] = useState<Pick<BookingPrice, 'basePrice' | 'discountAmount' | 'adminFee' | 'totalPrice'> | null>(state.price ?? null)
 
   useEffect(() => {
-    if (!state.resourceId || !state.bookingDate) navigate('/home', { replace: true })
-  }, [navigate, state.bookingDate, state.resourceId])
+    if (!pendingOrderModal && !pendingBookingId && (!state.resourceId || !state.bookingDate)) navigate('/home', { replace: true })
+  }, [navigate, pendingBookingId, pendingOrderModal, state.bookingDate, state.resourceId])
 
   const selectedChannel: PaymentChannel | null = isMobile ? mobileMethod : method
   const selectedMethodLabel = [...PAYMENT_GROUPS, ...MOBILE_METHOD_GROUPS]
@@ -256,6 +284,7 @@ function PaymentPage() {
       endTime: item.endTime!,
       sportType: item.sportType!,
       ...(paymentMethod ? { paymentMethod } : {}),
+      ...(selectedChannel ? { paymentChannel: selectedChannel } : {}),
       bookingType: 'regular',
     })))
       .then((prices) => {
@@ -275,7 +304,7 @@ function PaymentPage() {
         if (active) toast.error(getApiErrorMessage(error, 'Rincian harga tidak dapat diperbarui.'))
       })
     return () => { active = false }
-  }, [cartItems, cartItemsKey, isCartCheckout, paymentMethod, state.bookingDate, state.endTime, state.resourceId, state.sportType, state.time])
+  }, [cartItems, cartItemsKey, isCartCheckout, paymentMethod, selectedChannel, state.bookingDate, state.endTime, state.resourceId, state.sportType, state.time])
 
   /* ---------- Turunan data pesanan ---------- */
   const date = state.date ?? DEFAULT_DATE
@@ -291,6 +320,106 @@ function PaymentPage() {
         time: `${item.startTime ?? '-'} - ${item.endTime ?? '-'}`,
       }))
     : [{ id: state.resourceId ?? 'booking', name: facilityName, date, time: `${startTime} - ${endTime}` }]
+
+  useEffect(() => {
+    if (!pendingOrderModal) return
+
+    let active = true
+    const expiresAt = new Date(pendingOrderModal.expiresAt).getTime()
+    if (!Number.isFinite(expiresAt) || expiresAt <= Date.now()) {
+      sessionStorage.removeItem(PENDING_ORDER_STORAGE_KEY)
+      navigate('/home', { replace: true })
+      return
+    }
+
+    const timeout = window.setTimeout(() => {
+      sessionStorage.removeItem(PENDING_ORDER_STORAGE_KEY)
+      navigate('/home', { replace: true })
+    }, expiresAt - Date.now())
+
+    Promise.all((pendingOrderModal.bookingIds ?? [pendingOrderModal.bookingId]).map((id) => getBookingDetails(id)))
+      .then((details) => {
+        if (!active) return
+        const allPaid = details.every((booking) => PAID_STATUSES.includes(booking.status) || PAID_STATUSES.includes(booking.payments[0]?.status ?? ''))
+        if (allPaid) {
+          sessionStorage.removeItem(PENDING_ORDER_STORAGE_KEY)
+          navigate(`/success-order?bookingId=${encodeURIComponent(pendingOrderModal.bookingId)}&bookingIds=${encodeURIComponent((pendingOrderModal.bookingIds ?? [pendingOrderModal.bookingId]).join(','))}`, { replace: true })
+          return
+        }
+        const hasFailed = details.some((booking) => FAILED_STATUSES.includes(booking.status) || FAILED_STATUSES.includes(booking.payments[0]?.status ?? ''))
+        if (hasFailed) {
+          sessionStorage.removeItem(PENDING_ORDER_STORAGE_KEY)
+          navigate(`/failed-order?bookingId=${encodeURIComponent(pendingOrderModal.bookingId)}`, { replace: true })
+        }
+      })
+      .catch(() => undefined)
+
+    return () => {
+      active = false
+      window.clearTimeout(timeout)
+    }
+  }, [navigate, pendingOrderModal])
+
+  useEffect(() => {
+    if (!pendingBookingId || pendingOrderModal) return
+
+    let active = true
+    const bookingIds = pendingBookingIds.length ? pendingBookingIds : [pendingBookingId]
+    Promise.all(bookingIds.map((id) => getBookingDetails(id)))
+      .then((details) => {
+        if (!active) return
+        const allPaid = details.every((booking) => PAID_STATUSES.includes(booking.status) || PAID_STATUSES.includes(booking.payments[0]?.status ?? ''))
+        if (allPaid) {
+          sessionStorage.removeItem(PENDING_ORDER_STORAGE_KEY)
+          navigate(`/success-order?bookingId=${encodeURIComponent(pendingBookingId)}&bookingIds=${encodeURIComponent(bookingIds.join(','))}`, { replace: true })
+          return
+        }
+        const hasFailed = details.some((booking) => FAILED_STATUSES.includes(booking.status) || FAILED_STATUSES.includes(booking.payments[0]?.status ?? ''))
+        if (hasFailed) {
+          sessionStorage.removeItem(PENDING_ORDER_STORAGE_KEY)
+          navigate(`/failed-order?bookingId=${encodeURIComponent(pendingBookingId)}`, { replace: true })
+          return
+        }
+
+        const firstBooking = details[0]
+        const firstPayment = firstBooking?.payments[0]
+        if (!firstBooking) throw new Error('Booking tidak ditemukan.')
+        const paymentCreatedAt = firstPayment?.createdAt ? new Date(firstPayment.createdAt).getTime() : Number.NaN
+        const serverExpiry = firstBooking.lockedUntil ?? firstPayment?.expiredAt
+        const serverExpiryTime = serverExpiry ? new Date(serverExpiry).getTime() : Number.NaN
+        const threeMinuteExpiry = Number.isFinite(paymentCreatedAt)
+          ? paymentCreatedAt + PENDING_ORDER_MAX_AGE_MS
+          : Date.now() + PENDING_ORDER_MAX_AGE_MS
+        const expiresAt = new Date(Number.isFinite(serverExpiryTime)
+          ? Math.min(serverExpiryTime, threeMinuteExpiry)
+          : threeMinuteExpiry).toISOString()
+        const modalData: PendingOrderModalData = {
+          bookingId: pendingBookingId,
+          bookingIds,
+          transactionId: firstPayment?.midtransOrderId ?? pendingBookingId,
+          amount: firstPayment?.amount ?? firstBooking.pricing.totalPrice,
+          paymentInfo: parsePersistedDirectPayment(firstPayment?.paymentDetails),
+          paymentUrl: firstPayment?.redirectUrl ?? undefined,
+          date: firstBooking.bookingDate,
+          time: `${firstBooking.startTime} - ${firstBooking.endTime}`,
+          paymentMethod: firstPayment?.method ?? firstPayment?.paymentType ?? 'Pembayaran Midtrans',
+          bookings: details.map((booking) => ({
+            id: booking.id,
+            name: booking.resource.name,
+            date: booking.bookingDate,
+            time: `${booking.startTime} - ${booking.endTime}`,
+          })),
+          expiresAt,
+        }
+        sessionStorage.setItem(PENDING_ORDER_STORAGE_KEY, JSON.stringify(modalData))
+        setPendingOrderModal(modalData)
+      })
+      .catch(() => {
+        if (active) navigate('/home', { replace: true })
+      })
+
+    return () => { active = false }
+  }, [navigate, pendingBookingId, pendingBookingIds, pendingOrderModal])
   const subtotal = pricePreview?.basePrice ?? state.total ?? DEFAULT_SUBTOTAL
 
   const hours = Math.max((state.durationMinutes ?? (hourOf(endTime) - hourOf(startTime)) * 60) / 60, 1)
@@ -307,6 +436,30 @@ function PaymentPage() {
     0,
   )
   const mobileTotal = selectedChannel ? subtotal + serviceFee + extrasTotal : subtotal + extrasTotal
+
+  const showPendingOrderModal = (pending: Omit<PendingOrderModalData, 'date' | 'time' | 'paymentMethod' | 'bookings' | 'expiresAt'>, holdExpiresAt?: string | null) => {
+    const fallbackExpiry = Date.now() + PENDING_ORDER_MAX_AGE_MS
+    const holdExpiry = holdExpiresAt ? new Date(holdExpiresAt).getTime() : Number.NaN
+    const modalData: PendingOrderModalData = {
+      ...pending,
+      date,
+      time: `${startTime} - ${endTime}`,
+      paymentMethod: selectedMethodLabel,
+      bookings: pendingBookings,
+      expiresAt: new Date(Number.isFinite(holdExpiry) ? Math.min(holdExpiry, fallbackExpiry) : fallbackExpiry).toISOString(),
+    }
+    try {
+      sessionStorage.setItem(PENDING_ORDER_STORAGE_KEY, JSON.stringify(modalData))
+    } catch {
+      // The active modal still works if browser storage is unavailable.
+    }
+    const params = new URLSearchParams({
+      pendingBookingId: modalData.bookingId,
+      pendingBookingIds: (modalData.bookingIds ?? [modalData.bookingId]).join(','),
+    })
+    navigate(`/payment?${params.toString()}`, { replace: true, state: location.state })
+    setPendingOrderModal(modalData)
+  }
 
   /* ---------- Handler ---------- */
   const handlePay = async () => {
@@ -385,13 +538,13 @@ function PaymentPage() {
       if (payment && 'chargeResponse' in payment && isDirectChannel(selectedChannel)) {
         const bookingId = booking.bookingId
         const bookingIds = 'bookingIds' in booking ? booking.bookingIds : [booking.bookingId]
-        setPendingOrderModal({
+        showPendingOrderModal({
           bookingId,
           bookingIds,
           transactionId: payment.chargeResponse.order_id ?? bookingId,
           amount: Number(payment.chargeResponse.gross_amount) || total,
           paymentInfo: parseMidtransCharge(payment.chargeResponse, selectedChannel),
-        })
+        }, booking.holdExpiresAt)
         setIsSubmitting(false)
         return
       }
@@ -410,18 +563,18 @@ function PaymentPage() {
         const bookingId = booking.bookingId
         const bookingIds = 'bookingIds' in booking ? booking.bookingIds : [booking.bookingId]
         if (selectedChannel === 'ovo') {
-          setPendingOrderModal({
+          showPendingOrderModal({
             bookingId,
             bookingIds,
             transactionId: bookingId,
             amount: total,
             paymentUrl: booking.payment.redirectUrl,
-          })
+          }, booking.holdExpiresAt)
           setIsSubmitting(false)
           return
         }
 
-        setPendingOrderModal({ bookingId, bookingIds, transactionId: bookingId, amount: total })
+        showPendingOrderModal({ bookingId, bookingIds, transactionId: bookingId, amount: total }, booking.holdExpiresAt)
         setIsSubmitting(false)
         return
       }
@@ -443,15 +596,18 @@ function PaymentPage() {
   if (pendingOrderModal) {
     return (
       <PendingOrderModal
-        date={date}
-        time={`${startTime} - ${endTime}`}
-        paymentMethod={selectedMethodLabel}
+        date={pendingOrderModal.date}
+        time={pendingOrderModal.time}
+        paymentMethod={pendingOrderModal.paymentMethod}
         amount={pendingOrderModal.amount}
         transactionId={pendingOrderModal.transactionId}
         paymentInfo={pendingOrderModal.paymentInfo}
         paymentUrl={pendingOrderModal.paymentUrl}
-        bookings={pendingBookings}
-        onReturnHome={() => navigate('/home')}
+        bookings={pendingOrderModal.bookings}
+        onReturnHome={() => {
+          sessionStorage.removeItem(PENDING_ORDER_STORAGE_KEY)
+          navigate('/home')
+        }}
         onOpenOrderStatus={() => {
           const bookingId = pendingOrderModal.bookingId
           const bookingIds = pendingOrderModal.bookingIds ?? [bookingId]
@@ -464,6 +620,17 @@ function PaymentPage() {
           if (pendingOrderModal.paymentUrl) window.location.assign(pendingOrderModal.paymentUrl)
         }}
       />
+    )
+  }
+
+  if (pendingBookingId) {
+    return (
+      <main className="grid h-[100dvh] w-screen place-items-center bg-[#F4F6F0]" role="status" aria-live="polite">
+        <div className="text-center">
+          <span className="mx-auto block h-9 w-9 animate-spin rounded-full border-4 border-[#DCE5D3] border-t-[#354B24]" />
+          <p className="mt-4 font-heading text-sm font-semibold text-[#354B24]">Memuat status pembayaran...</p>
+        </div>
+      </main>
     )
   }
 

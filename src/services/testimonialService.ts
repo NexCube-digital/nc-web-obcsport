@@ -14,6 +14,18 @@ export interface ResourceReview {
 	customer: { id: string; name: string; avatarUrl: string | null }
 }
 
+export interface PublicTestimonial {
+	id: string
+	source: 'compro' | 'sport'
+	name: string
+	company: string | null
+	text: string
+	rating: number
+	avatar: string | null
+	createdAt: string
+	resourceId: string | null
+}
+
 export interface ResourceReviews {
 	reviews: ResourceReview[]
 	pagination: { total: number; page: number; limit: number; totalPages: number }
@@ -30,6 +42,13 @@ export interface CreateReviewInput {
 	category?: string
 	bookingId?: string
 	photos?: string[]
+}
+
+export async function getPublishedTestimonials(): Promise<PublicTestimonial[]> {
+	const response = await api.get<ApiSuccess<PublicTestimonial[]>>('/public/testimonials', {
+		params: { source: 'sport' },
+	})
+	return response.data.data
 }
 
 export async function getResourceReviews(

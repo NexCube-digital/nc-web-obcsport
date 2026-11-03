@@ -134,6 +134,7 @@ export async function previewBookingPrice(input: {
 	endTime: string
 	sportType: string
 	paymentMethod?: 'bank_transfer' | 'credit_card' | 'ewallet' | 'convenience_store' | 'qris' | 'other'
+	 paymentChannel?: PaymentChannel
 	bookingType?: 'regular' | 'membership' | 'event'
 	membershipSessionId?: string
 	packageId?: string

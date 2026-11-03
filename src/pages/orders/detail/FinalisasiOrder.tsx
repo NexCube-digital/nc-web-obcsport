@@ -1,8 +1,5 @@
 import { useEffect, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
-import NavbarDashboard from '../../../components/layout/Navbar'
-import MobileHeader from '../../../components/layout/MobileHeader'
-import DeferredFooter from '../../../components/layout/DeferredFooter'
 import PaymentInstructionCard, { type PaymentBookingItem } from '../payment/PaymentInstructionCard'
 import { getBookingDetails, type BookingDetails } from '../../../services/bookingService'
 import { getMembershipDetail } from '../../../services/membershipService'
@@ -104,8 +101,6 @@ function FinalisasiOrder() {
 
   return (
     <div className="flex min-h-screen flex-col bg-white font-body text-[#343133]">
-      <div className="hidden md:block"><NavbarDashboard showDesktopNavigation={false} showMobileHeader={false} /></div>
-      <div className="md:hidden"><MobileHeader variant="title" title="Selesaikan Pembayaran" showBottomNav={false} /></div>
       <main className="mx-auto w-full max-w-[560px] flex-1 px-4 pt-6 pb-16">
         {errorMessage && <p role="alert" className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{errorMessage}</p>}
         {!directInfo && !errorMessage && <p role="status" className="py-10 text-center text-sm text-[#6F6B6E]">Memuat instruksi pembayaran...</p>}
@@ -118,7 +113,6 @@ function FinalisasiOrder() {
           />
         )}
       </main>
-      <DeferredFooter />
     </div>
   )
 }

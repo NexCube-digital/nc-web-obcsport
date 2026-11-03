@@ -1,7 +1,8 @@
-import lapangF1 from '../../assets/layanan/Lapang F1.png'
-import futsalF2 from '../../assets/layanan/Futsal F2.png'
-import lapangF2 from '../../assets/layanan/Lapang F2.png'
-import mejaBilliard from '../../assets/layanan/Meja Billiard.png'
+import lapangF1 from '../../assets/images/lapang/Lapang F1.webp'
+import futsalF2 from '../../assets/images/lapang/academy2.webp'
+import sepakbola from '../../assets/images/lapang/lapang-bola.webp'
+import lapangF2 from '../../assets/images/lapang/Lapang F2.webp'
+import mejaBilliard from '../../assets/images/lapang/Meja Billiard.webp'
 
 const COLLAGE_IMG =
 	'w-full rounded-lg sm:rounded-xl object-cover shadow-[0_2px_10px_rgba(0,0,0,0.15)] transition duration-300 ease-out hover:scale-[1.04] hover:shadow-[0_10px_24px_rgba(0,0,0,0.22)]'
@@ -58,7 +59,7 @@ function Booking() {
 							className={`${COLLAGE_IMG} aspect-[193/194]`}
 						/>
 						<img
-							src={futsalF2}
+							src={sepakbola}
 							alt="Lapang sepak bola"
 							loading="lazy"
 							decoding="async"

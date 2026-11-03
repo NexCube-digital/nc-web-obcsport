@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import lapangF1 from '../../assets/layanan/Lapang F1.png'
-import futsalF2 from '../../assets/layanan/Futsal F2.png'
-import lapangF2 from '../../assets/layanan/Lapang F2.png'
-import mejaBilliard from '../../assets/layanan/Meja Billiard.png'
+import lapangF1 from '../../assets/images/lapang/Lapang F1.webp'
+import futsalF2 from '../../assets/images/lapang/academy2.webp'
+import lapangF2 from '../../assets/images/lapang/Lapang F2.webp'
+import mejaBilliard from '../../assets/images/lapang/Meja Billiard.webp'
 
 const HERO_IMAGES = [lapangF1, futsalF2, lapangF2, mejaBilliard]
 
@@ -92,7 +92,7 @@ function Hero() {
 				</div>
 			</section>
 
-			<section className="hidden border-y border-[#D4D4D4] bg-[#FDFCF7] md:flex md:min-h-[min(100svh,760px)] md:items-center">
+			<section className="hidden border-y border-[#D4D4D4] bg-[#FDFCF7] md:flex md:min-h-[min(760px,calc(100svh-100px))] md:items-center">
 				<div className="mx-auto grid max-w-[1248px] items-center gap-8 px-4 py-10 sm:px-6 sm:py-14 md:py-16 lg:grid-cols-2 lg:gap-16 lg:py-16">
 					<div className="text-center lg:text-left">
 						<span className="inline-block rounded-full bg-[#E8EDE3] px-3 py-1.5 font-heading text-[10px] font-bold tracking-wide text-[#404F14] sm:px-4 sm:py-2 sm:text-xs">

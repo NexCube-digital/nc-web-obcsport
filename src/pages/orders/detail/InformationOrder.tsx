@@ -1,9 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { CheckCircle2, Clock } from 'lucide-react'
-import NavbarDashboard from '../../../components/layout/Navbar'
-import MobileHeader from '../../../components/layout/MobileHeader'
-import DeferredFooter from '../../../components/layout/DeferredFooter'
 import ScrollReveal from '../../../components/animation/ScrollReveal'
 import { useIsMobile } from '../../../hooks/useIsMobile'
 import { cancelBooking, getBookingDetails, type BookingDetails } from '../../../services/bookingService'
@@ -305,11 +302,6 @@ function InformationOrder() {
   if (isPaid) {
     return (
       <div className="flex min-h-screen flex-col bg-white font-body text-[#343133]">
-        {isMobile ? (
-          <MobileHeader variant="title" title="Status Pembayaran" showBottomNav={false} />
-        ) : (
-          <NavbarDashboard showDesktopNavigation={false} showMobileHeader={false} />
-        )}
         <main className="mx-auto flex w-full max-w-[620px] flex-1 flex-col justify-center px-4 py-10">
           <section className="rounded-xl border border-[#DCE8D6] bg-[#F7FAF5] p-6 text-center md:p-10">
             <CheckCircle2 size={58} strokeWidth={1.8} className="mx-auto text-[#39712F]" aria-hidden="true" />
@@ -347,7 +339,6 @@ function InformationOrder() {
             Buka Riwayat Pesanan
           </button>
         </main>
-        {!isMobile && <DeferredFooter />}
       </div>
     )
   }
@@ -357,15 +348,7 @@ function InformationOrder() {
       {/* ===================================================================
           TAMPILAN MOBILE (< md): tanpa navbar & footer, sesuai desain
           =================================================================== */}
-      {isMobile && (
-        <MobileHeader
-          variant="title"
-          title="Status Pembayaran"
-          centerTitle
-          showBottomNav={false}
-        />
-      )}
-      {isMobile && <div className="fixed inset-x-0 bottom-0 top-14 flex min-h-0 flex-col overflow-hidden bg-white font-body text-[#343133]">
+      {isMobile && <div className="fixed inset-x-0 bottom-0 top-0 flex min-h-0 flex-col overflow-hidden bg-white font-body text-[#343133]">
         {/* Banner batas waktu */}
         <div
           role="timer"
@@ -461,8 +444,6 @@ function InformationOrder() {
           TAMPILAN DESKTOP (>= md): tampilan asli
           =================================================================== */}
       {!isMobile && <div className="min-h-screen flex flex-col bg-white font-body text-[#343133]">
-        <NavbarDashboard showDesktopNavigation={false} showMobileHeader={false} />
-
         <main className="mx-auto w-full max-w-[1248px] flex-1 px-6 pb-16 pt-6">
           <ScrollReveal className="w-full">
           <div className="text-center">
@@ -566,7 +547,6 @@ function InformationOrder() {
           </ScrollReveal>
         </main>
 
-        <DeferredFooter />
       </div>}
     </>
   )

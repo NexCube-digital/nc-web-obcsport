@@ -33,6 +33,7 @@ interface NavbarDashboardProps {
   profileImage?: string
   showDesktopNavigation?: boolean
   showMobileHeader?: boolean
+  showCart?: boolean
 }
 
 /* -------------------------------------------------------------------------
@@ -106,6 +107,7 @@ function Navbar({
   profileImage,
   showDesktopNavigation = true,
   showMobileHeader = true,
+  showCart = false,
 }: NavbarDashboardProps) {
   const location = useLocation()
   const navigate = useNavigate()
@@ -264,7 +266,7 @@ function Navbar({
             {/* Ikon notifikasi */}
             <NotificationDropdown />
 
-            {showDesktopNavigation && (
+            {(showDesktopNavigation || showCart) && (
               <button
                 type="button"
                 onClick={() => setIsCartOpen(true)}
