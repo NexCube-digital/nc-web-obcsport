@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { CalendarDays, ChevronDown, Clock, ShoppingCart } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import BookingCalendar from './BookingCalendar'
 import TimeSlotPicker from './TimeSlotPicker'
 
@@ -69,6 +70,7 @@ function MobileBookingSheet({
   totalPrice,
   maxSessionHours,
 }: MobileBookingSheetProps) {
+  const { t } = useTranslation()
   const barRef = useRef<HTMLDivElement>(null)
   const [barHeight, setBarHeight] = useState(DEFAULT_BAR_HEIGHT)
 
@@ -92,7 +94,7 @@ function MobileBookingSheet({
           <div className="fixed inset-0 z-30 bg-black/40" onClick={onClose} aria-hidden="true" />
           <div
             role="dialog"
-            aria-label="Pilih tanggal dan waktu bertanding"
+            aria-label={t('booking.chooseDateAndTime')}
             style={{
               bottom: barHeight,
               maxHeight: `calc(100dvh - ${barHeight}px - ${TOP_GAP}px)`,
@@ -102,7 +104,7 @@ function MobileBookingSheet({
             {/* Header tetap di atas, tidak ikut ter-scroll */}
             <div className="shrink-0 px-4 pt-5 pb-2">
               <h2 className="text-center font-heading text-base font-bold text-[#343133]">
-                {selectedDate ? 'Pilih Waktu Main' : 'Pilih Tanggal Main'}
+                {selectedDate ? t('booking.choosePlayingTimeShort') : t('booking.choosePlayingDate')}
               </h2>
 
               {selectedDate && (
@@ -113,7 +115,7 @@ function MobileBookingSheet({
                     onClick={onSearchOther}
                     className="shrink-0 cursor-pointer whitespace-nowrap py-1 text-xs font-heading font-bold leading-normal text-[#265021] underline underline-offset-2"
                   >
-                    Ubah tanggal
+                    {t('booking.updateDate')}
                   </button>
                 </div>
               )}
@@ -171,7 +173,7 @@ function MobileBookingSheet({
               <Clock size={16} />
             </span>
             <span className="min-w-0 truncate font-heading text-xs font-medium text-[#343133]">
-              Pilih Tanggal &amp; Waktu Booking
+              {t('booking.selectDateTime')}
             </span>
             <ChevronDown
               size={16}
@@ -184,21 +186,21 @@ function MobileBookingSheet({
           {isDateBooked ? (
             <>
               <div className="min-w-0">
-                <p className="text-[11px] text-[#6F6B6E]">Rencana Main</p>
-                <p className="truncate font-heading text-base font-bold text-[#E02424]">Lapangan Penuh</p>
+                <p className="text-[11px] text-[#6F6B6E]">{t('booking.playingPlan')}</p>
+                <p className="truncate font-heading text-base font-bold text-[#E02424]">{t('booking.courtFull')}</p>
               </div>
               <button
                 type="button"
                 onClick={onSearchOther}
                 className="h-11 shrink-0 whitespace-nowrap rounded-xl bg-[#E8302F] px-6 font-heading text-sm font-bold text-white active:bg-[#C41717] transition-colors cursor-pointer"
               >
-                Cari Lain
+                {t('booking.searchAgain')}
               </button>
             </>
           ) : (
             <>
               <div className="min-w-0 shrink-0">
-                <p className="text-[11px] text-[#6F6B6E]">Durasi: {durationLabel ?? `${sessionCount} jam`}</p>
+                <p className="text-[11px] text-[#6F6B6E]">{t('booking.duration')}: {durationLabel ?? t('booking.durationHours', { count: sessionCount })}</p>
                 <p className="font-heading text-base font-bold text-[#121212]">
                   {formatRupiah(totalPrice)}
                 </p>
@@ -209,12 +211,12 @@ function MobileBookingSheet({
                 disabled={isAvailabilityLoading}
                 className="h-11 min-w-0 flex-1 whitespace-nowrap rounded-xl bg-[#CDF178] px-3 font-heading text-sm font-bold text-[#404F14] active:bg-[#9AAD3E] transition-colors disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer"
               >
-                Pesan Sekarang
+                {t('booking.bookNow')}
               </button>
               <button
                 type="button"
                 onClick={onAddToCart}
-                aria-label="Tambah booking ke keranjang"
+                aria-label={t('booking.addToCart')}
                 disabled={isAvailabilityLoading}
                 className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-[#D4D4D4] bg-white text-[#404F14] transition-colors disabled:cursor-not-allowed disabled:opacity-50 active:bg-[#F1F4EA]"
               >

@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import NavbarDashboard from '../../components/layout/Navbar'
 import DeferredFooter from '../../components/layout/DeferredFooter'
 import DeferredSection from '../../components/layout/DeferredSection'
@@ -20,37 +21,14 @@ interface ReservationStep {
 // Font heading di desain terlihat seperti Montserrat, pastikan sudah di-load
 const FONT_MONTSERRAT = "font-['Montserrat',sans-serif]"
 
-const RESERVATION_STEPS: ReservationStep[] = [
-  {
-    id: 1,
-    title: 'Konsultasi Awal',
-    description:
-      'Diskusikan kebutuhan lapangan, tanggal, durasi, serta layanan tambahan (sound system, panggung, wasit resmi).',
-    maxWidth: 'max-w-[460px]',
-  },
-  {
-    id: 2,
-    title: 'Penerbitan Invoice & Penawaran',
-    description:
-      'Tim admin OBC akan menghitung estimasi biaya sesuai paket event khusus mabar korporat atau akademi.',
-    maxWidth: 'max-w-[300px]',
-  },
-  {
-    id: 3,
-    title: 'Uang Muka (DP) & Locking Slot',
-    description:
-      'Pembayaran DP minimal 50% untuk mengamankan slot agar tidak terisi oleh penyewa regular lainnya.',
-    maxWidth: 'max-w-[250px]',
-  },
-]
-
 // TODO: ganti dengan nomor WhatsApp PIC Event yang sebenarnya
 const PIC_WHATSAPP_NUMBER = '628123456789'
-const PIC_WHATSAPP_MESSAGE = 'Halo, saya ingin bertanya tentang sewa event di OBC Sport Center.'
 
 function OrderPage() {
+  const { t } = useTranslation()
+  const reservationSteps = t('event.steps', { returnObjects: true }) as ReservationStep[]
   const handleContactWhatsApp = () => {
-    const url = `https://wa.me/${PIC_WHATSAPP_NUMBER}?text=${encodeURIComponent(PIC_WHATSAPP_MESSAGE)}`
+    const url = `https://wa.me/${PIC_WHATSAPP_NUMBER}?text=${encodeURIComponent(t('event.whatsappMessage'))}`
     window.open(url, '_blank')
   }
 
@@ -63,11 +41,10 @@ function OrderPage() {
         {/* ================= Judul halaman ================= */}
         <ScrollReveal>
           <h1 className={`${FONT_MONTSERRAT} font-bold text-2xl leading-8 text-[#343133]`}>
-            Layanan Sewa Event &amp; Multi-Day OBC
+            {t('event.title')}
           </h1>
           <p className="mt-1 text-sm leading-[21px] font-heading text-[#343133]">
-            Penyelenggaraan turnamen korporat, liga komunitas, gathering, dan festival
-            olahraga premium.
+            {t('event.description')}
           </p>
         </ScrollReveal>
 
@@ -77,14 +54,14 @@ function OrderPage() {
           {/* ================= Ketentuan & alur reservasi ================= */}
           <section className="rounded-2xl border border-[#D4D4D4] bg-white p-6">
             <h2 className={`${FONT_MONTSERRAT} font-semibold text-lg leading-7 text-[#343133]`}>
-              Ketentuan &amp; Alur Reservasi Event
+              {t('event.reservationTitle')}
             </h2>
 
             <div className="mt-4 space-y-4">
-              {RESERVATION_STEPS.map((step) => (
+              {reservationSteps.map((step, index) => (
                 <div key={step.id} className="flex items-start gap-3">
                   <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#E6F0E0] text-sm font-heading font-bold text-[#265021]">
-                    {step.id}
+                    {index + 1}
                   </span>
                   <div className={step.maxWidth}>
                     <h3 className={`${FONT_MONTSERRAT} font-semibold text-sm leading-5 text-[#343133]`}>
@@ -104,8 +81,7 @@ function OrderPage() {
                 ⚠️
               </span>
               <p className="text-xs leading-[18px] font-heading text-[#C00000]">
-                Kebijakan Pembatalan Event: Pembatalan kurang dari H-7 acara dikenakan
-                denda hangus sebesar 50% dari total uang muka yang dibayarkan.
+                {t('event.cancellationPolicy')}
               </p>
             </div>
           </section>
@@ -113,11 +89,10 @@ function OrderPage() {
           {/* ================= Kontak admin event ================= */}
           <section className="rounded-2xl border border-[#D4D4D4] bg-white p-6 flex flex-col">
             <h2 className={`${FONT_MONTSERRAT} font-semibold text-lg leading-7 text-[#343133]`}>
-              Hubungi Admin Event
+              {t('event.contactTitle')}
             </h2>
             <p className="mt-3 text-sm leading-5 font-heading text-[#343133]">
-              Ada rencana event besar dalam waktu dekat? Langsung terhubung dengan PIC
-              Event OBC Sport Center via WhatsApp untuk penawaran harga terbaik.
+              {t('event.contactDescription')}
             </p>
 
             {/* Info PIC (tanpa kotak, hanya padding) */}
@@ -127,11 +102,11 @@ function OrderPage() {
                   <img src={whatsappIcon} alt="" aria-hidden="true" className="h-4 w-4 brightness-0 invert" />
                 </span>
                 <span className="font-heading font-semibold text-sm text-[#343133]">
-                  Bpk. Hermawan (PIC Event)
+                  {t('event.contactPerson')}
                 </span>
               </div>
               <p className="mt-3 text-[11px] font-heading text-[#343133]">
-                Fast Response: Senin - Sabtu (08:00 - 18:00)
+                {t('event.availability')}
               </p>
             </div>
 
@@ -141,7 +116,7 @@ function OrderPage() {
               onClick={handleContactWhatsApp}
               className="mt-auto w-full h-10 rounded-lg bg-[#CDF178] text-[13px] font-heading font-semibold text-[#343133] hover:bg-[#9AAD3E] transition-colors cursor-pointer"
             >
-              Hubungi PIC Event via WA
+              {t('event.contactButton')}
             </button>
           </section>
         </div>

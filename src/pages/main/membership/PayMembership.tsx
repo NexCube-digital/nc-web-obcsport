@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next'
 import NavbarDashboard from '../../../components/layout/Navbar'
 import MobileHeader from '../../../components/layout/MobileHeader'
 import DeferredFooter from '../../../components/layout/DeferredFooter'
+import PaymentMethodSelector from '../../../components/ui/PaymentMethodSelector'
 import { useIsMobile } from '../../../hooks/useIsMobile'
 import { toast } from 'sonner'
 import PendingOrderModal from '../../../components/ui/PendingOrderModal'
@@ -57,41 +58,6 @@ export default function PayMembership() {
     const redirectUrl = pendingPaymentUrl ?? paymentUrl ?? paymentInfo?.deeplinkUrl
     if (redirectUrl) window.location.assign(redirectUrl)
   }
-
-  const paymentGroups: Array<{ id: string; label: string; methods: Array<{ id: MembershipPaymentChannel; badge: string; name: string }> }> = [
-    {
-      id: 'ewallet',
-      label: t('membership.payment.categories.ewallet'),
-      methods: [
-        { id: 'qris', badge: 'QRIS', name: 'QRIS' },
-        { id: 'gopay', badge: 'GOPAY', name: 'GoPay' },
-        { id: 'shopeepay', badge: 'SPAY', name: 'ShopeePay' },
-        { id: 'ovo', badge: 'OVO', name: 'OVO' },
-        { id: 'dana', badge: 'DANA', name: 'DANA' },
-      ],
-    },
-    { id: 'card', label: t('membership.payment.categories.card'), methods: [{ id: 'credit_card', badge: 'CARD', name: t('membership.payment.creditDebit') }] },
-    {
-      id: 'bank',
-      label: t('membership.payment.categories.bank'),
-      methods: [
-        { id: 'bca_va', badge: 'BCA', name: 'BCA Virtual Account' },
-        { id: 'bni_va', badge: 'BNI', name: 'BNI Virtual Account' },
-        { id: 'bri_va', badge: 'BRI', name: 'BRI Virtual Account' },
-        { id: 'mandiri_va', badge: 'MANDIRI', name: 'Mandiri Virtual Account' },
-        { id: 'permata_va', badge: 'PERMATA', name: 'Permata Virtual Account' },
-      ],
-    },
-    {
-      id: 'retail',
-      label: t('membership.payment.categories.retail'),
-      methods: [
-        { id: 'alfamart', badge: 'ALFA', name: 'Alfamart' },
-        { id: 'indomaret', badge: 'INDO', name: 'Indomaret' },
-      ],
-    },
-  ]
-  const paymentMethods = paymentGroups.flatMap((group) => group.methods)
 
   const handlePay = async () => {
     if (!selectedChannel) {
@@ -171,24 +137,8 @@ export default function PayMembership() {
             </div>
           </div>
 
-          <div className="mt-5 space-y-5" role="radiogroup" aria-label={t('membership.payment.methodsLabel')}>
-            {paymentGroups.map((group) => (
-              <div key={group.id}>
-                <h3 className="font-heading text-[11px] font-bold text-[#404F14]">{group.label}</h3>
-                <div className="mt-2 grid grid-cols-2 gap-2">
-                  {group.methods.map((method) => {
-                    const active = selectedChannel === method.id
-                    return (
-                      <button key={method.id} type="button" role="radio" aria-checked={active} onClick={() => setSelectedChannel(method.id)} className={`flex min-h-[76px] min-w-0 items-center gap-3 rounded-lg bg-white p-3 text-left transition-colors ${active ? 'border-2 border-[#404F14] bg-[#F5FAF0]' : 'border border-[#D4D4D4] hover:border-[#9AAD3E]'}`}>
-                        <span className={`flex h-5 w-14 shrink-0 items-center justify-center rounded text-[10px] font-heading font-bold ${active ? 'bg-[#E6F0E0] text-[#404F14]' : 'bg-[#F0F0F0] text-[#6F6B6E]'}`}>{method.badge}</span>
-                        <span className="min-w-0 flex-1 break-words text-xs font-semibold text-[#343133]">{method.name}</span>
-                        <span className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full ${active ? 'bg-[#404F14]' : 'border border-[#D4D4D4] bg-white'}`} aria-hidden="true" />
-                      </button>
-                    )
-                  })}
-                </div>
-              </div>
-            ))}
+          <div className="mt-5">
+            <PaymentMethodSelector value={selectedChannel} onChange={setSelectedChannel} ariaLabel={t('membership.payment.methodsLabel')} />
           </div>
         </section>
 
@@ -257,7 +207,7 @@ export default function PayMembership() {
       <PendingOrderModal
         date={schedules[0]?.bookingDate ?? '-'}
         time={schedules.length > 0 ? `${schedules[0]?.startTime ?? '-'} - ${schedules[0]?.endTime ?? '-'}` : '-'}
-        paymentMethod={paymentMethods.find((method) => method.id === selectedChannel)?.name ?? t('membership.payment.midtrans')}
+        paymentMethod={selectedChannel ? t(`payment.methods.${selectedChannel}.name`) : t('membership.payment.midtrans')}
         amount={membershipInfo?.price ?? membershipPackage.memberPrice}
         transactionId={membershipInfo?.membershipId ?? '-'}
         paymentInfo={paymentInfo}

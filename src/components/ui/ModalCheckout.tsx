@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import { ShoppingCart, X } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 
 interface ModalCheckoutProps {
 	isOpen: boolean
@@ -24,6 +25,7 @@ function ModalCheckout({
 	onOrder,
 	onAddToCart,
 }: ModalCheckoutProps) {
+	const { t } = useTranslation()
 	useEffect(() => {
 		if (!isOpen) return
 
@@ -67,12 +69,12 @@ function ModalCheckout({
 			>
 				<header className="flex items-center justify-between gap-4">
 					<h2 id="checkout-summary-title" className="font-heading text-lg font-bold text-[#343133]">
-						Ringkasan Pemesanan
+						{t('booking.confirmationTitle')}
 					</h2>
 					<button
 						type="button"
 						onClick={onClose}
-						aria-label="Tutup ringkasan pemesanan"
+						aria-label={t('common.close')}
 						className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[#6F6B6E] transition-colors hover:bg-[#F1F4EA] hover:text-[#004000]"
 					>
 						<X size={18} aria-hidden="true" />
@@ -81,23 +83,23 @@ function ModalCheckout({
 
 				<dl className="mt-5 space-y-3 border-b border-[#D4D4D4] pb-4 text-sm">
 					<div className="flex items-center justify-between gap-4">
-						<dt className="text-[#343133]">Fasilitas</dt>
+						<dt className="text-[#343133]">{t('booking.facility')}</dt>
 						<dd className="text-right font-heading font-bold text-[#121212]">{facility}</dd>
 					</div>
 					<div className="flex items-center justify-between gap-4">
-						<dt className="text-[#343133]">Durasi</dt>
+						<dt className="text-[#343133]">{t('booking.duration')}</dt>
 						<dd className="text-right font-heading font-bold text-[#121212]">
-							{duration > 0 ? `${duration} Jam` : '-'}
+							{duration > 0 ? t('booking.durationHours', { count: duration }) : '-'}
 						</dd>
 					</div>
 					<div className="flex items-start justify-between gap-4">
-						<dt className="shrink-0 text-[#343133]">Tanggal &amp; Waktu</dt>
+						<dt className="shrink-0 text-[#343133]">{t('booking.dateTime')}</dt>
 						<dd className="text-right font-heading font-bold text-[#121212]">{dateTime}</dd>
 					</div>
 				</dl>
 
 				<div className="mt-4 flex items-center justify-between gap-4">
-					<span className="font-heading text-sm font-bold text-[#121212]">Total Bayar</span>
+					<span className="font-heading text-sm font-bold text-[#121212]">{t('booking.totalDue')}</span>
 					<span className="font-heading text-xl font-bold text-[#265021]">
 						{formatRupiah(total)}
 					</span>
@@ -109,11 +111,11 @@ function ModalCheckout({
 						onClick={onOrder}
 						className="h-11 flex-1 rounded-lg bg-[#CDF178] px-4 text-sm font-heading font-bold text-[#121212] transition-colors hover:bg-[#9AAD3E]"
 					>
-						Pesan Sekarang
+						{t('booking.bookNow')}
 					</button>
 					<button
 						type="button"
-						aria-label="Tambah ke keranjang"
+						aria-label={t('booking.addToCartButton')}
 						onClick={onAddToCart}
 						className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-[#E5E5E5] bg-white text-[#6F6B6E] transition-colors hover:text-[#404F14]"
 					>

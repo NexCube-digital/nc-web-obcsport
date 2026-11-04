@@ -1,5 +1,6 @@
 import { useState, type FormEvent, useEffect } from 'react'
 import { Link, useSearchParams, useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { ArrowLeft, CircleCheck, Eye, EyeOff } from 'lucide-react'
 import { toast } from 'sonner'
 import loginIllustration from '../../assets/figma/login.jpg'
@@ -12,6 +13,7 @@ function PasswordVisibilityIcon({ visible }: { visible: boolean }) {
 }
 
 function ResetPassword() {
+  const { t } = useTranslation()
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
   const token = searchParams.get('token')
@@ -25,22 +27,22 @@ function ResetPassword() {
 
   useEffect(() => {
     if (!token) {
-      toast.error('Token reset password tidak ditemukan.')
+      toast.error(t('resetPassword.tokenMissing'))
       navigate('/forgot-password')
     }
   }, [token, navigate])
 
   const validatePasswords = (): boolean => {
     if (!password.trim()) {
-      toast.error('Kata sandi baru wajib diisi.')
+      toast.error(t('resetPassword.passwordRequired'))
       return false
     }
     if (password.length < 6) {
-      toast.error('Kata sandi minimal 6 karakter.')
+      toast.error(t('resetPassword.passwordMin'))
       return false
     }
     if (password !== confirmPassword) {
-      toast.error('Kata sandi tidak cocok.')
+      toast.error(t('resetPassword.passwordMismatch'))
       return false
     }
     return true
@@ -54,10 +56,10 @@ function ResetPassword() {
     try {
       await resetPasswordCustomer(token, password)
       setIsSubmitted(true)
-      toast.success('Kata sandi berhasil diperbarui. Silakan login kembali.')
+      toast.success(t('resetPassword.success'))
       setTimeout(() => navigate('/login'), 2000)
     } catch (err: any) {
-      const msg = err.response?.data?.error?.message || err.message || 'Gagal mengatur ulang kata sandi.'
+      const msg = err.response?.data?.error?.message || err.message || t('resetPassword.failed')
       toast.error(msg)
     } finally {
       setIsLoading(false)
@@ -78,13 +80,13 @@ function ResetPassword() {
 
         <div className="mt-12">
           <span className="font-heading text-xs font-bold uppercase tracking-wide text-[#404F14]">
-            Pengaturan Ulang Kata Sandi
+            {t('resetPassword.eyebrow')}
           </span>
           <h1 className="mt-3 max-w-xl font-heading text-4xl font-bold leading-tight text-[#343133]">
-            Buat Kata Sandi Baru untuk Akun Anda
+            {t('resetPassword.title')}
           </h1>
           <p className="mt-4 max-w-lg text-base leading-relaxed text-[#6F6B6E]">
-            Masukkan kata sandi baru yang kuat. Pastikan berbeda dengan kata sandi sebelumnya.
+            {t('resetPassword.description')}
           </p>
           <div className="mt-8 h-[clamp(220px,42vh,400px)] overflow-hidden rounded-2xl bg-[#A9AD86]">
             <img
@@ -106,25 +108,25 @@ function ResetPassword() {
           </Link>
 
           <h2 className="font-heading text-2xl font-bold text-[#343133] md:text-3xl">
-            Atur Ulang Kata Sandi
+            {t('resetPassword.pageTitle')}
           </h2>
           <p className="mt-2 text-sm leading-relaxed text-[#6F6B6E] md:text-base">
-            Masukkan kata sandi baru untuk melanjutkan login ke akun Anda.
+            {t('resetPassword.pageDescription')}
           </p>
 
           {isSubmitted ? (
             <div role="status" className="mt-8 rounded-xl border border-[#D4D4D4] bg-white p-5">
               <CircleCheck size={28} className="text-[#404F14]" aria-hidden="true" />
-              <p className="mt-3 font-heading font-bold text-[#343133]">Kata Sandi Berhasil Diperbarui</p>
+              <p className="mt-3 font-heading font-bold text-[#343133]">{t('resetPassword.successTitle')}</p>
               <p className="mt-1 text-sm leading-relaxed text-[#6F6B6E]">
-                Kata sandi Anda telah berhasil diperbarui. Anda akan diarahkan ke halaman login dalam beberapa saat.
+                {t('resetPassword.successDescription')}
               </p>
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="mt-8">
               <div>
                 <label htmlFor="new-password" className="mb-2 block text-sm font-heading font-bold text-[#343133]">
-                  Kata Sandi Baru
+                  {t('resetPassword.password')}
                 </label>
                 <div className="relative">
                   <input
@@ -132,7 +134,7 @@ function ResetPassword() {
                     type={showPassword ? 'text' : 'password'}
                     value={password}
                     onChange={(event) => setPassword(event.target.value)}
-                    placeholder="Masukan kata sandi baru"
+                    placeholder={t('resetPassword.passwordPlaceholder')}
                     autoComplete="new-password"
                     disabled={isLoading}
                     className="h-12 w-full rounded-lg border border-[#D4D4D4] bg-white px-4 pr-12 text-sm text-[#343133] placeholder:text-[#8A8688] focus:border-[#404F14] focus:outline-none"
@@ -140,7 +142,7 @@ function ResetPassword() {
                   <button
                     type="button"
                     onClick={() => setShowPassword((prev) => !prev)}
-                    aria-label={showPassword ? 'Sembunyikan kata sandi' : 'Tampilkan kata sandi'}
+                    aria-label={showPassword ? t('auth.hidePassword') : t('auth.showPassword')}
                     className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer p-2 text-[#404F14]"
                   >
                     <PasswordVisibilityIcon visible={showPassword} />
@@ -150,7 +152,7 @@ function ResetPassword() {
 
               <div className="mt-4">
                 <label htmlFor="confirm-password" className="mb-2 block text-sm font-heading font-bold text-[#343133]">
-                  Konfirmasi Kata Sandi
+                  {t('resetPassword.confirmPassword')}
                 </label>
                 <div className="relative">
                   <input
@@ -158,7 +160,7 @@ function ResetPassword() {
                     type={showConfirmPassword ? 'text' : 'password'}
                     value={confirmPassword}
                     onChange={(event) => setConfirmPassword(event.target.value)}
-                    placeholder="Masukan ulang kata sandi baru"
+                    placeholder={t('resetPassword.confirmPasswordPlaceholder')}
                     autoComplete="new-password"
                     disabled={isLoading}
                     className="h-12 w-full rounded-lg border border-[#D4D4D4] bg-white px-4 pr-12 text-sm text-[#343133] placeholder:text-[#8A8688] focus:border-[#404F14] focus:outline-none"
@@ -166,7 +168,7 @@ function ResetPassword() {
                   <button
                     type="button"
                     onClick={() => setShowConfirmPassword((prev) => !prev)}
-                    aria-label={showConfirmPassword ? 'Sembunyikan kata sandi' : 'Tampilkan kata sandi'}
+                    aria-label={showConfirmPassword ? t('auth.hidePassword') : t('auth.showPassword')}
                     className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer p-2 text-[#404F14]"
                   >
                     <PasswordVisibilityIcon visible={showConfirmPassword} />
@@ -179,7 +181,7 @@ function ResetPassword() {
                 disabled={isLoading}
                 className="mt-6 h-12 w-full cursor-pointer rounded-lg bg-[#CDF178] font-heading text-sm font-bold text-[#404F14] shadow-[0_2px_6px_rgba(0,0,0,0.15)] transition-colors hover:bg-[#BDE35F] disabled:opacity-50"
               >
-                {isLoading ? 'Memproses...' : 'Atur Ulang Kata Sandi'}
+                {isLoading ? t('resetPassword.processing') : t('resetPassword.submit')}
               </button>
             </form>
           )}
@@ -189,7 +191,7 @@ function ResetPassword() {
             className="mt-6 inline-flex items-center gap-2 font-heading text-sm font-bold text-[#404F14] hover:underline"
           >
             <ArrowLeft size={16} aria-hidden="true" />
-            Kembali ke Login
+            {t('recovery.backToLogin')}
           </Link>
         </div>
       </main>

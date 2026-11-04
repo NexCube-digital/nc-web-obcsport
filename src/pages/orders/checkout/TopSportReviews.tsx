@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react'
 import { ArrowRight, Star } from 'lucide-react'
 import { getPublishedTestimonials, type PublicTestimonial } from '../../../services/testimonialService'
+import { useTranslation } from 'react-i18next'
 
-function formatReviewDate(date: string) {
-	return new Intl.DateTimeFormat('id-ID', {
+function formatReviewDate(date: string, locale: string) {
+	return new Intl.DateTimeFormat(locale, {
 		day: 'numeric',
 		month: 'short',
 		year: 'numeric',
@@ -11,6 +12,7 @@ function formatReviewDate(date: string) {
 }
 
 function TopSportReviews() {
+	const { t, i18n } = useTranslation()
 	const [reviews, setReviews] = useState<PublicTestimonial[]>([])
 	const [isLoading, setIsLoading] = useState(true)
 	const [hasError, setHasError] = useState(false)
@@ -40,19 +42,19 @@ function TopSportReviews() {
 		<section className="mt-6" aria-labelledby="checkout-sport-reviews-title">
 			<div className="flex items-center justify-between gap-3">
 				<h2 id="checkout-sport-reviews-title" className="font-heading text-base font-bold text-[#343133]">
-					Ulasan Pengguna
+					{t('booking.reviews')}
 				</h2>
 				<a href="/#testimoni" className="inline-flex shrink-0 items-center gap-1 text-xs font-semibold text-[#404F14] underline underline-offset-2">
-					Lihat selengkapnya <ArrowRight size={14} aria-hidden="true" />
+					{t('booking.viewMore')} <ArrowRight size={14} aria-hidden="true" />
 				</a>
 			</div>
 
 			{isLoading ? (
-				<p role="status" className="mt-3 text-sm text-[#6F6B6E]">Memuat ulasan...</p>
+				<p role="status" className="mt-3 text-sm text-[#6F6B6E]">{t('booking.reviewsLoading')}</p>
 			) : hasError ? (
-				<p role="status" className="mt-3 text-sm text-[#6F6B6E]">Ulasan belum dapat dimuat.</p>
+				<p role="status" className="mt-3 text-sm text-[#6F6B6E]">{t('booking.reviewsUnavailable')}</p>
 			) : reviews.length === 0 ? (
-				<p className="mt-3 text-sm text-[#6F6B6E]">Belum ada ulasan Sport.</p>
+				<p className="mt-3 text-sm text-[#6F6B6E]">{t('booking.reviewsEmpty')}</p>
 			) : (
 				<div className="mt-3 space-y-3">
 					{reviews.map((review) => (
@@ -64,10 +66,10 @@ function TopSportReviews() {
 								<div className="min-w-0 flex-1">
 									<div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
 										<p className="font-heading text-sm font-semibold text-[#121212]">{review.name}</p>
-										<time dateTime={review.createdAt} className="text-xs text-[#8A8688]">{formatReviewDate(review.createdAt)}</time>
+										<time dateTime={review.createdAt} className="text-xs text-[#8A8688]">{formatReviewDate(review.createdAt, i18n.language)}</time>
 									</div>
 									<p className="mt-0.5 truncate text-xs text-[#6F6B6E]">{review.company ?? 'OBC Sport Center'}</p>
-									<div className="mt-1 flex items-center gap-1" aria-label={`Rating ${review.rating} dari 5`}>
+									<div className="mt-1 flex items-center gap-1" aria-label={t('booking.ratingOutOfFive', { rating: review.rating })}>
 										{[1, 2, 3, 4, 5].map((value) => (
 											<Star key={value} size={14} aria-hidden="true" className={value <= review.rating ? 'fill-[#F5B301] text-[#F5B301]' : 'text-[#D4D4D4]'} />
 										))}

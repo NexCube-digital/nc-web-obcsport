@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Star, X } from 'lucide-react'
 import { toast } from 'sonner'
+import { useTranslation } from 'react-i18next'
 import { getApiErrorMessage } from '../../services/apiService'
 import { createResourceReview } from '../../services/testimonialService'
 
@@ -41,6 +42,7 @@ function TestimonialModal({
   bookingId,
   onSubmit,
 }: TestimonialModalProps) {
+  const { t } = useTranslation()
   const [rating, setRating] = useState(DEFAULT_RATING)
   const [review, setReview] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -79,11 +81,11 @@ function TestimonialModal({
         comment: trimmedReview,
         ...(bookingId ? { bookingId } : {}),
       })
-      toast.success('Terima kasih, ulasan kamu berhasil dikirim.')
+      toast.success(t('testimonialModal.success'))
       onSubmit?.({ rating, text: trimmedReview })
       onClose()
     } catch (error) {
-      toast.error(getApiErrorMessage(error, 'Ulasan gagal dikirim. Silakan coba lagi.'))
+      toast.error(getApiErrorMessage(error, t('testimonialModal.failure')))
     } finally {
       setIsSubmitting(false)
     }
@@ -105,7 +107,7 @@ function TestimonialModal({
         <button
           type="button"
           onClick={onClose}
-          aria-label="Tutup modal ulasan"
+          aria-label={t('testimonialModal.close')}
           className="absolute right-4 top-4 z-10 grid h-9 w-9 place-items-center rounded-full border-[0.67px] border-[#1F3320] bg-white text-[#1F3320] transition-colors hover:bg-[#f5f5f5] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#404F14]"
         >
           <X size={20} aria-hidden="true" />
@@ -114,13 +116,13 @@ function TestimonialModal({
         {/* ================= Header ================= */}
         <header className="shrink-0 border-b border-[#ececec] pb-4 pr-10">
           <span className="block font-['Montserrat'] text-[13px] font-semibold uppercase tracking-[1.4px] text-[#000000CC]">
-            ULASAN SPORT
+            {t('testimonialModal.eyebrow')}
           </span>
           <h2
             id="testimonial-modal-title"
             className={`${FONT_MONTSERRAT} mt-1 text-[22px] font-bold leading-[30px] text-[#1F3320] sm:text-[26px] sm:leading-[34px]`}
           >
-            Berikan ulasan pengalaman kamu
+            {t('testimonialModal.title')}
           </h2>
           <p className="mt-2 font-['Montserrat'] text-[13px] leading-[20px] text-[#4b5563]">
             {facilityName} · {dateLabel}
@@ -130,10 +132,10 @@ function TestimonialModal({
         <div className="flex flex-col pt-5">
           {/* Rating */}
           <p className="font-['Montserrat'] text-[13px] font-semibold text-[#1F3320]">
-            Bagaimana pengalaman kamu?
+            {t('testimonialModal.ratingPrompt')}
           </p>
           <div className="mt-2 flex items-center gap-1">
-            <div className="flex gap-0.5" role="radiogroup" aria-label="Penilaian bintang">
+            <div className="flex gap-0.5" role="radiogroup" aria-label={t('testimonialModal.ratingLabel')}>
               {STAR_VALUES.map((value) => {
                 const isFilled = value <= rating
                 return (
@@ -142,7 +144,7 @@ function TestimonialModal({
                     type="button"
                     role="radio"
                     aria-checked={value === rating}
-                    aria-label={`${value} bintang`}
+                    aria-label={t('testimonialModal.stars', { count: value })}
                     onClick={() => setRating(value)}
                     className="cursor-pointer p-0.5 transition-transform hover:scale-110"
                   >
@@ -167,14 +169,14 @@ function TestimonialModal({
             htmlFor="testimonial-review"
             className="mb-1.5 mt-5 font-['Montserrat'] text-[13px] font-semibold text-[#1F3320]"
           >
-            Tulis Ulasan Anda
+            {t('testimonialModal.reviewLabel')}
           </label>
           <textarea
             id="testimonial-review"
             value={review}
             onChange={(event) => setReview(event.target.value)}
             maxLength={MAX_REVIEW_LENGTH}
-            placeholder="Ceritakan pengalaman kamu menggunakan fasilitas kami..."
+            placeholder={t('testimonialModal.placeholder')}
             className="h-28 w-full resize-none rounded-[12px] border border-[#e5e5e5] bg-white px-4 py-3 font-['Montserrat'] text-[14px] text-[#000000] outline-none transition-colors placeholder:text-[#9ca3af] focus:border-[#004000] focus:ring-2 focus:ring-[#CDF178]"
           />
 
@@ -182,7 +184,7 @@ function TestimonialModal({
           <div className="mt-1 flex justify-between font-['Montserrat'] text-[12px]">
             <p className={review.trim().length > 0 && review.trim().length < MIN_REVIEW_LENGTH ? 'text-red-500' : 'text-[#6b7280]'}>
               {review.trim().length > 0 && review.trim().length < MIN_REVIEW_LENGTH
-                ? `Minimal ${MIN_REVIEW_LENGTH} karakter`
+                ? t('testimonialModal.minimumCharacters', { count: MIN_REVIEW_LENGTH })
                 : ' '}
             </p>
             <span className="shrink-0 text-[#6b7280]">{review.length}/{MAX_REVIEW_LENGTH}</span>
@@ -193,7 +195,7 @@ function TestimonialModal({
               onClick={onDefer}
               className="h-10 shrink-0 cursor-pointer rounded-[45px] border border-[#D4D4D4] bg-white px-5 font-['Montserrat'] text-[13px] font-semibold text-[#343133] transition-colors hover:bg-[#F5FAF3]"
             >
-              Nanti
+              {t('testimonialModal.defer')}
             </button>
             <button
               type="button"
@@ -201,7 +203,7 @@ function TestimonialModal({
               disabled={review.trim().length < MIN_REVIEW_LENGTH || isSubmitting}
               className="h-11 cursor-pointer rounded-[45px] border-[0.67px] border-[#CDF178] bg-[#CDF178] px-5 font-['Montserrat'] text-[13px] font-semibold text-[#000000] shadow-[0px_3px_5.8px_0px_#0000004D] transition-colors hover:bg-[#c0e85a] disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {isSubmitting ? 'Mengirim...' : 'Konfirmasi Ulasan'}
+              {isSubmitting ? t('testimonialModal.submitting') : t('testimonialModal.submit')}
             </button>
           </div>
         </div>

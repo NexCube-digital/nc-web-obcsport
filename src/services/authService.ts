@@ -35,10 +35,10 @@ export async function loginCustomer(email: string, password: string, rememberMe:
 	return result.customer
 }
 
-export async function loginGoogleCustomer(credential: string) {
+export async function loginGoogleCustomer(credential: string, rememberMe = true) {
 	const response = await api.post('/auth/customer/google', { idToken: credential })
 	const result = ensureAuthResponse(unwrap<AuthResponse>(response.data))
-	saveSession(result.customer, toTokens(result), true)
+	saveSession(result.customer, toTokens(result), rememberMe)
 	return result.customer
 }
 
@@ -86,4 +86,60 @@ function toTokens(response: AuthResponse): AuthTokens {
 		expiresIn: response.expiresIn,
 		sessionExpiresAt: response.sessionExpiresAt,
 	}
+}
+
+export interface StaffAuthSession {
+	accessToken: string
+	refreshToken: string
+	expiresIn: number
+	user: {
+		id: string
+		email: string
+		name: string
+		role: string
+		tenantId: string | null
+		lastLoginAt: string
+	}
+}
+
+export type AutomaticLoginResult =
+	| { principalType: 'staff'; session: StaffAuthSession }
+	| { principalType: 'customer'; customer: CustomerProfile }
+
+type AutomaticAuthResponse =
+	| ({ principalType: 'staff' } & StaffAuthSession)
+	| ({ principalType: 'customer' } & AuthResponse)
+
+export async function loginAutomatically(
+	email: string,
+	password: string,
+	rememberMe: boolean,
+): Promise<AutomaticLoginResult> {
+	const response = await api.post('/auth/auto-login', { email: email.trim(), password })
+	const result = unwrap<AutomaticAuthResponse>(response.data)
+
+	if (result?.principalType === 'staff') {
+		if (!result.accessToken || !result.refreshToken || !result.user?.role) {
+			throw new Error('Respons login staff tidak valid dari server.')
+		}
+		return {
+			principalType: 'staff',
+			session: {
+				accessToken: result.accessToken,
+				refreshToken: result.refreshToken,
+				expiresIn: result.expiresIn,
+				user: result.user,
+			},
+		}
+	}
+
+	if (result?.principalType === 'customer') {
+		if (!result.accessToken || !result.customer || !result.sessionExpiresAt) {
+			throw new Error('Respons login pelanggan tidak valid dari server.')
+		}
+		saveSession(result.customer, toTokens(result), rememberMe)
+		return { principalType: 'customer', customer: result.customer }
+	}
+
+	throw new Error('Respons login tidak valid dari server.')
 }

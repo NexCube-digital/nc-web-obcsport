@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Check, Copy } from 'lucide-react'
 import type { DirectPaymentInfo } from '../../../services/paymentService'
+import { useTranslation } from 'react-i18next'
 
 export interface PaymentBookingItem {
   id: string
@@ -53,6 +54,7 @@ function useCountdown(expiryTime?: string) {
 }
 
 function CopyRow({ label, value }: { label: string; value: string }) {
+  const { t } = useTranslation()
   const [copied, setCopied] = useState(false)
 
   const handleCopy = async () => {
@@ -77,19 +79,20 @@ function CopyRow({ label, value }: { label: string; value: string }) {
         className="flex h-8 shrink-0 items-center gap-1 rounded-md bg-[#E6F0E0] px-2 font-heading text-xs font-bold text-[#404F14] cursor-pointer"
       >
         {copied ? <Check size={14} /> : <Copy size={14} />}
-        {copied ? 'Tersalin' : 'Salin'}
+        {copied ? t('payment.instructions.copied') : t('payment.instructions.copy')}
       </button>
     </div>
   )
 }
 
 function PaymentInstructionCard({ info, totalLabel, bookings = [], onCheckStatus }: PaymentInstructionCardProps) {
+  const { t } = useTranslation()
   const countdown = useCountdown(info.expiryTime)
 
   return (
     <section className="rounded-2xl border border-[#D4D4D4] bg-white p-5">
       <h1 className={`${FONT_MONTSERRAT} text-lg font-bold text-[#343133]`}>
-        Selesaikan Pembayaran
+        {t('payment.instructions.title')}
       </h1>
       <p className="mt-0.5 font-heading text-xs text-[#6F6B6E]">
         {CHANNEL_LABEL[info.channel]}
@@ -97,10 +100,10 @@ function PaymentInstructionCard({ info, totalLabel, bookings = [], onCheckStatus
       {bookings.length > 0 && (
         <section className="mt-3 rounded-lg border border-[#D4D4D4] bg-white">
           <div className="flex items-center justify-between gap-3 border-b border-[#E5E5E5] px-3 py-2">
-            <h2 className="font-heading text-xs font-bold text-[#121212]">Detail Booking</h2>
+            <h2 className="font-heading text-xs font-bold text-[#121212]">{t('payment.instructions.bookingDetails')}</h2>
             {bookings.length > 1 && (
               <span className="rounded-full bg-[#E6F0E0] px-2 py-1 text-[10px] font-bold text-[#404F14]">
-                {bookings.length} pesanan
+                {t('payment.instructions.orderCount', { count: bookings.length })}
               </span>
             )}
           </div>
@@ -120,13 +123,13 @@ function PaymentInstructionCard({ info, totalLabel, bookings = [], onCheckStatus
         </section>
       )}
       <div className="mt-4 flex items-center justify-between rounded-lg bg-[#E6F0E0] px-3 py-2">
-        <span className="font-heading text-xs text-[#404F14]">Total Pembayaran</span>
+        <span className="font-heading text-xs text-[#404F14]">{t('payment.instructions.total')}</span>
         <span className={`${FONT_MONTSERRAT} text-lg font-bold text-[#404F14]`}>{totalLabel}</span>
       </div>
 
       {countdown && (
         <p className="mt-3 text-center font-heading text-xs text-[#C00000]">
-          Bayar sebelum <span className="font-bold">{countdown}</span>
+          {t('payment.instructions.payBefore')} <span className="font-bold">{countdown}</span>
         </p>
       )}
 
@@ -136,11 +139,11 @@ function PaymentInstructionCard({ info, totalLabel, bookings = [], onCheckStatus
           <div className="flex flex-col items-center gap-2">
             <img
               src={info.qrUrl}
-              alt="Kode QR pembayaran"
+              alt={t('payment.instructions.qrAlt')}
               className="h-56 w-56 rounded-lg border border-[#D4D4D4] object-contain"
             />
             <p className="font-heading text-xs text-[#6F6B6E]">
-              Scan kode QR dengan aplikasi pembayaran Anda
+              {t('payment.instructions.scanQr')}
             </p>
           </div>
         )}
@@ -151,19 +154,19 @@ function PaymentInstructionCard({ info, totalLabel, bookings = [], onCheckStatus
             href={info.deeplinkUrl}
             className="flex h-10 w-full items-center justify-center rounded-lg border-2 border-[#404F14] font-heading text-xs font-bold text-[#404F14]"
           >
-            Buka Aplikasi {CHANNEL_LABEL[info.channel]}
+            {t('payment.instructions.openApp', { name: CHANNEL_LABEL[info.channel] })}
           </a>
         )}
 
         {/* Virtual Account */}
-        {info.vaNumber && <CopyRow label={`Nomor Virtual Account ${info.bankName ?? ''}`.trim()} value={info.vaNumber} />}
+        {info.vaNumber && <CopyRow label={t('payment.instructions.virtualAccount', { bank: info.bankName ?? '' })} value={info.vaNumber} />}
 
         {/* Mandiri (echannel) */}
-        {info.billerCode && <CopyRow label="Kode Perusahaan (Biller Code)" value={info.billerCode} />}
-        {info.billKey && <CopyRow label="Kode Pembayaran (Bill Key)" value={info.billKey} />}
+        {info.billerCode && <CopyRow label={t('payment.instructions.billerCode')} value={info.billerCode} />}
+        {info.billKey && <CopyRow label={t('payment.instructions.billKey')} value={info.billKey} />}
 
         {/* Alfamart / Indomaret */}
-        {info.paymentCode && <CopyRow label={`Kode Pembayaran ${info.storeName ?? ''}`.trim()} value={info.paymentCode} />}
+        {info.paymentCode && <CopyRow label={t('payment.instructions.storeCode', { store: info.storeName ?? '' })} value={info.paymentCode} />}
       </div>
 
       <button
@@ -171,7 +174,7 @@ function PaymentInstructionCard({ info, totalLabel, bookings = [], onCheckStatus
         onClick={onCheckStatus}
         className="mt-5 h-10 w-full rounded-lg bg-[#CDF178] font-heading text-xs font-bold text-[#404F14] transition-colors hover:bg-[#9AAD3E] cursor-pointer"
       >
-        Saya Sudah Bayar / Cek Status
+        {t('payment.instructions.checkStatus')}
       </button>
     </section>
   )

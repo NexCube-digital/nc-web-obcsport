@@ -3,12 +3,14 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import { getBookingDetails, type BookingDetails } from '../../../services/bookingService'
 import { getApiErrorMessage } from '../../../services/apiService'
 import CreditCardPaymentForm from '../payment/CreditCardPaymentForm'
+import { useTranslation } from 'react-i18next'
 
 interface CreditCardPaymentState {
 	bookingId?: string
 }
 
 function CreditCardPaymentPage() {
+	const { t } = useTranslation()
 	const location = useLocation()
 	const navigate = useNavigate()
 	const state = (location.state as CreditCardPaymentState | null) ?? {}
@@ -50,11 +52,11 @@ function CreditCardPaymentPage() {
 				setBooking(details)
 			})
 			.catch((error: unknown) => {
-				if (active) setErrorMessage(getApiErrorMessage(error, 'Detail booking tidak dapat dimuat.'))
+				if (active) setErrorMessage(getApiErrorMessage(error, t('paymentStatus.loadingBooking')))
 			})
 
 		return () => { active = false }
-	}, [bookingId, navigate])
+	}, [bookingId, navigate, t])
 
 	const openInformationOrder = () => {
 		navigate(`/finalisasi-order?bookingId=${encodeURIComponent(bookingId)}`, {
@@ -77,7 +79,7 @@ function CreditCardPaymentPage() {
 						onPaymentStarted={openInformationOrder}
 					/>
 				) : (
-					<p role="status" className="text-center text-sm text-[#6F6B6E]">Memuat detail pembayaran...</p>
+					<p role="status" className="text-center text-sm text-[#6F6B6E]">{t('paymentStatus.loadingPayment')}</p>
 				)}
 			</main>
 		</div>

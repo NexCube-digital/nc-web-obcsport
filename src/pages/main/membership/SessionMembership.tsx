@@ -3,9 +3,8 @@ import { Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { CalendarDays } from 'lucide-react'
 import { toast } from 'sonner'
-import BookingCalendar from '../../orders/checkout/BookingCalendar'
-import TimeSlotPicker from '../../orders/checkout/TimeSlotPicker'
-import lapangF1 from '../../../assets/layanan/Lapang F1.png'
+import BookingScheduleSelector from '../../orders/checkout/BookingScheduleSelector'
+import lapangF1 from '../../../assets/images/lapang/Lapang F1.webp'
 import NavbarDashboard from '../../../components/layout/Navbar'
 import DeferredFooter from '../../../components/layout/DeferredFooter'
 import { getFacilityAvailability, getSportsFacilities, type SportsFacility } from '../../../services/facilityService'
@@ -172,45 +171,31 @@ export function SessionMembership({ selectedPackage, schedules, facilities, onUp
           </h5>
           <p className="mt-1 text-xs text-[#6F6B6E]">{t('membership.schedule.availabilityHint')}</p>
 
-          {!selectedDate ? (
-            <BookingCalendar
-              variant="desktop"
-              viewYear={viewYear}
-              viewMonth={viewMonth}
-              selectedDate={selectedDate || null}
-              bookedDates={[]}
-              onChangeMonth={changeMonth}
-              onSelectDate={chooseDate}
-            />
-          ) : (
-            <>
-              <div className="mt-3 flex items-center justify-between gap-3 rounded-xl border border-[#D4D4D4] px-4 py-3">
-                <div>
-                  <p className="text-xs text-[#6F6B6E]">{t('membership.schedule.selectedDate')}</p>
-                  <p className="font-heading text-sm font-bold text-[#343133]">{selectedSessionLabel}</p>
-                </div>
-                <button type="button" onClick={() => setSelectedDate('')} className="shrink-0 rounded-lg border border-[#D4D4D4] px-3 py-2 text-xs font-bold text-[#265021]">{t('membership.schedule.changeDate')}</button>
-              </div>
-              <TimeSlotPicker
-                variant="desktop"
-                isDateBooked={!isLoading && availableSlots.length === 0}
-                bookedSlotsToday={bookedSlots}
-                availableTimeSlots={availableSlots}
-                isLoading={isLoading}
-                selectedStartTime={schedule?.startTime ?? null}
-                durationMinutes={60}
-                sessionCount={schedule?.startTime ? 1 : 0}
-                durationLabel={t('membership.schedule.oneHour')}
-                selectedDateLabel={selectedSessionLabel}
-                startTime={schedule?.startTime ?? ''}
-                endTime={schedule?.endTime ?? ''}
-                maxSessionHours={1}
-                onToggleTime={chooseTime}
-                onChangeDuration={() => undefined}
-                onResetSearch={() => setSelectedDate('')}
-              />
-            </>
-          )}
+          <BookingScheduleSelector
+            viewYear={viewYear}
+            viewMonth={viewMonth}
+            selectedDate={selectedDate || null}
+            selectedDateLabel={selectedSessionLabel}
+            selectedDateText={t('membership.schedule.selectedDate')}
+            changeDateText={t('membership.schedule.changeDate')}
+            bookedDates={[]}
+            bookedSlotsToday={bookedSlots}
+            availableTimeSlots={availableSlots}
+            isLoading={isLoading}
+            isDateBooked={!isLoading && availableSlots.length === 0}
+            selectedStartTime={schedule?.startTime ?? null}
+            durationMinutes={60}
+            sessionCount={schedule?.startTime ? 1 : 0}
+            durationLabel={t('membership.schedule.oneHour')}
+            startTime={schedule?.startTime ?? ''}
+            endTime={schedule?.endTime ?? ''}
+            maxSessionHours={1}
+            onChangeMonth={changeMonth}
+            onSelectDate={chooseDate}
+            onToggleTime={chooseTime}
+            onChangeDuration={() => undefined}
+            onResetDate={() => setSelectedDate('')}
+          />
         </div>
       </div>
     </section>

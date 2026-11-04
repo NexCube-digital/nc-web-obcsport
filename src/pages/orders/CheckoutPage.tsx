@@ -14,13 +14,13 @@ import { addBackendCartItem, cartService, getBackendCart, removeBackendCartItem 
 import { getApiErrorMessage } from '../../services/apiService'
 import FacilityDetails from './checkout/FacilityDetails'
 import { useIsMobile } from '../../hooks/useIsMobile'
+import { useTranslation } from 'react-i18next'
 
 const ScheduleConflict = lazy(() => import('./checkout/ScheduleConflict'))
 const ModalCheckout = lazy(() => import('../../components/ui/ModalCheckout'))
 const CartModal = lazy(() => import('../../components/ui/CartModal'))
 const TopSportReviews = lazy(() => import('./checkout/TopSportReviews'))
-const BookingCalendar = lazy(() => import('./checkout/BookingCalendar'))
-const TimeSlotPicker = lazy(() => import('./checkout/TimeSlotPicker'))
+const BookingScheduleSelector = lazy(() => import('./checkout/BookingScheduleSelector'))
 const MobileBookingSheet = lazy(() => import('./checkout/MobileBookingSheet'))
 
 /* -------------------------------------------------------------------------
@@ -32,12 +32,6 @@ const MobileBookingSheet = lazy(() => import('./checkout/MobileBookingSheet'))
 const MAX_SESSION_HOURS = 5
 
 const BOOKED_DATES: string[] = []
-
-const DAY_NAMES = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu']
-const MONTH_NAMES = [
-  'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
-  'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember',
-]
 
 /* -------------------------------------------------------------------------
    Fungsi bantu
@@ -82,14 +76,6 @@ const isPastSlot = (date: string, time: string, now: Date) => {
   return timeToMinutes(time) * 60 <= nowSeconds
 }
 
-const formatDuration = (minutes: number) => {
-  const hours = Math.floor(minutes / 60)
-  const remainingMinutes = minutes % 60
-  return remainingMinutes === 0
-    ? `${hours} Jam`
-    : `${hours > 0 ? `${hours} Jam ` : ''}${remainingMinutes} Menit`
-}
-
 type CheckoutState = {
   resourceId?: string
   sportType?: string
@@ -97,17 +83,25 @@ type CheckoutState = {
 }
 
 function DetailOrder() {
+  const { t, i18n } = useTranslation()
   const navigate = useNavigate()
   const location = useLocation()
   const isMobile = useIsMobile()
+  const formatDuration = (minutes: number) => {
+    const hours = Math.floor(minutes / 60)
+    const remainingMinutes = minutes % 60
+    if (hours && remainingMinutes) return t('booking.durationHoursMinutes', { hours, minutes: remainingMinutes })
+    if (hours) return t('booking.durationHours', { count: hours })
+    return t('booking.durationMinutes', { count: remainingMinutes })
+  }
   const checkoutState = (location.state as CheckoutState | null) ?? {}
   const resourceId = checkoutState.resourceId
   const sportType = checkoutState.sportType ?? 'futsal'
   const facility = checkoutState.facility ?? {
     ...COURT_FACILITIES[0],
     description: COURT_FACILITIES[0].description,
-    badge: 'TERSEDIA',
-    buttonLabel: 'Booking Sekarang',
+    badge: t('booking.available'),
+    buttonLabel: t('booking.bookCourt'),
   }
 
   const [viewYear, setViewYear] = useState(() => Number(getZonedParts(new Date()).year))
@@ -180,12 +174,12 @@ function DetailOrder() {
       .catch((error: unknown) => {
         if (active) {
           setApiPriceTiers([])
-          toast.error(getApiErrorMessage(error, 'Harga fasilitas tidak dapat dimuat.'))
+          toast.error(getApiErrorMessage(error, t('booking.priceLoadFailed')))
         }
       })
       .finally(() => { if (active) setIsApiPriceLoading(false) })
     return () => { active = false }
-  }, [resourceId])
+  }, [resourceId, t])
 
   useEffect(() => {
     if (!resourceId) navigate('/home', { replace: true })
@@ -197,12 +191,12 @@ function DetailOrder() {
     getFacilityAvailability(resourceId, selectedDate, sportType)
       .then((result) => { if (active) setAvailability(result) })
       .catch((error: unknown) => {
-        if (active) toast.error(getApiErrorMessage(error, 'Jadwal tidak dapat dimuat.'))
+        if (active) toast.error(getApiErrorMessage(error, t('booking.availabilityLoadFailed')))
       })
       .finally(() => { if (active) setIsAvailabilityLoading(false) })
 
     return () => { active = false }
-  }, [resourceId, selectedDate, sportType])
+  }, [resourceId, selectedDate, sportType, t])
 
   // State khusus mobile: bottom sheet pilih tanggal & jam
   const [isSheetOpen, setIsSheetOpen] = useState(false)
@@ -297,20 +291,23 @@ function DetailOrder() {
     })
       .then((price) => { if (active) setPricePreview(price) })
       .catch((error: unknown) => {
-        if (active) toast.error(getApiErrorMessage(error, 'Harga booking tidak dapat dihitung.'))
+        if (active) toast.error(getApiErrorMessage(error, t('booking.priceCalculateFailed')))
       })
       .finally(() => { if (active) setIsPriceLoading(false) })
 
     return () => { active = false }
-  }, [resourceId, selectedDate, startTime, endTime, sportType])
+  }, [resourceId, selectedDate, startTime, endTime, sportType, t])
 
   let selectedDateLabel = '-'
   let selectedDayAndDate = '-'
   if (selectedDate) {
-    const [year, month, day] = selectedDate.split('-').map(Number)
-    const dayName = DAY_NAMES[new Date(year, month - 1, day).getDay()]
-    selectedDateLabel = `${dayName}, ${day} ${MONTH_NAMES[month - 1]} ${year}`
-    selectedDayAndDate = `${dayName}, ${day} ${MONTH_NAMES[month - 1].slice(0, 3)}`
+    const date = new Date(`${selectedDate}T00:00:00Z`)
+    selectedDateLabel = new Intl.DateTimeFormat(i18n.language, {
+      weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC',
+    }).format(date)
+    selectedDayAndDate = new Intl.DateTimeFormat(i18n.language, {
+      weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC',
+    }).format(date)
   }
 
   /* ---------- Handler ---------- */
@@ -373,22 +370,22 @@ function DetailOrder() {
 
   // Validasi jadwal dipakai bersama oleh desktop & mobile. Mengembalikan pesan error atau null
   const getScheduleError = (): string | null => {
-    if (!resourceId) return 'Pilih fasilitas terlebih dahulu.'
-    if (!selectedDate) return 'Pilih tanggal terlebih dahulu.'
-    if (selectedDate < getTodayKey(new Date())) return 'Tanggal yang dipilih sudah lewat. Pilih tanggal hari ini atau setelahnya.'
-    if (isAvailabilityLoading || !availability) return 'Ketersediaan jadwal belum selesai dimuat.'
-    if (isDateBooked) return 'Fasilitas tutup atau jadwal sudah penuh pada tanggal ini.'
-    if (!selectedStartTime) return 'Pilih waktu mulai terlebih dahulu.'
+    if (!resourceId) return t('booking.facilityNotSelected')
+    if (!selectedDate) return t('booking.dateNotSelected')
+    if (selectedDate < getTodayKey(new Date())) return t('booking.dateInPast')
+    if (isAvailabilityLoading || !availability) return t('booking.availabilityLoading')
+    if (isDateBooked) return t('booking.facilityUnavailable')
+    if (!selectedStartTime) return t('booking.timeNotSelected')
     if (bookedSlotsToday.includes(selectedStartTime)) {
-      return 'Salah satu slot sudah tidak tersedia. Muat ulang jadwal dan pilih waktu lain.'
+      return t('booking.slotUnavailable')
     }
     if (isPastSlot(selectedDate, selectedStartTime, new Date())) {
-      return 'Jam yang dipilih sudah lewat. Pilih waktu yang masih tersedia.'
+      return t('booking.timeInPast')
     }
     if (durationMinutes < 60 || !canBookWindow(timeToMinutes(selectedStartTime), durationMinutes)) {
-      return 'Durasi tidak tersedia sampai waktu selesai. Pilih waktu atau durasi lain.'
+      return t('booking.durationUnavailable')
     }
-    if (isPriceLoading || !pricePreview) return 'Harga booking belum selesai dihitung.'
+    if (isPriceLoading || !pricePreview) return t('booking.priceCalculating')
     return null
   }
 
@@ -464,7 +461,7 @@ function DetailOrder() {
       return
     }
     if (!resourceId) {
-      toast.error('Fasilitas belum dipilih.')
+      toast.error(t('booking.facilityNotSelected'))
       return
     }
 
@@ -496,9 +493,9 @@ function DetailOrder() {
         cartService.addItem(persistedCartItem)
         return [...items, persistedCartItem]
       })
-      toast.success('Jadwal berhasil ditambahkan ke keranjang.')
+      toast.success(t('booking.addScheduleToCart'))
     } catch (error) {
-      toast.error(getApiErrorMessage(error, 'Jadwal gagal ditambahkan ke keranjang.'))
+      toast.error(getApiErrorMessage(error, t('booking.addScheduleToCartFailed')))
       return
     }
     setIsCheckoutModalOpen(false)
@@ -511,7 +508,7 @@ function DetailOrder() {
         <>
           <MobileHeader
             variant="title"
-            title="Checkout"
+            title={t('booking.checkout')}
             showCart
             showShare
             showBottomNav={false}
@@ -583,61 +580,38 @@ function DetailOrder() {
 
               <div>
                 <h2 className="font-heading text-2xl font-bold text-[#343133]">
-                  Pilih Tanggal &amp; Waktu Booking
+                  {t('booking.chooseDateTime')}
                 </h2>
                 <p className="mt-2 max-w-[320px] text-sm leading-relaxed text-[#343133]">
-                  Silakan pilih tanggal yang tersedia (Hijau) dan jam latihan Anda. Tanggal
-                  merah / soft-red sudah dibooking.
+                  {t('booking.scheduleInstruction')}
                 </p>
                 <Suspense fallback={<div aria-hidden="true" className="min-h-[420px]" />}>
-                  {!selectedDate ? (
-                    <BookingCalendar
-                      variant="desktop"
-                      viewYear={viewYear}
-                      viewMonth={viewMonth}
-                      selectedDate={selectedDate}
-                      bookedDates={BOOKED_DATES}
-                      onChangeMonth={handleChangeMonth}
-                      onSelectDate={handleSelectDate}
-                    />
-                  ) : (
-                    <>
-                      <div className="mt-3 flex items-center justify-between gap-4 rounded-xl border border-[#D4D4D4] bg-white px-4 py-3">
-                        <div className="min-w-0">
-                          <p className="text-xs text-[#6F6B6E]">Tanggal dipilih</p>
-                          <p className="truncate font-heading text-sm font-bold text-[#343133]">
-                            {selectedDateLabel}
-                          </p>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={handleResetSearch}
-                          className="shrink-0 cursor-pointer rounded-lg border border-[#D4D4D4] px-3 py-2 font-heading text-xs font-bold text-[#265021] transition-colors hover:bg-[#F5FAF0]"
-                        >
-                          Ubah tanggal
-                        </button>
-                      </div>
-                      <TimeSlotPicker
-                        variant="desktop"
-                        isDateBooked={isDateBooked}
-                        bookedSlotsToday={bookedSlotsToday}
-                        availableTimeSlots={availableTimeSlots}
-                        isLoading={isAvailabilityLoading}
-                        selectedStartTime={selectedStartTime}
-                        durationMinutes={durationMinutes}
-                        sessionCount={sessionCount}
-                        durationLabel={durationLabel}
-                        selectedDateLabel={selectedDateLabel}
-                        startTime={startTime}
-                        endTime={endTime}
-                        maxSessionHours={maxSessionHoursForSelection}
-                        onToggleTime={handleSelectStartTime}
-                        onChangeDuration={handleChangeDuration}
-                        onConfirmSchedule={handleConfirmSchedule}
-                        onResetSearch={handleResetSearch}
-                      />
-                    </>
-                  )}
+                  <BookingScheduleSelector
+                    viewYear={viewYear}
+                    viewMonth={viewMonth}
+                    selectedDate={selectedDate}
+                    selectedDateLabel={selectedDateLabel}
+                    selectedDateText={t('booking.selectedDate')}
+                    changeDateText={t('booking.changeDate')}
+                    bookedDates={BOOKED_DATES}
+                    bookedSlotsToday={bookedSlotsToday}
+                    availableTimeSlots={availableTimeSlots}
+                    isLoading={isAvailabilityLoading}
+                    isDateBooked={isDateBooked}
+                    selectedStartTime={selectedStartTime}
+                    durationMinutes={durationMinutes}
+                    sessionCount={sessionCount}
+                    durationLabel={durationLabel}
+                    startTime={startTime}
+                    endTime={endTime}
+                    maxSessionHours={maxSessionHoursForSelection}
+                    onChangeMonth={handleChangeMonth}
+                    onSelectDate={handleSelectDate}
+                    onToggleTime={handleSelectStartTime}
+                    onChangeDuration={handleChangeDuration}
+                    onResetDate={handleResetSearch}
+                    onConfirmSchedule={handleConfirmSchedule}
+                  />
                 </Suspense>
               </div>
             </div>
@@ -671,9 +645,9 @@ function DetailOrder() {
                 await removeBackendCartItem(id)
                 cartService.removeItem(id)
                 setCartItems((items) => items.filter((item) => item.id !== id))
-                toast.success('Booking berhasil dihapus dari keranjang.')
+                toast.success(t('booking.cartItemRemoved'))
               } catch (error) {
-                toast.error(getApiErrorMessage(error, 'Item keranjang gagal dihapus.'))
+                toast.error(getApiErrorMessage(error, t('booking.cartItemRemoveFailed')))
               }
             }}
             onCheckout={(items) => {
@@ -681,13 +655,13 @@ function DetailOrder() {
                 !item.resourceId || !item.bookingDate || !item.startTime || !item.endTime || !item.sportType,
               )
               if (invalidItems.length > 0) {
-                toast.error('Data jadwal keranjang tidak lengkap. Tambahkan ulang jadwal tersebut.')
+                toast.error(t('booking.cartDataIncomplete'))
                 return
               }
 
               const firstItem = items[0]
               if (!firstItem) {
-                toast.error('Keranjang masih kosong.')
+                toast.error(t('booking.cartEmpty'))
                 return
               }
 

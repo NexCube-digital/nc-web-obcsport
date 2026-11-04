@@ -20,6 +20,7 @@ export interface PublicTestimonial {
 	name: string
 	company: string | null
 	text: string
+	textEn?: string | null
 	rating: number
 	avatar: string | null
 	createdAt: string

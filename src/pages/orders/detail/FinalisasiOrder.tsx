@@ -5,6 +5,7 @@ import { getBookingDetails, type BookingDetails } from '../../../services/bookin
 import { getMembershipDetail } from '../../../services/membershipService'
 import { getApiErrorMessage } from '../../../services/apiService'
 import { parsePersistedDirectPayment } from '../../../services/paymentService'
+import { useTranslation } from 'react-i18next'
 
 interface FinalisasiState {
   bookingId?: string
@@ -16,6 +17,7 @@ const PAID_STATUSES = ['paid', 'settlement', 'capture', 'fully_paid', 'completed
 const FAILED_STATUSES = ['cancelled', 'expired', 'refunded', 'deny', 'failure', 'failed', 'cancel']
 
 function FinalisasiOrder() {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const location = useLocation()
   const state = (location.state as FinalisasiState | null) ?? {}
@@ -59,7 +61,7 @@ function FinalisasiOrder() {
             startTime: session.booking ? `${String(Math.floor(session.booking.startMinute / 60)).padStart(2, '0')}:${String(session.booking.startMinute % 60).padStart(2, '0')}` : '-',
             endTime: session.booking ? `${String(Math.floor(session.booking.endMinute / 60)).padStart(2, '0')}:${String(session.booking.endMinute % 60).padStart(2, '0')}` : '-',
           })))
-          setErrorMessage(info ? '' : 'Instruksi pembayaran membership belum tersedia.')
+          setErrorMessage(info ? '' : t('payment.instructionsMissing'))
           return
         }
 
@@ -89,13 +91,13 @@ function FinalisasiOrder() {
           endTime: item.endTime,
         })))
       } catch (error) {
-        if (active) setErrorMessage(getApiErrorMessage(error, 'Detail pembayaran tidak dapat dimuat.'))
+        if (active) setErrorMessage(getApiErrorMessage(error, t('paymentStatus.loadingPayment')))
       }
     }
 
     void loadStatus()
     return () => { active = false }
-  }, [bookingId, bookingIdsKey, membershipId, navigate])
+  }, [bookingId, bookingIdsKey, membershipId, navigate, t])
 
   const formatRupiah = (value: number) => `Rp ${value.toLocaleString('id-ID')}`
 
@@ -103,7 +105,7 @@ function FinalisasiOrder() {
     <div className="flex min-h-screen flex-col bg-white font-body text-[#343133]">
       <main className="mx-auto w-full max-w-[560px] flex-1 px-4 pt-6 pb-16">
         {errorMessage && <p role="alert" className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{errorMessage}</p>}
-        {!directInfo && !errorMessage && <p role="status" className="py-10 text-center text-sm text-[#6F6B6E]">Memuat instruksi pembayaran...</p>}
+        {!directInfo && !errorMessage && <p role="status" className="py-10 text-center text-sm text-[#6F6B6E]">{t('payment.preparing')}</p>}
         {directInfo && (
           <PaymentInstructionCard
             info={directInfo}

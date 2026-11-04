@@ -138,7 +138,7 @@ function MobileHeader({
   userName,
   profileImage,
   title = '',
-  backLabel = 'Kembali',
+  backLabel,
   backTo,
   onShare,
   showShare = false,
@@ -149,8 +149,9 @@ function MobileHeader({
   const navigate = useNavigate()
   const { t, i18n } = useTranslation()
   const { user } = useAuth()
-  const displayName = user?.name ?? userName ?? 'Akun OBC'
+  const displayName = user?.name ?? userName ?? t('common.myAccount')
   const displayImage = profileImage ?? user?.avatarUrl
+  const resolvedBackLabel = backLabel ?? t('common.back')
   const activeLanguage = i18n.resolvedLanguage?.startsWith('en') ? LANGUAGES[1] : LANGUAGES[0]
   const [isLanguageMenuOpen, setIsLanguageMenuOpen] = useState(false)
   const [isCartOpen, setIsCartOpen] = useState(false)
@@ -211,12 +212,12 @@ function MobileHeader({
           <div className="flex h-[72px] items-center justify-between gap-2">
             <Link
               to="/pengaturan"
-              aria-label={`Buka pengaturan profil ${displayName}`}
+              aria-label={t('common.profileSettings', { name: displayName })}
               className="flex min-w-0 items-center gap-2 rounded-md text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#004000]"
             >
               <div
                 role="img"
-                aria-label={`Foto profil ${displayName}`}
+                aria-label={t('common.profilePhoto', { name: displayName })}
                 className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#404F14] font-heading text-xs font-bold text-white"
               >
                 {displayImage ? (
@@ -285,14 +286,14 @@ function MobileHeader({
               <button
                 type="button"
                 onClick={() => setIsCartOpen(true)}
-                aria-label="Keranjang"
+                aria-label={t('common.cart')}
                 aria-haspopup="dialog"
                 aria-expanded={isCartOpen}
                 className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[#404F14] transition-colors hover:bg-[#F1F4EA] hover:text-[#004000]"
               >
                 <ShoppingCart size={19} strokeWidth={1.8} aria-hidden="true" />
                 {cartItems.length > 0 && (
-                  <span className="absolute right-0 top-0 grid min-h-4 min-w-4 -translate-y-1/3 translate-x-1/3 place-items-center rounded-full bg-[#9AAD3E] px-1 text-[9px] font-bold leading-none text-white" aria-label={`${cartItems.length} booking dalam keranjang`}>
+                  <span className="absolute right-0 top-0 grid min-h-4 min-w-4 -translate-y-1/3 translate-x-1/3 place-items-center rounded-full bg-[#9AAD3E] px-1 text-[9px] font-bold leading-none text-white" aria-label={t('common.bookingsInCart', { count: cartItems.length })}>
                     {cartItems.length > 99 ? '99+' : cartItems.length}
                   </span>
                 )}
@@ -311,7 +312,7 @@ function MobileHeader({
             <button
               type="button"
               onClick={handleBack}
-              aria-label="Kembali"
+              aria-label={t('common.back')}
               className="-ml-1 p-1 text-[#004000] shrink-0"
             >
               <ChevronLeftIcon />
@@ -329,7 +330,7 @@ function MobileHeader({
               <button
                 type="button"
                 onClick={handleShare}
-                aria-label="Bagikan"
+                aria-label={t('common.share')}
                 className="-mr-1 shrink-0 p-1 text-[#121212]"
               >
                 <ShareIcon />
@@ -346,17 +347,17 @@ function MobileHeader({
             <button
               type="button"
               onClick={handleBack}
-              aria-label={backLabel}
+              aria-label={resolvedBackLabel}
               className="-ml-1 flex items-center gap-2 p-1 text-[#004000]"
             >
               <ArrowLeftIcon />
-              <span className="text-base font-heading font-bold">{backLabel}</span>
+              <span className="text-base font-heading font-bold">{resolvedBackLabel}</span>
             </button>
 
             <button
               type="button"
               onClick={handleShare}
-              aria-label="Bagikan"
+              aria-label={t('common.share')}
               className="-mr-1 p-1 text-[#121212]"
             >
               <ShareIcon />
@@ -367,7 +368,7 @@ function MobileHeader({
 
       {showBottomNav && (
         <nav
-          aria-label="Navigasi utama"
+          aria-label={t('common.primaryNavigation')}
           className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-white border-t border-[#E5E5E5] pb-[env(safe-area-inset-bottom)]"
         >
           <ul className="flex items-stretch justify-between px-2">
@@ -405,9 +406,9 @@ function MobileHeader({
                 await removeBackendCartItem(id)
                 const items = await syncBackendCart()
                 setCartItems(items)
-                toast.success('Booking berhasil dihapus dari keranjang.')
+                toast.success(t('common.cartItemRemoved'))
               } catch (error) {
-                toast.error(error instanceof Error ? error.message : 'Item keranjang gagal dihapus.')
+                toast.error(error instanceof Error ? error.message : t('common.cartItemRemoveFailed'))
               }
             }}
             onCheckout={(items) => {

@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { CircleCheck, Eye, EyeOff, House, X } from 'lucide-react'
 import { toast } from 'sonner'
-import logo from '../../assets/logo/unit bisnis/LOGO OBC SPORT CENTER.png'
+import logo from '../../assets/logo/unit bisnis/sport.webp'
 import { useIsMobile } from '../../hooks/useIsMobile'
 import ScrollReveal from '../../components/animation/ScrollReveal'
 import { getApiErrorMessage } from '../../services/apiService'
@@ -51,33 +52,6 @@ function EyeIcon({ visible }: { visible: boolean }) {
   )
 }
 
-const BENEFITS: string[] = [
-  'Booking 100% Instan & QRIS Otomatis',
-  'Akses Premium Court Booking & Member Club',
-  'Tracking Sesi Akademi & Modul Pelatihan',
-]
-
-const REGISTRATION_POLICIES = [
-  {
-    title: 'Syarat dan Ketentuan',
-    items: [
-      'Informasi akun yang Anda berikan harus benar dan terbaru. Anda bertanggung jawab menjaga kerahasiaan kata sandi dan aktivitas pada akun Anda.',
-      'Ketersediaan lapangan mengikuti jadwal yang ditampilkan. Pemesanan dianggap berhasil setelah status transaksi menunjukkan berhasil di aplikasi.',
-      'Gunakan fasilitas sesuai jadwal, aturan lokasi, dan petunjuk keselamatan yang berlaku. Perubahan atau pembatalan mengikuti informasi yang ditampilkan pada proses pemesanan.',
-      'Jangan menggunakan akun atau layanan untuk mengganggu pengguna lain, merusak fasilitas, atau melakukan aktivitas yang melanggar hukum.',
-    ],
-  },
-  {
-    title: 'Kebijakan Privasi',
-    items: [
-      'OBC Sport menggunakan nama, email, dan nomor telepon yang Anda masukkan untuk membuat dan mengelola akun, memproses pemesanan, serta menyampaikan informasi layanan.',
-      'Informasi akun tidak ditampilkan sebagai informasi publik. Data hanya digunakan untuk menjalankan layanan dan komunikasi yang berkaitan dengan akun atau pemesanan Anda.',
-      'Anda dapat menghubungi admin OBC Sport untuk meminta bantuan terkait informasi akun. Jangan membagikan kata sandi atau kode keamanan kepada siapa pun.',
-      'Dengan melanjutkan pendaftaran, Anda menyatakan telah membaca syarat layanan dan pemberitahuan penggunaan data di atas.',
-    ],
-  },
-]
-
 /* Desktop: padding input fluid mengikuti tinggi layar */
 const INPUT_CLASS =
   'w-full rounded-lg border border-[#D4D4D4] bg-[#FDFCF7] px-3 py-[clamp(6px,1.1vh,10px)] text-sm placeholder:text-[#343133] focus:outline-none focus:border-[#404F14]'
@@ -90,6 +64,9 @@ const M_LABEL_CLASS =
   'mb-[clamp(2px,0.6vh,6px)] block text-xs font-heading font-bold text-[#343133]'
 
 function Register() {
+  const { t } = useTranslation()
+  const benefits = t('register.benefits', { returnObjects: true }) as string[]
+  const registrationPolicies = t('register.policies', { returnObjects: true }) as Array<{ title: string; items: string[] }>
   const [fullName, setFullName] = useState('')
   const [phone, setPhone] = useState('')
   const [email, setEmail] = useState('')
@@ -147,23 +124,23 @@ function Register() {
   const submitRegistration = async (e: React.FormEvent, includePhone: boolean, requireAgreement: boolean) => {
     e.preventDefault()
     if (fullName.trim().length < 3) {
-      toast.error('Nama harus terdiri dari minimal 3 karakter.')
+      toast.error(t('register.nameMinError'))
       return
     }
     if (password.length < 8) {
-      toast.error('Password minimal 8 karakter.')
+      toast.error(t('register.passwordMinError'))
       return
     }
     if (password !== confirmPassword) {
-      toast.error('Konfirmasi password tidak sama.')
+      toast.error(t('register.passwordMismatchError'))
       return
     }
     if (includePhone && phone && !/^(\+62|62|0)[0-9]{8,14}$/.test(phone.trim())) {
-      toast.error('Format nomor telepon Indonesia tidak valid.')
+      toast.error(t('register.phoneFormatError'))
       return
     }
     if (requireAgreement && !agreed) {
-      toast.error('Harap setujui syarat dan ketentuan terlebih dahulu.')
+      toast.error(t('register.agreementError'))
       return
     }
 
@@ -175,10 +152,10 @@ function Register() {
         password,
         ...(includePhone && phone.trim() ? { phone: phone.trim() } : {}),
       })
-      toast.success('Pendaftaran berhasil.')
+      toast.success(t('register.success'))
       navigate('/home', { replace: true })
     } catch (error) {
-      toast.error(getApiErrorMessage(error, 'Pendaftaran gagal. Periksa koneksi dan coba lagi.'))
+      toast.error(getApiErrorMessage(error, t('register.failed')))
     } finally {
       setIsSubmitting(false)
     }
@@ -202,7 +179,7 @@ function Register() {
       const google = (window as any).google
       const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || ''
       if (!clientId) {
-        toast.info('Google Client ID belum dikonfigurasi di env frontend.')
+        toast.info(t('auth.googleClientMissing'))
         return
       }
 
@@ -212,10 +189,10 @@ function Register() {
           setIsSubmitting(true)
           try {
             await loginGoogleCustomer(response.credential)
-            toast.success('Pendaftaran / Masuk dengan Google berhasil!')
+            toast.success(t('register.googleSuccess'))
             navigate('/home', { replace: true })
           } catch (err: any) {
-            toast.error(getApiErrorMessage(err, 'Gagal mendaftar via Google.'))
+            toast.error(getApiErrorMessage(err, t('register.googleFailed')))
           } finally {
             setIsSubmitting(false)
           }
@@ -223,7 +200,7 @@ function Register() {
       })
       google.accounts.id.prompt()
     } else {
-      toast.info('Google Sign-In sedang dimuat, silakan coba beberapa saat lagi.')
+      toast.info(t('auth.googleLoading'))
     }
   }
 
@@ -246,27 +223,27 @@ function Register() {
             </div>
 
             <h1 className="mt-6 text-center text-2xl font-bold text-[#404F14]">
-              Buat Akun Baru
+              {t('register.title')}
             </h1>
             <p className="mt-1 text-center font-body text-xs text-[#6F6B6E]">
-              Daftar akun OBC Sport untuk kemudahan reservasi
+              {t('register.description')}
             </p>
 
             <form onSubmit={handleSubmitMobile} className="mt-6 space-y-3">
-              <Link to="/" aria-label="Kembali ke Home" className="-mt-4 ml-auto flex w-fit items-center gap-1.5 rounded-lg px-2 py-1.5 text-sm font-semibold text-[#404F14] transition-colors hover:bg-[#E8EDE3]">
+              <Link to="/" aria-label={t('common.home')} className="-mt-4 ml-auto flex w-fit items-center gap-1.5 rounded-lg px-2 py-1.5 text-sm font-semibold text-[#404F14] transition-colors hover:bg-[#E8EDE3]">
                 <House size={17} aria-hidden="true" />
-                Home
+                {t('common.home')}
               </Link>
               <div>
                 <label htmlFor="m-name" className={M_LABEL_CLASS}>
-                  Nama Lengkap
+                  {t('register.fullName')}
                 </label>
                 <input
                   id="m-name"
                   type="text"
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
-                  placeholder="Nama Lengkap Anda"
+                  placeholder={t('register.fullNamePlaceholder')}
                   disabled={isSubmitting}
                   className={M_INPUT_CLASS}
                 />
@@ -274,7 +251,7 @@ function Register() {
 
               <div>
                 <label htmlFor="m-email" className={M_LABEL_CLASS}>
-                  Email
+                  {t('register.email')}
                 </label>
                 <input
                   id="m-email"
@@ -289,7 +266,7 @@ function Register() {
 
               <div>
                 <label htmlFor="m-password" className={M_LABEL_CLASS}>
-                  Kata Sandi
+                  {t('register.password')}
                 </label>
                 <div className="relative">
                   <input
@@ -297,14 +274,14 @@ function Register() {
                     type={showPassword ? 'text' : 'password'}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Minimal 8 karakter"
+                    placeholder={t('register.passwordPlaceholder')}
                     disabled={isSubmitting}
                     className={`${M_INPUT_CLASS} pr-12`}
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword((prev) => !prev)}
-                    aria-label={showPassword ? 'Sembunyikan kata sandi' : 'Tampilkan kata sandi'}
+                    aria-label={showPassword ? t('auth.hidePassword') : t('auth.showPassword')}
                     className="absolute right-4 top-1/2 -translate-y-1/2 text-[#404F14] cursor-pointer"
                   >
                     <EyeIcon visible={showPassword} />
@@ -314,7 +291,7 @@ function Register() {
 
               <div>
                 <label htmlFor="m-confirm-password" className={M_LABEL_CLASS}>
-                  Konfirmasi Kata Sandi
+                  {t('register.confirmPassword')}
                 </label>
                 <div className="relative">
                   <input
@@ -322,14 +299,14 @@ function Register() {
                     type={showConfirmPassword ? 'text' : 'password'}
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
-                    placeholder="Ulangi kata sandi"
+                    placeholder={t('register.confirmPasswordPlaceholder')}
                     disabled={isSubmitting}
                     className={`${M_INPUT_CLASS} pr-12`}
                   />
                   <button
                     type="button"
                     onClick={() => setShowConfirmPassword((prev) => !prev)}
-                    aria-label={showConfirmPassword ? 'Sembunyikan kata sandi' : 'Tampilkan kata sandi'}
+                    aria-label={showConfirmPassword ? t('auth.hidePassword') : t('auth.showPassword')}
                     className="absolute right-4 top-1/2 -translate-y-1/2 text-[#404F14] cursor-pointer"
                   >
                     <EyeIcon visible={showConfirmPassword} />
@@ -347,7 +324,7 @@ function Register() {
                     disabled={isSubmitting}
                     className="mt-1 h-4 w-4 shrink-0 accent-[#404F14]"
                   />
-                  <span>Saya menyetujui Syarat dan Ketentuan serta Kebijakan Privasi OBC Sport Center.</span>
+                  <span>{t('register.acceptPolicies')}</span>
                 </label>
               </div>
 
@@ -356,13 +333,13 @@ function Register() {
                 disabled={isSubmitting}
                 className="mt-1 h-[clamp(36px,6vh,48px)] w-full rounded-xl bg-[#CDF178] text-sm font-heading font-bold text-[#404F14] hover:bg-[#9AAD3E] active:bg-[#9AAD3E] transition-colors cursor-pointer disabled:opacity-50"
               >
-                {isSubmitting ? 'Memproses...' : 'Daftar Sekarang'}
+                {isSubmitting ? t('register.processing') : t('register.submit')}
               </button>
             </form>
 
             <div className="mt-[clamp(6px,1.4vh,14px)] flex items-center gap-3">
               <span className="h-px flex-1 bg-[#D4D4D4]" />
-              <span className="font-body text-xs text-[#343133]">Atau</span>
+              <span className="font-body text-xs text-[#343133]">{t('register.or')}</span>
               <span className="h-px flex-1 bg-[#D4D4D4]" />
             </div>
 
@@ -372,16 +349,16 @@ function Register() {
               className="mt-3 flex h-[clamp(36px,6vh,48px)] w-full items-center justify-center gap-2 rounded-xl border border-[#D4D4D4] bg-white text-sm font-bold text-[#121212] active:bg-[#FDFCF7] transition-colors cursor-pointer"
             >
               <GoogleIcon />
-              Daftar dengan Google
+              {t('register.registerGoogle')}
             </button>
 
             <p className="mt-4 text-center font-body text-sm text-[#343133]">
-              Sudah punya akun?{' '}
+              {t('register.alreadyHaveAccount')}{' '}
               <Link
                 to="/login"
                 className="font-heading font-bold text-[#404F14] underline underline-offset-2"
               >
-                Masuk Sekarang
+                {t('register.signIn')}
               </Link>
             </p>
           </div>
@@ -397,17 +374,17 @@ function Register() {
               <ScrollReveal delay={0} className="hidden lg:block">
                 <div className="max-w-lg">
                   <h1 className="font-heading text-3xl font-extrabold leading-tight text-[#343133] lg:text-4xl">
-                    Bergabung Bersama Komunitas Olahraga Terlengkap
+                    {t('register.desktopTitle')}
                   </h1>
                   <p className="mt-3 text-sm leading-relaxed text-[#6F6B6E]">
-                    Nikmati kemudahan reservasi lapangan secara mandiri, akses ke berbagai program keanggotaan eksklusif, serta keuntungan poin promo setiap pemesanan.
+                    {t('register.desktopDescription')}
                   </p>
 
                   <ul className="mt-6 space-y-3">
-                    {BENEFITS.map((b, i) => (
-                      <li key={i} className="flex items-center gap-2.5 text-sm font-medium text-[#404F14]">
+                    {benefits.map((benefit, index) => (
+                      <li key={index} className="flex items-center gap-2.5 text-sm font-medium text-[#404F14]">
                         <CircleCheck size={18} className="shrink-0 text-[#404F14]" />
-                        <span>{b}</span>
+                        <span>{benefit}</span>
                       </li>
                     ))}
                   </ul>
@@ -419,28 +396,28 @@ function Register() {
                 <div className="mx-auto w-full max-w-[520px] rounded-2xl border border-[#D4D4D4] bg-white p-6 shadow-[0_4px_20px_rgba(0,0,0,0.08)]">
                   <div className="flex items-center justify-between gap-3">
                     <h2 className="font-heading text-xl font-bold text-[#343133]">
-                      Buat Akun OBC
+                      {t('register.formTitle')}
                     </h2>
-                    <Link to="/" aria-label="Kembali ke Home" className="flex shrink-0 items-center gap-2 rounded-lg px-2.5 py-1.5 text-sm font-semibold leading-none text-[#404F14] transition-colors hover:bg-[#F5FAF3]">
+                    <Link to="/" aria-label={t('common.backToHome')} className="flex shrink-0 items-center gap-2 rounded-lg px-2.5 py-1.5 text-sm font-semibold leading-none text-[#404F14] transition-colors hover:bg-[#F5FAF3]">
                       <House size={18} className="shrink-0" aria-hidden="true" />
                       <span>Home</span>
                     </Link>
                   </div>
                   <p className="mt-0.5 text-xs text-[#6F6B6E]">
-                    Lengkapi formulir di bawah ini untuk memulai
+                    {t('register.formDescription')}
                   </p>
 
                   <form onSubmit={handleSubmit} className="mt-4 space-y-2.5">
                     <div>
                       <label htmlFor="fullName" className={LABEL_CLASS}>
-                        Nama Lengkap
+                        {t('register.fullName')}
                       </label>
                       <input
                         id="fullName"
                         type="text"
                         value={fullName}
                         onChange={(e) => setFullName(e.target.value)}
-                        placeholder="Nama Lengkap Anda"
+                        placeholder={t('register.fullNamePlaceholder')}
                         disabled={isSubmitting}
                         className={INPUT_CLASS}
                       />
@@ -449,7 +426,7 @@ function Register() {
                     <div className="grid grid-cols-2 gap-3">
                       <div>
                         <label htmlFor="email" className={LABEL_CLASS}>
-                          Email
+                          {t('register.email')}
                         </label>
                         <input
                           id="email"
@@ -463,7 +440,7 @@ function Register() {
                       </div>
                       <div>
                         <label htmlFor="phone" className={LABEL_CLASS}>
-                          Nomor Telepon (WhatsApp)
+                          {t('register.phone')}
                         </label>
                         <input
                           id="phone"
@@ -480,7 +457,7 @@ function Register() {
                     <div className="grid grid-cols-2 gap-3">
                       <div>
                         <label htmlFor="password" className={LABEL_CLASS}>
-                          Kata Sandi
+                          {t('register.password')}
                         </label>
                         <div className="relative">
                           <input
@@ -488,13 +465,14 @@ function Register() {
                             type={showPassword ? 'text' : 'password'}
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
-                            placeholder="Min. 8 karakter"
+                            placeholder={t('register.passwordPlaceholder')}
                             disabled={isSubmitting}
                             className={`${INPUT_CLASS} pr-10`}
                           />
                           <button
                             type="button"
                             onClick={() => setShowPassword((p) => !p)}
+                            aria-label={showPassword ? t('auth.hidePassword') : t('auth.showPassword')}
                             className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#404F14] cursor-pointer"
                           >
                             {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
@@ -504,7 +482,7 @@ function Register() {
 
                       <div>
                         <label htmlFor="confirmPassword" className={LABEL_CLASS}>
-                          Ulangi Kata Sandi
+                          {t('register.confirmPassword')}
                         </label>
                         <div className="relative">
                           <input
@@ -512,13 +490,14 @@ function Register() {
                             type={showConfirmPassword ? 'text' : 'password'}
                             value={confirmPassword}
                             onChange={(e) => setConfirmPassword(e.target.value)}
-                            placeholder="Ulangi sandi"
+                            placeholder={t('register.confirmPasswordPlaceholder')}
                             disabled={isSubmitting}
                             className={`${INPUT_CLASS} pr-10`}
                           />
                           <button
                             type="button"
                             onClick={() => setShowConfirmPassword((p) => !p)}
+                            aria-label={showConfirmPassword ? t('auth.hidePassword') : t('auth.showPassword')}
                             className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#404F14] cursor-pointer"
                           >
                             {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
@@ -536,7 +515,7 @@ function Register() {
                         className="mt-0.5 h-4 w-4 shrink-0 rounded border-[#404F14] accent-[#404F14] cursor-pointer"
                       />
                       <span>
-                        Saya menyetujui Syarat dan Ketentuan serta Kebijakan Privasi OBC Sport Center.
+                        {t('register.acceptPolicies')}
                       </span>
                     </label>
                     <button
@@ -544,17 +523,17 @@ function Register() {
                       disabled={isSubmitting}
                       className="w-full rounded-lg bg-[#CDF178] py-[clamp(7px,1.3vh,10px)] text-sm font-heading font-bold text-[#404F14] hover:bg-[#9AAD3E] transition-colors cursor-pointer disabled:opacity-50"
                     >
-                      {isSubmitting ? 'Memproses...' : 'Daftar Sekarang'}
+                      {isSubmitting ? t('register.processing') : t('register.submit')}
                     </button>
                   </form>
                   <p className="mt-[clamp(6px,1.4vh,12px)] text-center text-xs text-[#343133]">
-                    Sudah punya akun?{' '}
+                    {t('register.alreadyHaveAccount')}{' '}
                     <Link to="/login" className="font-heading font-bold text-[#404F14]">
-                      Masuk Disini
+                      {t('register.signInHere')}
                     </Link>
                   </p>
 
-                  <p className="mt-2 text-center text-xs text-[#343133]">Atau</p>
+                  <p className="mt-2 text-center text-xs text-[#343133]">{t('register.or')}</p>
 
                   <button
                     type="button"
@@ -562,7 +541,7 @@ function Register() {
                     className="mx-auto mt-2 flex w-full max-w-[280px] items-center justify-center gap-2 rounded-md border border-[#D4D4D4] bg-white py-1.5 font-heading text-xs font-bold text-[#121212] hover:bg-[#FDFCF7] transition-colors cursor-pointer"
                   >
                     <GoogleIcon />
-                    Daftar dengan Google
+                    {t('register.registerGoogle')}
                   </button>
                 </div>
               </ScrollReveal>
@@ -581,10 +560,10 @@ function Register() {
           <section role="dialog" aria-modal="true" aria-labelledby="registration-policy-title" className="flex max-h-[90dvh] w-full max-w-2xl flex-col overflow-hidden rounded-xl bg-white shadow-2xl">
             <header className="flex items-start justify-between gap-4 border-b border-[#E5E5E5] px-5 py-4 sm:px-6">
               <div>
-                <h2 id="registration-policy-title" className="font-heading text-lg font-bold text-[#343133]">Syarat dan Kebijakan Privasi</h2>
-                <p className="mt-1 text-sm text-[#6F6B6E]">Gulir sampai akhir untuk melanjutkan persetujuan.</p>
+                <h2 id="registration-policy-title" className="font-heading text-lg font-bold text-[#343133]">{t('register.policyModalTitle')}</h2>
+                <p className="mt-1 text-sm text-[#6F6B6E]">{t('register.policyModalHint')}</p>
               </div>
-              <button type="button" onClick={() => setIsPolicyModalOpen(false)} aria-label="Tutup" className="grid h-9 w-9 shrink-0 place-items-center rounded-lg border border-[#D4D4D4] text-[#343133] hover:bg-[#FDFCF7]">
+              <button type="button" onClick={() => setIsPolicyModalOpen(false)} aria-label={t('common.close')} className="grid h-9 w-9 shrink-0 place-items-center rounded-lg border border-[#D4D4D4] text-[#343133] hover:bg-[#FDFCF7]">
                 <X size={18} aria-hidden="true" />
               </button>
             </header>
@@ -596,7 +575,7 @@ function Register() {
               }}
               className="min-h-0 max-h-[min(60dvh,560px)] flex-1 space-y-6 overflow-y-auto px-5 py-5 text-sm leading-6 text-[#343133] sm:px-6"
             >
-              {REGISTRATION_POLICIES.map((section) => (
+              {registrationPolicies.map((section) => (
                 <section key={section.title}>
                   <h3 className="font-heading text-base font-bold text-[#265021]">{section.title}</h3>
                   <ol className="mt-3 list-decimal space-y-3 pl-5">
@@ -607,10 +586,10 @@ function Register() {
             </div>
             <footer className="flex flex-col-reverse gap-2 border-t border-[#E5E5E5] px-5 py-4 sm:flex-row sm:justify-end sm:px-6">
               <button type="button" onClick={() => setIsPolicyModalOpen(false)} className="h-10 rounded-lg border border-[#D4D4D4] px-4 text-sm font-semibold text-[#343133] hover:bg-[#FDFCF7]">
-                Tutup
+                {t('common.close')}
               </button>
               <button type="button" onClick={acceptPolicies} disabled={!hasReadPolicy} className="h-10 rounded-lg bg-[#CDF178] px-4 text-sm font-bold text-[#404F14] hover:bg-[#9AAD3E] disabled:cursor-not-allowed disabled:opacity-50">
-                {hasReadPolicy ? 'Saya membaca dan setuju' : 'Gulir sampai akhir untuk setuju'}
+                {hasReadPolicy ? t('register.policyReadAndAgree') : t('register.policyScrollToAgree')}
               </button>
             </footer>
           </section>

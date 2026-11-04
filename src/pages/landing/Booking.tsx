@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import lapangF1 from '../../assets/images/lapang/Lapang F1.webp'
 import futsalF2 from '../../assets/images/lapang/academy2.webp'
 import sepakbola from '../../assets/images/lapang/lapang-bola.webp'
@@ -8,6 +9,8 @@ const COLLAGE_IMG =
 	'w-full rounded-lg sm:rounded-xl object-cover shadow-[0_2px_10px_rgba(0,0,0,0.15)] transition duration-300 ease-out hover:scale-[1.04] hover:shadow-[0_10px_24px_rgba(0,0,0,0.22)]'
 
 function Booking() {
+	const { t } = useTranslation()
+	const courtImages = t('landing.courtImages', { returnObjects: true }) as string[]
 	return (
 		<section className="border-y border-[#D4D4D4] bg-white lg:flex lg:items-center">
 			<div className="mx-auto grid max-w-[1248px] items-center gap-8 px-4 py-10 sm:px-6 lg:grid-cols-2 lg:gap-16 lg:py-24">
@@ -16,13 +19,10 @@ function Booking() {
 						OBC Sport
 					</span>
 					<h2 className="mt-3 max-w-[480px] font-heading text-xl font-semibold leading-snug text-[#343133] sm:text-2xl">
-						Booking Lapangan Instan untuk Harian, Rutin, hingga Event Skala Besar
+						{t('landing.bookingTitle')}
 					</h2>
 					<p className="mt-3 max-w-[460px] text-sm leading-relaxed text-[#343133]">
-						Nikmati kemudahan sewa lapangan olahraga premium di OBC Sport Center secara
-						cepat dan praktis. Mulai dari pemesanan harian, membership rutin, hingga
-						sewa eksklusif untuk turnamen dan gathering komunitas—semuanya diatur
-						secara transparan tanpa ribet.
+						{t('landing.bookingDescription')}
 					</p>
 				</div>
 
@@ -30,14 +30,14 @@ function Booking() {
 					<div className="flex min-w-0 flex-[259] flex-col gap-3 pt-8 sm:gap-5 sm:pt-14">
 						<img
 							src={lapangF1}
-							alt="Lapangan F1"
+							alt={courtImages[0]}
 							loading="lazy"
 							decoding="async"
 							className={`${COLLAGE_IMG} aspect-[259/194]`}
 						/>
 						<img
 							src={lapangF2}
-							alt="Lapangan F2"
+							alt={courtImages[1]}
 							loading="lazy"
 							decoding="async"
 							className={`${COLLAGE_IMG} aspect-[259/133]`}
@@ -46,21 +46,21 @@ function Booking() {
 					<div className="flex min-w-0 flex-[193] flex-col gap-3 sm:gap-5">
 						<img
 							src={futsalF2}
-							alt="Ruang tenis meja"
+							alt={courtImages[2]}
 							loading="lazy"
 							decoding="async"
 							className={`${COLLAGE_IMG} aspect-[193/112]`}
 						/>
 						<img
 							src={mejaBilliard}
-							alt="Ruang billiard"
+							alt={courtImages[3]}
 							loading="lazy"
 							decoding="async"
 							className={`${COLLAGE_IMG} aspect-[193/194]`}
 						/>
 						<img
 							src={sepakbola}
-							alt="Lapang sepak bola"
+							alt={courtImages[4]}
 							loading="lazy"
 							decoding="async"
 							className={`${COLLAGE_IMG} aspect-[193/111]`}

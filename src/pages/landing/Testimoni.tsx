@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import TestimonialModal from '../../components/ui/TestimonialModal'
 import reviewIcon from '../../assets/icon/image.png'
@@ -14,16 +15,17 @@ interface FeaturedReview extends PublicTestimonial {
 }
 
 function Testimoni() {
+	const { t, i18n } = useTranslation()
 	const navigate = useNavigate()
 	const { isLoggedIn } = useAuth()
 	const [facilities, setFacilities] = useState<SportsFacility[]>([])
 	const [reviews, setReviews] = useState<FeaturedReview[]>([])
 	const [activeTesti, setActiveTesti] = useState(0)
 	const [isLoadingReviews, setIsLoadingReviews] = useState(true)
-	const [loadError, setLoadError] = useState('')
+	const [hasLoadError, setHasLoadError] = useState(false)
 	const [isTestimonialOpen, setIsTestimonialOpen] = useState(false)
 	const testimonial = reviews[activeTesti]
-	const dateLabel = new Intl.DateTimeFormat('id-ID', {
+	const dateLabel = new Intl.DateTimeFormat(i18n.resolvedLanguage?.startsWith('en') ? 'en-US' : 'id-ID', {
 		day: 'numeric',
 		month: 'long',
 		year: 'numeric',
@@ -33,7 +35,7 @@ function Testimoni() {
 	const handleNext = () => setActiveTesti((prev) => (prev + 1) % reviews.length)
 	const handleWriteReview = () => {
 		if (!isLoggedIn) {
-			toast.info('Silakan masuk dulu untuk menulis ulasan pengalaman kamu.')
+			toast.info(t('landing.loginToReview'))
 			navigate('/login', { state: { from: { pathname: window.location.pathname } } })
 			return
 		}
@@ -46,7 +48,7 @@ function Testimoni() {
 			if (!active) return
 			if (facilitiesResult.status === 'fulfilled') setFacilities(facilitiesResult.value)
 			if (reviewsResult.status === 'rejected') {
-				setLoadError('Testimoni gagal dimuat.')
+				setHasLoadError(true)
 				setIsLoadingReviews(false)
 				return
 			}
@@ -57,7 +59,6 @@ function Testimoni() {
 				right.rating - left.rating || new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime())
 			setReviews(featuredReviews.slice(0, 12))
 			setActiveTesti(0)
-			setLoadError(featuredReviews.length ? '' : 'Belum ada ulasan untuk fasilitas ini.')
 			setIsLoadingReviews(false)
 		})
 		return () => { active = false }
@@ -68,7 +69,7 @@ function Testimoni() {
 			<div className="mx-auto grid w-full max-w-[1040px] overflow-hidden rounded-xl bg-white shadow-[0_4px_16px_rgba(0,0,0,0.15)] md:min-h-[clamp(380px,calc(100svh-16rem),480px)] md:grid-cols-[minmax(220px,36%)_1fr] lg:max-w-[1100px] lg:min-h-[clamp(420px,calc(100svh-14rem),540px)] lg:grid-cols-[minmax(340px,36%)_1fr]">
 				<div className="flex items-center bg-gradient-to-br from-[#004000] to-[#404F14] px-5 py-6 sm:px-8 md:px-7 md:py-9 lg:px-10">
 					<h2 className="font-heading text-xl font-semibold leading-snug text-white sm:text-2xl">
-						Apa kata Pengguna OBC Sport ?
+						{t('landing.testimonialTitle')}
 					</h2>
 				</div>
 
@@ -76,7 +77,7 @@ function Testimoni() {
 					
 
 					{isLoadingReviews ? (
-						<p role="status" className="mt-5 text-sm text-[#343133]">Memuat ulasan...</p>
+						<p role="status" className="mt-5 text-sm text-[#343133]">{t('landing.testimonialLoading')}</p>
 					) : testimonial ? (
 						<>
 							<div className="flex items-center gap-3 sm:gap-4">
@@ -93,12 +94,12 @@ function Testimoni() {
 								</div>
 							</div>
 							<p className="mt-5 text-sm italic leading-relaxed text-[#343133] md:mt-8">
-								“{testimonial.text}”
+								“{i18n.resolvedLanguage?.startsWith('en') && testimonial.textEn ? testimonial.textEn : testimonial.text}”
 							</p>
 						</>
 					) : (
 						<p className="mt-5 text-sm leading-relaxed text-[#343133]">
-							{loadError || 'Belum ada ulasan untuk fasilitas ini.'}
+							{hasLoadError ? t('landing.testimonialFailed') : t('landing.testimonialEmpty')}
 						</p>
 					)}
 
@@ -110,7 +111,7 @@ function Testimoni() {
 						<div className="flex items-center gap-1">
 							<button
 								type="button"
-								aria-label="Testimoni sebelumnya"
+								aria-label={t('landing.testimonialPrev')}
 								onClick={handlePrev}
 								disabled={reviews.length < 2}
 								className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-full font-heading text-xl font-bold text-[#343133] transition-colors hover:bg-[#E8EDE3]"
@@ -119,7 +120,7 @@ function Testimoni() {
 							</button>
 							<button
 								type="button"
-								aria-label="Testimoni berikutnya"
+								aria-label={t('landing.testimonialNext')}
 								onClick={handleNext}
 								disabled={reviews.length < 2}
 								className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-full font-heading text-xl font-bold text-[#343133] transition-colors hover:bg-[#E8EDE3]"
@@ -143,7 +144,7 @@ function Testimoni() {
 							<img src={reviewIcon} alt="" aria-hidden="true" className="h-4 w-4" />
 						</span>
 						<span className="block whitespace-nowrap text-center leading-[17px]">
-							Tulis Ulasan Pengalaman Kamu Disini
+							{t('landing.writeTestimonial')}
 						</span>
 					</button>
 				</div>

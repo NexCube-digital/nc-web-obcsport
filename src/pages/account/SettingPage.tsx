@@ -1,5 +1,6 @@
 import { lazy, Suspense, useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { ArrowRight, Check, Eye, EyeOff } from 'lucide-react'
 import { toast } from 'sonner'
 import NavbarDashboard from '../../components/layout/Navbar'
@@ -30,9 +31,9 @@ interface HelpLink {
 const CS_WHATSAPP_URL = 'https://wa.me/628123456789'
 
 const HELP_LINKS: HelpLink[] = [
-  { id: 'panduan', label: 'Panduan Pemesanan Lapangan & Membership', href: '/bantuan' },
-  { id: 'syarat', label: 'Syarat & Ketentuan Layanan', href: '/syarat-ketentuan' },
-  { id: 'admin', label: 'Hubungi Admin / Customer Support (WhatsApp)', external: CS_WHATSAPP_URL },
+  { id: 'panduan', label: 'account.helpBooking', href: '/bantuan' },
+  { id: 'syarat', label: 'account.helpTerms', href: '/syarat-ketentuan' },
+  { id: 'admin', label: 'account.helpContact', external: CS_WHATSAPP_URL },
 ]
 
 const MAX_PHOTO_SIZE = 2 * 1024 * 1024 // 2MB
@@ -57,6 +58,7 @@ function getInitials(name: string): string {
 }
 
 function SettingsPage() {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const { user } = useAuth()
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -112,11 +114,11 @@ function SettingsPage() {
     if (!file) return
 
     if (!ALLOWED_PHOTO_TYPES.includes(file.type)) {
-      setPhotoError('Format foto harus JPG, GIF, atau PNG.')
+      setPhotoError(t('account.photoFormatError'))
       return
     }
     if (file.size > MAX_PHOTO_SIZE) {
-      setPhotoError('Ukuran foto maksimal 2MB.')
+      setPhotoError(t('account.photoSizeError'))
       return
     }
 
@@ -134,9 +136,9 @@ function SettingsPage() {
       } else {
         setPhotoPreview(URL.createObjectURL(blob))
       }
-      toast.success('Foto profil berhasil diperbarui!')
+      toast.success(t('account.profilePhotoUpdated'))
     } catch (err) {
-      toast.error(getAccountErrorMessage(err, 'Gagal mengunggah foto profil.'))
+      toast.error(getAccountErrorMessage(err, t('account.uploadPhotoFailed')))
     }
   }
 
@@ -146,15 +148,15 @@ function SettingsPage() {
     const confirmPassword = confirmPasswordRef.current?.value ?? ''
 
     if ((hasPassword && !currentPassword) || !newPassword || !confirmPassword) {
-      setPasswordError('Semua kolom sandi wajib diisi.')
+      setPasswordError(t('account.passwordsRequired'))
       return
     }
     if (newPassword.length < MIN_PASSWORD_LENGTH) {
-      setPasswordError(`Sandi baru minimal ${MIN_PASSWORD_LENGTH} karakter.`)
+      setPasswordError(t('account.passwordMin', { count: MIN_PASSWORD_LENGTH }))
       return
     }
     if (newPassword !== confirmPassword) {
-      setPasswordError('Konfirmasi sandi baru tidak sama.')
+      setPasswordError(t('account.passwordMismatch'))
       return
     }
 
@@ -163,12 +165,12 @@ function SettingsPage() {
     try {
       await changePassword(hasPassword ? currentPassword : undefined, newPassword)
       setHasPassword(true)
-      toast.success(hasPassword ? 'Kata sandi berhasil diperbarui!' : 'Kata sandi berhasil dibuat!')
+      toast.success(hasPassword ? t('account.passwordUpdated') : t('account.passwordCreated'))
       if (currentPasswordRef.current) currentPasswordRef.current.value = ''
       if (newPasswordRef.current) newPasswordRef.current.value = ''
       if (confirmPasswordRef.current) confirmPasswordRef.current.value = ''
     } catch (err) {
-      const msg = getAccountErrorMessage(err, 'Gagal memperbarui sandi.')
+      const msg = getAccountErrorMessage(err, t('account.updatePasswordFailed'))
       setPasswordError(msg)
       toast.error(msg)
     } finally {
@@ -183,9 +185,9 @@ function SettingsPage() {
         name: fullName,
         phone: phone || undefined,
       })
-      toast.success('Perubahan profil berhasil disimpan!')
+      toast.success(t('account.profileSaved'))
     } catch (err) {
-      toast.error(getAccountErrorMessage(err, 'Gagal menyimpan profil.'))
+      toast.error(getAccountErrorMessage(err, t('account.saveProfileFailed')))
     } finally {
       setIsSaving(false)
     }
@@ -201,26 +203,26 @@ function SettingsPage() {
 
   return (
     <div className="min-h-screen bg-white font-body text-[#343133]">
-      <NavbarDashboard userName={fullName || 'Pengguna'} profileImage={photoPreview || undefined} />
+      <NavbarDashboard userName={fullName || t('common.myAccount')} profileImage={photoPreview || undefined} />
 
       {/* Lebar konten 1200px sesuai desain */}
       <main className="max-w-[1248px] mx-auto px-6 pt-8 pb-16">
         {/* ================= Judul halaman ================= */}
-        <h1 className="font-heading font-bold text-3xl text-[#121212]">Pengaturan Akun</h1>
+        <h1 className="font-heading font-bold text-3xl text-[#121212]">{t('account.settingsTitle')}</h1>
         <p className="mt-1 text-sm text-[#6F6B6E]">
-          Kelola informasi profil, foto, keamanan akun, dan preferensi Anda.
+          {t('account.settingsDescription')}
         </p>
 
         <div className="mt-6 space-y-6">
           {/* ================= Informasi profil & foto ================= */}
           <section className={`${CARD_CLASS} pb-12`}>
-            <h2 className={CARD_TITLE_CLASS}>Informasi Profil &amp; Foto</h2>
+            <h2 className={CARD_TITLE_CLASS}>{t('account.profileInfo')}</h2>
 
             {/* Foto profil */}
             <div className="mt-5 flex items-start gap-4 pb-5 border-b border-dashed border-[#E5E5E5]">
               <div className="h-[72px] w-[72px] shrink-0 overflow-hidden rounded-full border-2 border-[#C7C7D9]">
                 {photoPreview ? (
-                  <img src={photoPreview} alt="Foto profil" className="h-full w-full object-cover" />
+                  <img src={photoPreview} alt={t('account.profilePhotoAlt')} className="h-full w-full object-cover" />
                 ) : (
                   <span className="flex h-full w-full items-center justify-center bg-[#9AAD3E] font-heading font-bold text-xl text-white">
                     {getInitials(fullName || 'User')}
@@ -229,9 +231,9 @@ function SettingsPage() {
               </div>
 
               <div>
-                <p className="font-heading font-medium text-base text-[#121212]">Foto Profil</p>
+                <p className="font-heading font-medium text-base text-[#121212]">{t('account.profilePhoto')}</p>
                 <p className="mt-1 text-xs text-[#6F6B6E]">
-                  Format JPG, GIF atau PNG. Maksimal ukuran 2MB.
+                  {t('account.photoRequirements')}
                 </p>
                 <input
                   ref={fileInputRef}
@@ -245,7 +247,7 @@ function SettingsPage() {
                   onClick={handlePickPhoto}
                   className="mt-2 rounded-md bg-[#F3F4F6] border border-[#E5E5E5] px-4 py-1.5 text-sm font-heading font-medium text-[#121212] hover:bg-[#E5E7EB] transition-colors cursor-pointer"
                 >
-                  Ganti Foto Baru
+                  {t('account.changePhoto')}
                 </button>
                 {photoError && <p className="mt-1 text-xs text-[#C00000]">{photoError}</p>}
               </div>
@@ -255,7 +257,7 @@ function SettingsPage() {
             <div className="mt-5 grid md:grid-cols-2 gap-4">
               <div>
                 <label htmlFor="fullName" className={LABEL_CLASS}>
-                  Nama Lengkap
+                  {t('account.name')}
                 </label>
                 <input
                   id="fullName"
@@ -267,7 +269,7 @@ function SettingsPage() {
               </div>
               <div>
                 <label htmlFor="phone" className={LABEL_CLASS}>
-                  Nomor Telepon (Opsional)
+                  {t('account.phoneOptional')}
                 </label>
                 <input
                   id="phone"
@@ -280,7 +282,7 @@ function SettingsPage() {
               </div>
               <div>
                 <label htmlFor="email" className={LABEL_CLASS}>
-                  Alamat Email
+                  {t('account.email')}
                 </label>
                 <div className="flex items-center gap-2.5">
                   <input
@@ -292,7 +294,7 @@ function SettingsPage() {
                   />
                   <span className="inline-flex h-[39px] shrink-0 items-center gap-1.5 rounded-lg border border-[#DCEFE0] bg-[#EEF8F0] px-4 text-sm font-heading font-semibold text-[#004000]">
                     <Check size={12} strokeWidth={3} />
-                    Terverifikasi
+                    {t('account.verified')}
                   </span>
                 </div>
               </div>
@@ -306,7 +308,7 @@ function SettingsPage() {
                 disabled={isSaving}
                 className="h-9 rounded-lg bg-[#CDF178] px-6 text-sm font-heading font-semibold text-[#404F14] hover:bg-[#9AAD3E] transition-colors cursor-pointer disabled:opacity-50"
               >
-                {isSaving ? 'Menyimpan...' : 'Simpan Profil'}
+                {isSaving ? t('account.saving') : t('account.saveProfile')}
               </button>
             </div>
           </section>
@@ -314,13 +316,13 @@ function SettingsPage() {
           {/* ================= Keamanan sandi ================= */}
           <DeferredSection placeholderClassName="min-h-[270px]">
           <section className={CARD_CLASS}>
-            <h2 className={CARD_TITLE_CLASS}>Keamanan Sandi</h2>
+            <h2 className={CARD_TITLE_CLASS}>{t('account.passwordSecurity')}</h2>
 
             <div className={`mt-5 grid ${hasPassword ? 'md:grid-cols-3' : 'md:grid-cols-2'} gap-4`}>
               {hasPassword ? (
                 <div>
                   <label htmlFor="currentPassword" className={LABEL_CLASS}>
-                    Sandi Saat Ini
+                    {t('account.currentPassword')}
                   </label>
                   <div className="relative">
                     <input
@@ -332,7 +334,7 @@ function SettingsPage() {
                     <button
                       type="button"
                       onClick={() => setShowCurrentPassword(!showCurrentPassword)}
-                      aria-label={showCurrentPassword ? 'Sembunyikan sandi' : 'Tampilkan sandi'}
+                      aria-label={showCurrentPassword ? t('auth.hidePassword') : t('auth.showPassword')}
                       className="absolute right-3 top-1/2 -translate-y-1/2 text-[#6F6B6E] hover:text-[#121212] cursor-pointer"
                     >
                       {showCurrentPassword ? <EyeOff size={18} /> : <Eye size={18} />}
@@ -342,20 +344,20 @@ function SettingsPage() {
               ) : null}
               <div>
                 <label htmlFor="newPassword" className={LABEL_CLASS}>
-                  Sandi Baru
+                  {t('account.newPassword')}
                 </label>
                 <div className="relative">
                   <input
                     id="newPassword"
                     type={showNewPassword ? 'text' : 'password'}
                     ref={newPasswordRef}
-                    placeholder="Minimal 12 karakter"
+                    placeholder={t('account.passwordPlaceholder', { count: MIN_PASSWORD_LENGTH })}
                     className={INPUT_CLASS}
                   />
                   <button
                     type="button"
                     onClick={() => setShowNewPassword(!showNewPassword)}
-                    aria-label={showNewPassword ? 'Sembunyikan sandi' : 'Tampilkan sandi'}
+                    aria-label={showNewPassword ? t('auth.hidePassword') : t('auth.showPassword')}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-[#6F6B6E] hover:text-[#121212] cursor-pointer"
                   >
                     {showNewPassword ? <EyeOff size={18} /> : <Eye size={18} />}
@@ -364,20 +366,20 @@ function SettingsPage() {
               </div>
               <div>
                 <label htmlFor="confirmPassword" className={LABEL_CLASS}>
-                  Konfirmasi Sandi Baru
+                  {t('account.confirmNewPassword')}
                 </label>
                 <div className="relative">
                   <input
                     id="confirmPassword"
                     type={showConfirmPassword ? 'text' : 'password'}
                     ref={confirmPasswordRef}
-                    placeholder="Minimal 12 karakter"
+                    placeholder={t('account.passwordPlaceholder', { count: MIN_PASSWORD_LENGTH })}
                     className={INPUT_CLASS}
                   />
                   <button
                     type="button"
                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    aria-label={showConfirmPassword ? 'Sembunyikan sandi' : 'Tampilkan sandi'}
+                    aria-label={showConfirmPassword ? t('auth.hidePassword') : t('auth.showPassword')}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-[#6F6B6E] hover:text-[#121212] cursor-pointer"
                   >
                     {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
@@ -388,7 +390,7 @@ function SettingsPage() {
 
             {!hasPassword && (
               <p className="mt-3 text-sm text-[#6F6B6E]">
-                Akun Google Anda belum memiliki sandi. Buat sandi agar bisa masuk menggunakan email.
+                {t('account.googlePasswordHint')}
               </p>
             )}
 
@@ -400,7 +402,7 @@ function SettingsPage() {
               disabled={isUpdatingPassword}
               className="mt-5 h-9 rounded-lg bg-[#CDF178] px-4 text-sm font-heading font-semibold text-[#404F14] hover:bg-[#9AAD3E] transition-colors cursor-pointer disabled:opacity-50"
             >
-              {isUpdatingPassword ? 'Menyimpan...' : hasPassword ? 'Perbarui Sandi' : 'Buat Sandi'}
+              {isUpdatingPassword ? t('account.saving') : hasPassword ? t('account.updatePassword') : t('account.createPassword')}
             </button>
           </section>
           </DeferredSection>
@@ -408,7 +410,7 @@ function SettingsPage() {
           {/* ================= Pusat bantuan & dukungan ================= */}
           <DeferredSection placeholderClassName="min-h-[180px]">
           <section className={`${CARD_CLASS} pb-3`}>
-            <h2 className={CARD_TITLE_CLASS}>Pusat Bantuan &amp; Dukungan</h2>
+            <h2 className={CARD_TITLE_CLASS}>{t('account.helpCenter')}</h2>
 
             <ul className="mt-1">
               {HELP_LINKS.map((link) => (
@@ -418,7 +420,7 @@ function SettingsPage() {
                     onClick={() => handleHelpLink(link)}
                     className="flex w-full items-center justify-between py-4 text-left text-sm text-[#121212] hover:text-[#004000] transition-colors cursor-pointer"
                   >
-                    <span>{link.label}</span>
+                    <span>{t(link.label)}</span>
                     <ArrowRight size={14} aria-hidden="true" />
                   </button>
                 </li>

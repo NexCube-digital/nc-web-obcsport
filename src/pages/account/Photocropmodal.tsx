@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Crop, Move, RotateCcw, X, ZoomIn, ZoomOut } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 
 
 interface PhotoCropModalProps {
@@ -29,6 +30,7 @@ function calcViewSize(): number {
 }
 
 function PhotoCropModal({ file, onCancel, onApply }: PhotoCropModalProps) {
+  const { t } = useTranslation()
   const overlayRef = useRef<HTMLDivElement>(null)
   const imgRef = useRef<HTMLImageElement>(null)
   const dragRef = useRef<{ startX: number; startY: number; originX: number; originY: number } | null>(null)
@@ -217,16 +219,16 @@ function PhotoCropModal({ file, onCancel, onApply }: PhotoCropModalProps) {
           </span>
           <div className="min-w-0 flex-1">
             <h3 id="crop-title" className="font-heading font-semibold text-base text-[#121212] md:text-lg">
-              Atur Foto Profil
+              {t('photoCrop.title')}
             </h3>
             <p className="mt-0.5 truncate text-xs text-[#6F6B6E]">
-              Pilih bagian foto yang ingin ditampilkan pada profil Anda.
+              {t('photoCrop.description')}
             </p>
           </div>
           <button
             type="button"
             onClick={onCancel}
-            aria-label="Tutup"
+            aria-label={t('photoCrop.close')}
             className="rounded-lg p-1.5 text-[#6F6B6E] hover:bg-[#F3F4F6] hover:text-[#121212] transition-colors cursor-pointer"
           >
             <X size={18} />
@@ -240,7 +242,7 @@ function PhotoCropModal({ file, onCancel, onApply }: PhotoCropModalProps) {
             <div
               tabIndex={0}
               role="application"
-              aria-label="Area pengaturan foto. Gunakan tombol panah untuk menggeser."
+              aria-label={t('photoCrop.areaLabel')}
               className={`relative mx-auto overflow-hidden rounded-xl bg-[#121212] touch-none select-none outline-none focus-visible:ring-2 focus-visible:ring-[#9AAD3E] ${
                 isDragging ? 'cursor-grabbing' : 'cursor-grab'
               }`}
@@ -256,7 +258,7 @@ function PhotoCropModal({ file, onCancel, onApply }: PhotoCropModalProps) {
                 <img
                   ref={imgRef}
                   src={src}
-                  alt="Foto yang diatur"
+                  alt={t('photoCrop.imageAlt')}
                   onLoad={handleImageLoad}
                   draggable={false}
                   className="absolute max-w-none"
@@ -295,7 +297,7 @@ function PhotoCropModal({ file, onCancel, onApply }: PhotoCropModalProps) {
                 }`}
               >
                 <Move size={12} />
-                Geser untuk mengatur
+                {t('photoCrop.moveHint')}
               </span>
             </div>
           </div>
@@ -307,7 +309,7 @@ function PhotoCropModal({ file, onCancel, onApply }: PhotoCropModalProps) {
               <div className="mt-3 px-5 md:mt-0 md:px-0">
                 <div className="hidden items-center justify-between md:flex">
                   <label htmlFor="zoom" className="text-sm font-heading font-medium text-[#121212]">
-                    Perbesaran
+                    {t('photoCrop.zoom')}
                   </label>
                   <span className="rounded-md bg-[#F3F4F6] px-2 py-0.5 text-xs font-heading font-semibold text-[#404F14]">
                     {Math.round(zoom * 100)}%
@@ -319,7 +321,7 @@ function PhotoCropModal({ file, onCancel, onApply }: PhotoCropModalProps) {
                     type="button"
                     onClick={() => changeZoom(zoom - ZOOM_STEP)}
                     disabled={zoom <= MIN_ZOOM}
-                    aria-label="Perkecil"
+                    aria-label={t('photoCrop.zoomOut')}
                     className="rounded-lg p-1.5 text-[#404F14] hover:bg-[#EEF8F0] transition-colors cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
                   >
                     <ZoomOut size={18} />
@@ -332,7 +334,7 @@ function PhotoCropModal({ file, onCancel, onApply }: PhotoCropModalProps) {
                     step={0.01}
                     value={zoom}
                     onChange={(e) => changeZoom(Number(e.target.value))}
-                    aria-label="Perbesaran foto"
+                    aria-label={t('photoCrop.zoom')}
                     className="h-1.5 flex-1 cursor-pointer appearance-none rounded-full accent-[#404F14]"
                     style={{
                       background: `linear-gradient(to right, #9AAD3E ${zoomPercent}%, #E5E5E5 ${zoomPercent}%)`,
@@ -342,7 +344,7 @@ function PhotoCropModal({ file, onCancel, onApply }: PhotoCropModalProps) {
                     type="button"
                     onClick={() => changeZoom(zoom + ZOOM_STEP)}
                     disabled={zoom >= MAX_ZOOM}
-                    aria-label="Perbesar"
+                    aria-label={t('photoCrop.zoomIn')}
                     className="rounded-lg p-1.5 text-[#404F14] hover:bg-[#EEF8F0] transition-colors cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
                   >
                     <ZoomIn size={18} />
@@ -385,7 +387,7 @@ function PhotoCropModal({ file, onCancel, onApply }: PhotoCropModalProps) {
                   })}
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="text-sm font-heading font-medium text-[#121212]">Pratinjau</p>
+                  <p className="text-sm font-heading font-medium text-[#121212]">{t('photoCrop.preview')}</p>
                   <p className="truncate text-xs text-[#6F6B6E]" title={file.name}>
                     {file.name}
                   </p>
@@ -394,11 +396,11 @@ function PhotoCropModal({ file, onCancel, onApply }: PhotoCropModalProps) {
                   type="button"
                   onClick={handleReset}
                   disabled={!isChanged}
-                  aria-label="Atur ulang"
+                  aria-label={t('photoCrop.reset')}
                   className="inline-flex shrink-0 items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-heading font-medium text-[#404F14] hover:bg-[#EEF8F0] transition-colors cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
                 >
                   <RotateCcw size={14} />
-                  <span className="hidden md:inline">Atur ulang</span>
+                  <span className="hidden md:inline">{t('photoCrop.reset')}</span>
                 </button>
               </div>
             </div>
@@ -410,7 +412,7 @@ function PhotoCropModal({ file, onCancel, onApply }: PhotoCropModalProps) {
                 onClick={onCancel}
                 className="h-10 flex-1 rounded-lg border border-[#E5E5E5] bg-white text-sm font-heading font-medium text-[#121212] hover:bg-[#F3F4F6] transition-colors cursor-pointer"
               >
-                Batal
+                {t('photoCrop.cancel')}
               </button>
               <button
                 type="button"
@@ -418,7 +420,7 @@ function PhotoCropModal({ file, onCancel, onApply }: PhotoCropModalProps) {
                 disabled={!natural.w}
                 className="h-10 flex-1 rounded-lg bg-[#CDF178] text-sm font-heading font-bold text-[#404F14] hover:bg-[#9AAD3E] transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Terapkan Foto
+                {t('photoCrop.apply')}
               </button>
             </div>
           </div>

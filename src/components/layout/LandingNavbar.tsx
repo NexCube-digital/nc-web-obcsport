@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { LayoutDashboard, LogIn, UserPlus } from 'lucide-react'
-import logo from '../../assets/logo/unit bisnis/LOGO OBC SPORT CENTER.png'
+import logo from '../../assets/logo/unit bisnis/sport.webp'
 import { useAuth } from '../../hooks/useAuth'
 
 /* -------------------------------------------------------------------------

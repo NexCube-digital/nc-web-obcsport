@@ -1,4 +1,5 @@
 import { AlertTriangle } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 
 interface ScheduleConflictProps {
 	message: string | null
@@ -7,6 +8,7 @@ interface ScheduleConflictProps {
 }
 
 function ScheduleConflict({ message, onDismiss, onReturnHome }: ScheduleConflictProps) {
+	const { t } = useTranslation()
 	if (!message) return null
 
 	return (
@@ -24,7 +26,7 @@ function ScheduleConflict({ message, onDismiss, onReturnHome }: ScheduleConflict
 					id="schedule-conflict-title"
 					className="mt-5 text-center font-heading text-base font-bold text-[#121212]"
 				>
-					Jadwal Tidak Tersedia
+					{t('booking.scheduleUnavailable')}
 				</h2>
 				<p className="mt-1 text-center text-sm text-[#6F6B6E]">{message}</p>
 
@@ -33,14 +35,14 @@ function ScheduleConflict({ message, onDismiss, onReturnHome }: ScheduleConflict
 					onClick={onDismiss}
 					className="mt-4 h-12 w-full cursor-pointer rounded-xl bg-[#C41717] text-sm font-heading font-semibold text-white transition-colors hover:bg-[#A31212]"
 				>
-					Ganti Tanggal / Jam
+					{t('booking.changeDate')} / {t('booking.time')}
 				</button>
 				<button
 					type="button"
 					onClick={onReturnHome}
 					className="mt-2 h-10 w-full cursor-pointer rounded-xl border border-[#E5E5E5] bg-white text-xs font-heading font-semibold text-[#6F6B6E] transition-colors hover:bg-[#FDFCF7]"
 				>
-					Kembali ke Beranda
+					{t('common.backToHome')}
 				</button>
 			</div>
 		</div>

@@ -1,3 +1,5 @@
+import { useTranslation } from 'react-i18next'
+
 export interface FacilityCard {
 	id: string
 	key?: string
@@ -26,11 +28,14 @@ interface CourtProps {
 	onPreviewImage: (image: PreviewImage) => void
 	onSelectFacility: (facility: FacilityCard) => void
 	facilities?: FacilityCard[]
+	loadStatus?: 'loading' | 'ready' | 'error'
+	onRetry?: () => void
 }
 
 const FONT_MONTSERRAT = "font-['Montserrat',sans-serif]"
 
-function Court({ submittedSearch, onPreviewImage, onSelectFacility, facilities = [] }: CourtProps) {
+function Court({ submittedSearch, onPreviewImage, onSelectFacility, facilities = [], loadStatus = 'ready', onRetry }: CourtProps) {
+	const { t } = useTranslation()
 	const normalizedSearch = submittedSearch.toLocaleLowerCase('id-ID')
 	const filteredFacilities = facilities.filter((facility) =>
 		`${facility.name} ${facility.description}`.toLocaleLowerCase('id-ID').includes(normalizedSearch),
@@ -41,12 +46,25 @@ function Court({ submittedSearch, onPreviewImage, onSelectFacility, facilities =
 			<h2
 				className={`${FONT_MONTSERRAT} border-b border-[#D4D4D4] pb-2 text-base font-bold text-[#265021] min-[360px]:text-lg sm:text-xl`}
 			>
-				Ketersediaan Lapangan Premium
+				{t('booking.courtAvailability')}
 			</h2>
 
 			
 			<div className="mt-3 grid grid-cols-1 gap-2 min-[300px]:grid-cols-2 min-[360px]:gap-3 sm:gap-4 lg:grid-cols-3">
-				{filteredFacilities.map((facility) => (
+				{loadStatus === 'loading' && (
+					<p role="status" className="col-span-full py-8 text-center text-sm text-[#6F6B6E]">
+						{t('booking.loadingCourts')}
+					</p>
+				)}
+				{loadStatus === 'error' && (
+					<div className="col-span-full flex flex-col items-center gap-3 py-8 text-center">
+						<p role="alert" className="text-sm text-[#6F6B6E]">{t('booking.facilitiesLoadError')}</p>
+						<button type="button" onClick={onRetry} className="rounded-lg bg-[#CDF178] px-4 py-2 text-xs font-semibold text-[#404F14] transition-colors hover:bg-[#9AAD3E]">
+							{t('booking.retryFacilities')}
+						</button>
+					</div>
+				)}
+				{loadStatus === 'ready' && filteredFacilities.map((facility) => (
 					<div
 						key={facility.key ?? facility.id}
 						className="relative flex w-full min-w-0 flex-col overflow-hidden rounded-2xl bg-white shadow-[0_2px_10px_rgba(0,0,0,0.08)] min-[300px]:[&:last-child:nth-child(odd)]:col-span-2 lg:[&:last-child:nth-child(odd)]:col-span-1 sm:min-h-60 lg:min-h-52"
@@ -54,7 +72,7 @@ function Court({ submittedSearch, onPreviewImage, onSelectFacility, facilities =
 						<button
 							type="button"
 							onClick={() => onPreviewImage({ src: facility.image, alt: facility.name })}
-							aria-label={`Perbesar gambar ${facility.name}`}
+							aria-label={t('booking.zoomImage', { name: facility.name })}
 							className="absolute inset-0 z-10 cursor-zoom-in focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#404F14]"
 						/>
 						<div className="aspect-video w-full shrink-0 overflow-hidden lg:aspect-auto lg:h-36">
@@ -68,7 +86,7 @@ function Court({ submittedSearch, onPreviewImage, onSelectFacility, facilities =
 								/>
 							) : (
 								<div className="grid h-full place-items-center bg-[#EEF0EA] text-xs text-[#6F6B6E]">
-									Gambar belum tersedia
+									{t('booking.imageUnavailable')}
 								</div>
 							)}
 						</div>
@@ -95,9 +113,11 @@ function Court({ submittedSearch, onPreviewImage, onSelectFacility, facilities =
 						</div>
 					</div>
 				))}
-				{filteredFacilities.length === 0 && (
+				{loadStatus === 'ready' && filteredFacilities.length === 0 && (
 					<p className="col-span-full py-8 text-center text-sm text-[#6F6B6E]">
-						Tidak ada lapangan yang cocok dengan “{submittedSearch}”.
+						{submittedSearch
+							? t('booking.noMatchingCourts', { query: submittedSearch })
+							: t('booking.noCourtsAvailable')}
 					</p>
 				)}
 			</div>

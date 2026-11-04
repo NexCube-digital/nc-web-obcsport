@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import NavbarDashboard from '../../components/layout/Navbar'
 import DeferredFooter from '../../components/layout/DeferredFooter'
@@ -6,8 +7,9 @@ import { INITIAL_NOTIFICATIONS, type PromoNotification } from '../../data/notifi
 import { sportApi } from '../../services/api'
 
 function NotificationPage() {
+  const { t, i18n } = useTranslation()
   const [notifications, setNotifications] = useState<PromoNotification[]>(INITIAL_NOTIFICATIONS)
-  const [userName, setUserName] = useState('Pengguna')
+  const [userName, setUserName] = useState('')
 
   useEffect(() => {
     let isMounted = true
@@ -30,12 +32,8 @@ function NotificationPage() {
               id: n.id,
               title: n.title,
               description: n.message,
-              time: new Date(n.createdAt).toLocaleDateString('id-ID', {
-                day: 'numeric',
-                month: 'short',
-                hour: '2-digit',
-                minute: '2-digit',
-              }),
+              time: '',
+              createdAt: n.createdAt,
               isUnread: !n.isRead,
             }))
             setNotifications(mapped)
@@ -55,7 +53,7 @@ function NotificationPage() {
     try {
       await sportApi.markAllNotificationsAsRead()
       setNotifications((prev) => prev.map((notif) => ({ ...notif, isUnread: false })))
-      toast.success('Semua notifikasi telah ditandai sebagai dibaca.')
+      toast.success(t('notifications.allMarkedRead'))
     } catch {
       setNotifications((prev) => prev.map((notif) => ({ ...notif, isUnread: false })))
     }
@@ -81,20 +79,20 @@ function NotificationPage() {
 
       {/* Lebar konten 1240px sesuai desain */}
       <main className="max-w-[1288px] mx-auto px-6 pt-6 pb-10">
-        <h1 className="font-heading font-bold text-2xl text-[#343133]">Notifikasi Anda</h1>
+        <h1 className="font-heading font-bold text-2xl text-[#343133]">{t('notifications.pageTitle')}</h1>
 
         {/* ================= Promosi & Diskon ================= */}
         <section className="mt-6 min-h-[570px] rounded-2xl border border-[#D4D4D4] bg-white p-6">
           <div className="flex items-center justify-between border-b border-[#D4D4D4] pb-4">
             <h2 className="font-heading font-bold text-lg text-[#404F14]">
-              Promosi &amp; Diskon
+              {t('notifications.promotions')}
             </h2>
             <button
               type="button"
               onClick={handleMarkAllAsRead}
               className="text-xs font-heading font-bold text-[#343133] underline underline-offset-2 cursor-pointer"
             >
-              Tandai semua dibaca
+              {t('notifications.markAllRead')}
             </button>
           </div>
 
@@ -113,18 +111,27 @@ function NotificationPage() {
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
                       <p className="font-heading font-bold text-sm text-[#343133]">
-                        {notif.title}
+                        {notif.titleKey ? t(notif.titleKey) : notif.title}
                       </p>
                       {notif.isUnread && (
                         <span className="h-2 w-2 rounded-full bg-[#404F14] shrink-0" />
                       )}
                     </div>
                     <p className="mt-1 font-body text-xs text-[#343133] leading-relaxed">
-                      {notif.description}
+                      {notif.descriptionKey ? t(notif.descriptionKey) : notif.description}
                     </p>
                   </div>
                   <span className="font-body text-[11px] text-[#404F14] shrink-0 whitespace-nowrap">
-                    {notif.time}
+                    {notif.timeKey
+                      ? t(notif.timeKey)
+                      : notif.createdAt
+                        ? new Date(notif.createdAt).toLocaleString(i18n.resolvedLanguage?.startsWith('en') ? 'en-US' : 'id-ID', {
+                            day: 'numeric',
+                            month: 'short',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                          })
+                        : notif.time}
                   </span>
                 </div>
               </div>

@@ -3,6 +3,7 @@ import { CreditCard, LoaderCircle, ShieldCheck } from 'lucide-react'
 import { chargeBookingByCreditCard } from '../../../services/bookingService'
 import { getApiErrorMessage } from '../../../services/apiService'
 import { authenticateMidtransCard, tokenizeMidtransCard } from '../../../services/paymentService'
+import { useTranslation } from 'react-i18next'
 
 interface CreditCardPaymentFormProps {
 	bookingId: string
@@ -13,6 +14,7 @@ interface CreditCardPaymentFormProps {
 const formatRupiah = (value: number) => `Rp ${value.toLocaleString('id-ID')}`
 
 function CreditCardPaymentForm({ bookingId, amount, onPaymentStarted }: CreditCardPaymentFormProps) {
+	const { t } = useTranslation()
 	const [isSubmitting, setIsSubmitting] = useState(false)
 	const [errorMessage, setErrorMessage] = useState('')
 	const [authenticationUrl, setAuthenticationUrl] = useState('')
@@ -39,7 +41,7 @@ function CreditCardPaymentForm({ bookingId, amount, onPaymentStarted }: CreditCa
 			if (['deny', 'failure', 'cancel', 'expire'].includes(charge.transactionStatus.toLowerCase())) {
 				setRetryCurrentCharge(true)
 				sessionStorage.setItem(retryStorageKey, 'true')
-				setErrorMessage('Pembayaran ditolak. Periksa data kartu atau gunakan kartu lain.')
+				setErrorMessage(t('payment.card.declined'))
 				return
 			}
 			if (charge.redirectUrl) {
@@ -57,14 +59,14 @@ function CreditCardPaymentForm({ bookingId, amount, onPaymentStarted }: CreditCa
 						setAuthenticationUrl('')
 						setRetryCurrentCharge(true)
 						sessionStorage.setItem(retryStorageKey, 'true')
-						setErrorMessage('Autentikasi kartu gagal. Periksa konfirmasi bank atau coba kartu lain.')
+						setErrorMessage(t('payment.card.authenticationFailed'))
 					},
 				})
 				return
 			}
 			onPaymentStarted()
 		} catch (error: unknown) {
-			setErrorMessage(getApiErrorMessage(error, error instanceof Error ? error.message : 'Pembayaran kartu gagal diproses.'))
+			setErrorMessage(getApiErrorMessage(error, error instanceof Error ? error.message : t('payment.card.failed')))
 		} finally {
 			setIsSubmitting(false)
 		}
@@ -77,20 +79,20 @@ function CreditCardPaymentForm({ bookingId, amount, onPaymentStarted }: CreditCa
 					<CreditCard size={20} aria-hidden="true" />
 				</span>
 				<div>
-					<h2 className="font-heading text-base font-bold text-[#343133]">Pembayaran Kartu Kredit</h2>
-					<p className="mt-1 font-heading text-xs text-[#6F6B6E]">Masukkan detail kartu untuk melanjutkan pembayaran.</p>
+					<h2 className="font-heading text-base font-bold text-[#343133]">{t('payment.card.title')}</h2>
+					<p className="mt-1 font-heading text-xs text-[#6F6B6E]">{t('payment.card.description')}</p>
 				</div>
 			</div>
 
 			{authenticationUrl ? (
 				<div className="mt-5 overflow-hidden rounded-lg border border-[#D4D4D4]">
-					<p className="bg-[#F5FAF0] px-3 py-2 font-heading text-xs font-semibold text-[#404F14]">Konfirmasi keamanan dari bank</p>
-					<iframe title="Autentikasi 3D Secure" src={authenticationUrl} className="h-[520px] w-full bg-white" />
+					<p className="bg-[#F5FAF0] px-3 py-2 font-heading text-xs font-semibold text-[#404F14]">{t('payment.card.bankAuth')}</p>
+					<iframe title={t('payment.card.secureAuth')} src={authenticationUrl} className="h-[520px] w-full bg-white" />
 				</div>
 			) : (
 			<form className="mt-5 space-y-4" onSubmit={(event) => { void handleSubmit(event) }}>
 				<label className="block font-heading text-xs font-semibold text-[#343133]">
-					Nomor Kartu
+					{t('payment.card.number')}
 					<input
 						name="cardNumber"
 						type="text"
@@ -106,7 +108,7 @@ function CreditCardPaymentForm({ bookingId, amount, onPaymentStarted }: CreditCa
 
 				<div className="grid grid-cols-2 gap-3">
 					<label className="block font-heading text-xs font-semibold text-[#343133]">
-						Bulan Kedaluwarsa
+						{t('payment.card.expiryMonth')}
 						<select
 							name="expiryMonth"
 							autoComplete="cc-exp-month"
@@ -121,7 +123,7 @@ function CreditCardPaymentForm({ bookingId, amount, onPaymentStarted }: CreditCa
 						</select>
 					</label>
 					<label className="block font-heading text-xs font-semibold text-[#343133]">
-						Tahun Kedaluwarsa
+						{t('payment.card.expiryYear')}
 						<select
 							name="expiryYear"
 							autoComplete="cc-exp-year"
@@ -138,7 +140,7 @@ function CreditCardPaymentForm({ bookingId, amount, onPaymentStarted }: CreditCa
 				</div>
 
 				<label className="block max-w-[180px] font-heading text-xs font-semibold text-[#343133]">
-					CVV
+					{t('payment.card.cvv')}
 					<input
 						name="cvv"
 						type="password"
@@ -156,7 +158,7 @@ function CreditCardPaymentForm({ bookingId, amount, onPaymentStarted }: CreditCa
 
 				<div className="border-t border-[#E5E5E5] pt-4">
 					<div className="mb-3 flex items-center justify-between gap-3">
-						<span className="font-heading text-sm font-semibold text-[#343133]">Total pembayaran</span>
+						<span className="font-heading text-sm font-semibold text-[#343133]">{t('payment.totalPayment')}</span>
 						<strong className="font-heading text-base text-[#404F14]">{formatRupiah(amount)}</strong>
 					</div>
 					<button
@@ -165,9 +167,9 @@ function CreditCardPaymentForm({ bookingId, amount, onPaymentStarted }: CreditCa
 						className="flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-[#CDF178] font-heading text-sm font-bold text-[#404F14] transition-colors hover:bg-[#B8E35B] disabled:cursor-wait disabled:opacity-60"
 					>
 						{isSubmitting ? <LoaderCircle size={16} className="animate-spin" aria-hidden="true" /> : <ShieldCheck size={16} aria-hidden="true" />}
-						{isSubmitting ? 'Memproses pembayaran...' : 'Bayar Sekarang'}
+						{isSubmitting ? t('payment.card.processing') : t('payment.payNow')}
 					</button>
-					<p className="mt-2 text-center font-heading text-[10px] text-[#6F6B6E]">Data kartu ditokenisasi secara aman oleh Midtrans.</p>
+					<p className="mt-2 text-center font-heading text-[10px] text-[#6F6B6E]">{t('payment.card.securityNote')}</p>
 				</div>
 			</form>
 			)}

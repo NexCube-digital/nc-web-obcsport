@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Check, ChevronDown, Copy, House } from 'lucide-react'
 import type { DirectPaymentInfo } from '../../services/paymentService'
+import { useTranslation } from 'react-i18next'
 
 export interface PendingBookingItem {
   id: string
@@ -40,6 +41,7 @@ function PendingOrderModal({
   onOpenOrderStatus,
   onContinuePayment,
 }: PendingOrderModalProps) {
+  const { t } = useTranslation()
   const [copiedValue, setCopiedValue] = useState<string | null>(null)
   const [isInstructionsOpen, setIsInstructionsOpen] = useState(false)
 
@@ -64,32 +66,32 @@ function PendingOrderModal({
   const canContinuePayment = Boolean((paymentUrl || paymentInfo?.deeplinkUrl) && onContinuePayment)
   const paymentSteps = paymentInfo?.vaNumber
     ? [
-        `Buka aplikasi atau ATM ${paymentInfo.bankName ?? 'bank'} dan pilih menu Virtual Account.`,
-        `Masukkan nomor Virtual Account ${paymentInfo.vaNumber}.`,
-        `Periksa nama penerima dan nominal ${formatRupiah(paymentInfo.grossAmount ?? amount)}, lalu selesaikan transfer.`,
+        t('payment.pending.bankApp', { bank: paymentInfo.bankName ?? t('payment.groups.bank') }),
+        t('payment.pending.bankNumber', { number: paymentInfo.vaNumber }),
+        t('payment.pending.verifyAmount', { amount: formatRupiah(paymentInfo.grossAmount ?? amount) }),
       ]
     : paymentInfo?.billerCode && paymentInfo.billKey
       ? [
-          'Buka menu pembayaran e-channel Mandiri pada aplikasi Livin atau ATM Mandiri.',
-          `Masukkan kode perusahaan ${paymentInfo.billerCode} dan kode pembayaran ${paymentInfo.billKey}.`,
-          `Periksa nominal ${formatRupiah(paymentInfo.grossAmount ?? amount)}, lalu konfirmasi pembayaran.`,
+          t('payment.pending.mandiriMenu'),
+          t('payment.pending.companyAndBill', { company: paymentInfo.billerCode, bill: paymentInfo.billKey }),
+          t('payment.pending.confirmAmount', { amount: formatRupiah(paymentInfo.grossAmount ?? amount) }),
         ]
       : paymentInfo?.paymentCode
         ? [
-            `Datangi gerai ${paymentInfo.storeName ?? 'minimarket'} dan sampaikan bahwa Anda ingin membayar.`,
-            `Tunjukkan kode pembayaran ${paymentInfo.paymentCode} kepada kasir.`,
-            `Bayar sesuai nominal ${formatRupiah(paymentInfo.grossAmount ?? amount)} dan simpan bukti pembayaran.`,
+            t('payment.pending.visitStore', { store: paymentInfo.storeName ?? t('payment.groups.retail') }),
+            t('payment.pending.showCode', { code: paymentInfo.paymentCode }),
+            t('payment.pending.saveReceipt', { amount: formatRupiah(paymentInfo.grossAmount ?? amount) }),
           ]
         : paymentInfo?.qrUrl
           ? [
-              'Buka aplikasi pembayaran yang mendukung QRIS, lalu pilih menu Scan/Bayar.',
-              'Pindai kode QR di bawah dan periksa nama merchant serta nominal pembayaran.',
-              'Konfirmasi pembayaran di aplikasi; status pesanan akan diperbarui setelah pembayaran diterima.',
+              t('payment.pending.openQrApp'),
+              t('payment.pending.scanQr'),
+              t('payment.pending.confirmQr'),
             ]
           : [
-              'Tekan tombol Lanjutkan Pembayaran untuk membuka aplikasi atau halaman penyedia pembayaran.',
-              `Periksa nominal ${formatRupiah(paymentInfo?.grossAmount ?? amount)} sebelum menyelesaikan pembayaran.`,
-              'Kembali ke halaman informasi pembayaran untuk melihat pembaruan status.',
+              t('payment.pending.continueProvider'),
+              t('payment.pending.checkTotal', { amount: formatRupiah(paymentInfo?.grossAmount ?? amount) }),
+              t('payment.pending.returnStatus'),
             ]
 
   return (
@@ -104,23 +106,23 @@ function PendingOrderModal({
           <button
             type="button"
             onClick={onReturnHome}
-            aria-label="Kembali ke beranda"
-            title="Kembali ke beranda"
+            aria-label={t('payment.pending.backHome')}
+            title={t('payment.pending.backHome')}
             className="absolute left-0 top-0 grid h-9 w-9 place-items-center rounded-lg border border-[#D4D4D4] bg-white text-[#404F14] transition-colors hover:bg-[#F5FAF3]"
           >
             <House size={18} aria-hidden="true" />
           </button>
           <div className="flex justify-center">
-            <svg width="42" height="42" viewBox="0 0 56 56" fill="none" role="img" aria-label="Memproses pembayaran" className="motion-safe:animate-[spin_2s_linear_infinite]">
+            <svg width="42" height="42" viewBox="0 0 56 56" fill="none" role="img" aria-label={t('payment.pending.processingAlt')} className="motion-safe:animate-[spin_2s_linear_infinite]">
               <path d="M48.8 16 A24 24 0 1 1 36.2 5.4" stroke="#404F14" strokeWidth="5" strokeLinecap="round" />
               <circle cx="46" cy="9" r="3.5" fill="#265021" />
             </svg>
           </div>
           <h2 id="pending-order-title" className={`${FONT_MONTSERRAT} mt-2 text-lg font-bold leading-6 text-[#343133] sm:text-xl`}>
-            Menunggu Konfirmasi Pembayaran
+            {t('payment.pending.title')}
           </h2>
           <p className="mx-auto mt-1 max-w-[340px] font-heading text-[11px] leading-4 text-[#343133] sm:text-xs">
-            Kami sedang memverifikasi transaksi {paymentMethod} Anda.
+            {t('payment.pending.verifying', { method: paymentMethod })}
           </p>
         </header>
 
@@ -128,25 +130,25 @@ function PendingOrderModal({
 
         <main className={`min-h-0 flex-1 overscroll-contain ${isInstructionsOpen ? 'overflow-y-auto' : 'overflow-hidden'}`}>
           <dl className="grid grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] gap-x-3 gap-y-1.5 rounded-lg bg-[#FDFCF7] px-3 py-2.5 font-heading text-[11px] sm:gap-y-2 sm:px-4 sm:py-3 sm:text-xs">
-            <dt className="text-[#343133]">Status Transaksi</dt>
-            <dd className="justify-self-end rounded bg-[#FDEBC8] px-2 py-1 text-[9px] font-bold leading-none text-[#D97706]">PENDING / VERIFIKASI</dd>
-            <dt className="text-[#343133]">Tanggal</dt>
+            <dt className="text-[#343133]">{t('payment.pending.status')}</dt>
+            <dd className="justify-self-end rounded bg-[#FDEBC8] px-2 py-1 text-[9px] font-bold leading-none text-[#D97706]">{t('payment.pending.pendingStatus')}</dd>
+            <dt className="text-[#343133]">{t('payment.pending.date')}</dt>
             <dd className="text-right font-bold text-[#121212]">{date}</dd>
-            <dt className="text-[#343133]">Waktu</dt>
+            <dt className="text-[#343133]">{t('payment.pending.time')}</dt>
             <dd className="text-right font-bold text-[#121212]">{time}</dd>
-            <dt className="text-[#343133]">Metode Pembayaran</dt>
+            <dt className="text-[#343133]">{t('payment.pending.method')}</dt>
             <dd className="text-right font-bold text-[#121212]">{paymentMethod}</dd>
-            <dt className="text-[#343133]">Total Pembayaran</dt>
+            <dt className="text-[#343133]">{t('payment.pending.total')}</dt>
             <dd className="text-right font-bold text-[#404F14]">{formatRupiah(paymentInfo?.grossAmount ?? amount)}</dd>
-            <dt className="text-[#343133]">ID Transaksi</dt>
+            <dt className="text-[#343133]">{t('payment.pending.transactionId')}</dt>
             <dd className="break-all text-right font-bold text-[#404F14]">{transactionId || paymentInfo?.orderId}</dd>
           </dl>
 
           {bookings.length > 0 && (
             <section className="mt-2 rounded-lg border border-[#E5E5E5] bg-white px-3 py-2 sm:mt-3 sm:px-4 sm:py-3">
               <div className="flex items-center justify-between gap-3">
-                <h3 className="font-heading text-[11px] font-bold text-[#121212] sm:text-xs">Pesanan dalam transaksi</h3>
-                <span className="rounded-full bg-[#E6F0E0] px-2 py-1 text-[10px] font-bold text-[#404F14]">{bookings.length} booking</span>
+                <h3 className="font-heading text-[11px] font-bold text-[#121212] sm:text-xs">{t('payment.pending.bookingList')}</h3>
+                <span className="rounded-full bg-[#E6F0E0] px-2 py-1 text-[10px] font-bold text-[#404F14]">{t('payment.pending.bookingCount', { count: bookings.length })}</span>
               </div>
               <div className="mt-2 max-h-[96px] space-y-1.5 overflow-y-auto">
                 {bookings.map((booking, index) => (
@@ -168,8 +170,8 @@ function PendingOrderModal({
               className="flex w-full items-center justify-between gap-3 text-left"
             >
               <span>
-                <span className="block font-heading text-[11px] font-bold text-[#121212] sm:text-xs">Instruksi Pembayaran</span>
-                {!isInstructionsOpen && <span className="mt-0.5 block text-[10px] text-[#6F6B6E]">Ketuk untuk melihat langkah pembayaran</span>}
+                <span className="block font-heading text-[11px] font-bold text-[#121212] sm:text-xs">{t('payment.pending.instructions')}</span>
+                {!isInstructionsOpen && <span className="mt-0.5 block text-[10px] text-[#6F6B6E]">{t('payment.pending.revealInstructions')}</span>}
               </span>
               <ChevronDown size={18} aria-hidden="true" className={`shrink-0 text-[#404F14] transition-transform ${isInstructionsOpen ? 'rotate-180' : ''}`} />
             </button>
@@ -180,22 +182,22 @@ function PendingOrderModal({
                 </ol>
                 <div className="space-y-1.5">
                   {paymentInfo?.vaNumber && (
-                    <PaymentCode label={`Nomor Virtual Account ${paymentInfo.bankName ?? ''}`.trim()} value={paymentInfo.vaNumber} onCopy={handleCopy} copied={copiedValue === paymentInfo.vaNumber} />
+                    <PaymentCode label={t('payment.pending.virtualAccount', { bank: paymentInfo.bankName ?? '' })} value={paymentInfo.vaNumber} onCopy={handleCopy} copied={copiedValue === paymentInfo.vaNumber} />
                   )}
                   {paymentInfo?.billerCode && (
-                    <PaymentCode label="Kode Perusahaan" value={paymentInfo.billerCode} onCopy={handleCopy} copied={copiedValue === paymentInfo.billerCode} />
+                    <PaymentCode label={t('payment.pending.companyCode')} value={paymentInfo.billerCode} onCopy={handleCopy} copied={copiedValue === paymentInfo.billerCode} />
                   )}
                   {paymentInfo?.billKey && (
-                    <PaymentCode label="Kode Pembayaran" value={paymentInfo.billKey} onCopy={handleCopy} copied={copiedValue === paymentInfo.billKey} />
+                    <PaymentCode label={t('payment.pending.paymentCode')} value={paymentInfo.billKey} onCopy={handleCopy} copied={copiedValue === paymentInfo.billKey} />
                   )}
                   {paymentInfo?.paymentCode && (
-                    <PaymentCode label={`Kode Pembayaran ${paymentInfo.storeName ?? ''}`.trim()} value={paymentInfo.paymentCode} onCopy={handleCopy} copied={copiedValue === paymentInfo.paymentCode} />
+                    <PaymentCode label={t('payment.pending.storeCode', { store: paymentInfo.storeName ?? '' })} value={paymentInfo.paymentCode} onCopy={handleCopy} copied={copiedValue === paymentInfo.paymentCode} />
                   )}
                   {paymentInfo?.qrUrl && (
-                    <img src={paymentInfo.qrUrl} alt="QR pembayaran" className="mx-auto max-h-[min(16dvh,120px)] max-w-full object-contain sm:max-h-[min(18dvh,150px)]" />
+                    <img src={paymentInfo.qrUrl} alt={t('payment.pending.qrAlt')} className="mx-auto max-h-[min(16dvh,120px)] max-w-full object-contain sm:max-h-[min(18dvh,150px)]" />
                   )}
                   {!paymentInfo && paymentUrl && (
-                    <p className="text-[10px] leading-4 text-[#6F6B6E]">Gunakan tombol Lanjutkan Pembayaran untuk membuka halaman penyedia.</p>
+                    <p className="text-[10px] leading-4 text-[#6F6B6E]">{t('payment.pending.providerHint')}</p>
                   )}
                 </div>
               </div>
@@ -206,14 +208,14 @@ function PendingOrderModal({
         <footer className="mt-2 grid shrink-0 grid-cols-2 gap-2 sm:mt-3 sm:flex sm:justify-center">
           {(paymentUrl || paymentInfo?.deeplinkUrl) && onContinuePayment && (
             <button type="button" onClick={onContinuePayment} className="min-h-9 rounded-lg bg-[#354B24] px-3 font-heading text-[11px] font-bold text-white sm:min-h-10 sm:min-w-40 sm:text-xs">
-              Lanjutkan Pembayaran
+              {t('payment.pending.continue')}
             </button>
           )}
           <button type="button" onClick={onOpenOrderStatus} className="min-h-9 rounded-lg bg-[#354B24] px-3 font-heading text-[11px] font-bold text-white sm:min-h-10 sm:min-w-40 sm:text-xs">
-            Informasi Pembayaran
+            {t('payment.pending.information')}
           </button>
           <a href={ADMIN_WA_URL} target="_blank" rel="noreferrer" className={`flex min-h-9 items-center justify-center rounded-lg bg-[#CDF178] px-3 text-center font-heading text-[11px] font-bold text-[#404F14] sm:min-h-10 sm:min-w-40 sm:text-xs ${canContinuePayment ? 'col-span-2 sm:col-span-1' : ''}`}>
-            Bantuan WhatsApp
+            {t('payment.pending.whatsappHelp')}
           </a>
         </footer>
       </section>
@@ -232,6 +234,7 @@ function PaymentCode({
   onCopy: (value: string) => void
   copied: boolean
 }) {
+  const { t } = useTranslation()
   return (
     <div className="flex items-center justify-between gap-3 rounded-md bg-[#FDFCF7] px-2.5 py-2">
       <div className="min-w-0">
@@ -241,11 +244,11 @@ function PaymentCode({
       <button
         type="button"
         onClick={() => onCopy(value)}
-        aria-label={copied ? 'Tersalin' : `Salin ${label}`}
+        aria-label={copied ? t('paymentResult.copied') : t('paymentResult.copyCode', { label })}
         className="flex h-8 shrink-0 items-center gap-1 rounded-md bg-[#E6F0E0] px-2 font-heading text-xs font-bold text-[#404F14]"
       >
         {copied ? <Check size={14} /> : <Copy size={14} />}
-        {copied ? 'Tersalin' : 'Salin'}
+        {copied ? t('paymentResult.copied') : t('paymentResult.copy')}
       </button>
     </div>
   )

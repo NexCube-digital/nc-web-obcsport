@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { ArrowRight, CalendarClock, Plus, ShoppingCart, Trash2, X } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 
 /* -------------------------------------------------------------------------
    Tipe data
@@ -47,6 +48,7 @@ const ANIMATION_CSS = `
 `
 
 function CartModal({ isOpen, onClose, items = [], onRemove, onCheckout }: CartModalProps) {
+  const { t } = useTranslation()
   useEffect(() => {
     if (!isOpen) return
 
@@ -109,11 +111,11 @@ function CartModal({ isOpen, onClose, items = [], onRemove, onCheckout }: CartMo
                 id="cart-modal-title"
                 className={`${FONT_MONTSERRAT} truncate text-base font-semibold leading-6 text-black sm:text-lg`}
               >
-                Keranjang Booking
+                {t('cartModal.title')}
               </h2>
               {hasItems && (
                 <span className="shrink-0 whitespace-nowrap rounded-full bg-[#404F14] px-2.5 py-0.5 font-heading text-xs font-semibold leading-4 text-white">
-                  {items.length} paket
+                  {t('cartModal.itemCount', { count: items.length })}
                 </span>
               )}
             </div>
@@ -122,7 +124,7 @@ function CartModal({ isOpen, onClose, items = [], onRemove, onCheckout }: CartMo
           <button
             type="button"
             onClick={onClose}
-            aria-label="Tutup keranjang"
+            aria-label={t('cartModal.close')}
             className="flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-full bg-[#CDF178] text-[#343133] transition-colors hover:bg-[#9AAD3E] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#404F14] focus-visible:ring-offset-2"
           >
             <X size={16} aria-hidden="true" />
@@ -141,17 +143,17 @@ function CartModal({ isOpen, onClose, items = [], onRemove, onCheckout }: CartMo
                 <ShoppingCart size={30} strokeWidth={1.8} />
               </div>
               <h3 className="mt-5 font-heading text-base font-bold text-[#343133]">
-                Keranjang masih kosong
+                {t('cartModal.emptyTitle')}
               </h3>
               <p className="mt-2 max-w-xs text-sm leading-relaxed text-[#6F6B6E]">
-                Booking yang ditambahkan ke keranjang akan muncul di sini.
+                {t('cartModal.emptyDescription')}
               </p>
               <Link
                 to="/home"
                 onClick={onClose}
                 className="mt-6 inline-flex h-10 items-center justify-center rounded-lg bg-[#CDF178] px-5 text-sm font-heading font-bold text-[#404F14] transition-colors hover:bg-[#9AAD3E]"
               >
-                Cari Lapangan
+                {t('cartModal.findCourt')}
               </Link>
             </div>
           ) : (
@@ -163,7 +165,7 @@ function CartModal({ isOpen, onClose, items = [], onRemove, onCheckout }: CartMo
                 className="mb-4 flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-dashed border-[#9AAD3E] bg-[#F7FBEA] font-heading text-sm font-bold text-[#404F14] transition-colors hover:bg-[#EEF6D6] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#404F14] focus-visible:ring-offset-2"
               >
                 <Plus size={17} aria-hidden="true" />
-                Tambah Jadwal Baru
+                {t('cartModal.addSchedule')}
               </Link>
 
               <ul className="space-y-3">
@@ -204,7 +206,7 @@ function CartModal({ isOpen, onClose, items = [], onRemove, onCheckout }: CartMo
                       <button
                         type="button"
                         onClick={() => onRemove?.(item.id)}
-                        aria-label={`Hapus ${item.facilityName} dari keranjang`}
+                        aria-label={t('cartModal.removeItem', { name: item.facilityName })}
                         className="absolute right-3 top-3 flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border border-[#D4E4CC] bg-[#F1F8EC] text-[#343133] transition-colors hover:border-red-200 hover:bg-red-50 hover:text-red-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400"
                       >
                         <Trash2 size={14} aria-hidden="true" />
@@ -213,7 +215,7 @@ function CartModal({ isOpen, onClose, items = [], onRemove, onCheckout }: CartMo
 
                     {/* Baris harga dipisah garis tipis agar hierarki lebih jelas */}
                     <div className="flex items-center justify-between gap-3 border-t border-dashed border-[#E5E5E5] bg-[#FAFAF5] px-3.5 py-2.5 sm:px-4">
-                      <span className="font-heading text-xs text-[#6F6B6E]">Harga paket</span>
+                      <span className="font-heading text-xs text-[#6F6B6E]">{t('cartModal.packagePrice')}</span>
                       <span className="font-heading text-sm font-bold text-[#121212]">
                         {formatRupiah(item.price)}
                       </span>
@@ -229,11 +231,11 @@ function CartModal({ isOpen, onClose, items = [], onRemove, onCheckout }: CartMo
         {/* pb memakai safe-area agar tombol tidak tertutup home indicator iOS */}
         <footer className="shrink-0 border-t border-[#E5E5E5] bg-white px-4 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-4 shadow-[0_-8px_24px_rgba(0,0,0,0.04)] sm:px-8 sm:pb-8 sm:pt-5">
           <div className="flex items-center justify-between font-heading text-sm text-[#6F6B6E]">
-            <span>Total Bookingan</span>
-            <span className="font-semibold text-[#343133]">{items.length} paket</span>
+            <span>{t('cartModal.bookingTotal')}</span>
+            <span className="font-semibold text-[#343133]">{t('cartModal.itemCount', { count: items.length })}</span>
           </div>
           <div className="mt-2 flex items-baseline justify-between gap-3">
-            <span className="font-heading text-base font-bold text-black">Total Tagihan</span>
+            <span className="font-heading text-base font-bold text-black">{t('cartModal.billTotal')}</span>
             <span className={`${FONT_MONTSERRAT} text-xl font-bold text-[#404F14]`}>
               {formatRupiah(total)}
             </span>
@@ -245,7 +247,7 @@ function CartModal({ isOpen, onClose, items = [], onRemove, onCheckout }: CartMo
             onClick={() => onCheckout?.(items)}
             className="mt-4 flex h-12 w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-[#CDF178] font-heading text-sm font-bold text-[#404F14] transition-colors hover:bg-[#9AAD3E] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#404F14] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:bg-[#CDF178]"
           >
-            Lanjut ke Pembayaran
+            {t('cartModal.continuePayment')}
             <ArrowRight size={16} aria-hidden="true" />
           </button>
         </footer>

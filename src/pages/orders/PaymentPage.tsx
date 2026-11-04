@@ -8,18 +8,18 @@ import DeferredSection from '../../components/layout/DeferredSection'
 import DeferredFooter from '../../components/layout/DeferredFooter'
 import ScrollReveal from '../../components/animation/ScrollReveal'
 import PendingOrderModal from '../../components/ui/PendingOrderModal'
+import PaymentMethodSelector from '../../components/ui/PaymentMethodSelector'
 import { useIsMobile } from '../../hooks/useIsMobile'
 import { checkoutCart, createBooking, getBookingDetails, previewBookingPrice, type BookingPrice, type PaymentChannel } from '../../services/bookingService'
 import type { CartItem } from '../../components/ui/CartModal'
 import { cartService, syncBackendCart } from '../../services/cart'
 import { getApiErrorMessage } from '../../services/apiService'
 import { isDirectChannel, parseMidtransCharge, parsePersistedDirectPayment, type DirectPaymentInfo } from '../../services/paymentService'
+import { useTranslation } from 'react-i18next'
 
 /* -------------------------------------------------------------------------
    Tipe data
    ------------------------------------------------------------------------- */
-type PaymentMethodId = PaymentChannel
-
 interface PendingOrderModalData {
   bookingId: string
   bookingIds?: string[]
@@ -51,35 +51,6 @@ function readPendingOrder(): PendingOrderModalData | null {
   }
 }
 
-// Metode pembayaran khusus tampilan mobile (lebih lengkap sesuai desain)
-type MobileMethodId = PaymentChannel
-
-interface PaymentMethod {
-  id: PaymentMethodId
-  badge: string
-  name: string
-  description: string
-}
-
-interface PaymentGroup {
-  id: string
-  label: string
-  methods: PaymentMethod[]
-}
-
-interface MobileMethod {
-  id: MobileMethodId
-  badge: string
-  name: string
-  description: string
-}
-
-interface MobileMethodGroup {
-  id: string
-  label: string
-  methods: MobileMethod[]
-}
-
 interface ExtraItem {
   id: string
   name: string
@@ -104,104 +75,17 @@ interface CheckoutState {
 /* -------------------------------------------------------------------------
    Data (ganti dengan data dari API / services/paymentService.js)
    ------------------------------------------------------------------------- */
-const PROMO_CODE = 'Diskon'
-
 // Fallback bila halaman dibuka tanpa state (sesuai desain)
-const DEFAULT_DATE = 'Senin, 12 Januari 2026'
 const DEFAULT_START = '08:00'
 const DEFAULT_END = '10:00'
 const DEFAULT_SUBTOTAL = 250000
 
 const FONT_MONTSERRAT = "font-['Montserrat',sans-serif]"
 
-const PAYMENT_GROUPS: PaymentGroup[] = [
-  {
-    id: 'instant',
-    label: 'QRIS & E-WALLET',
-    methods: [
-      { id: 'qris', badge: 'QRIS', name: 'QRIS', description: 'Pembayaran dengan scan QR' },
-      { id: 'gopay', badge: 'GOPAY', name: 'GoPay', description: 'Pembayaran instan' },
-      { id: 'shopeepay', badge: 'SPAY', name: 'ShopeePay', description: 'Pembayaran instan' },
-      // CATATAN: Core API Midtrans tidak mendukung OVO, jadi OVO tetap lewat Snap (modal)
-      { id: 'ovo', badge: 'OVO', name: 'OVO', description: 'Pembayaran instan' },
-      { id: 'dana', badge: 'DANA', name: 'DANA', description: 'Pembayaran instan' },
-    ],
-  },
-  {
-    id: 'card',
-    label: 'KARTU',
-    methods: [
-      { id: 'credit_card', badge: 'CARD', name: 'Kartu kredit / debit', description: 'Pembayaran dengan kartu' },
-    ],
-  },
-  {
-    id: 'va',
-    label: 'VIRTUAL ACCOUNT',
-    methods: [
-      {
-        id: 'bca_va',
-        badge: 'BCA VA',
-        name: 'BCA Virtual Account',
-        description: 'Verifikasi otomatis 24 Jam',
-      },
-      { id: 'bni_va', badge: 'BNI VA', name: 'BNI Virtual Account', description: 'Verifikasi otomatis' },
-      { id: 'bri_va', badge: 'BRI VA', name: 'BRI Virtual Account', description: 'Verifikasi otomatis' },
-      { id: 'mandiri_va', badge: 'MANDIRI', name: 'Mandiri Virtual Account', description: 'Verifikasi otomatis' },
-      { id: 'permata_va', badge: 'PERMATA', name: 'Permata Virtual Account', description: 'Verifikasi otomatis' },
-    ],
-  },
-  {
-    id: 'retail',
-    label: 'GERAI RETAIL',
-    methods: [
-      { id: 'alfamart', badge: 'ALFA', name: 'Alfamart', description: 'Bayar melalui gerai Alfamart' },
-      { id: 'indomaret', badge: 'INDO', name: 'Indomaret', description: 'Bayar melalui gerai Indomaret' },
-    ],
-  },
-]
-
 // TODO: sewa alat tambahan (mobile) sementara hardcode, ambil dari API
 const EXTRA_ITEMS: ExtraItem[] = [
-  { id: 'raket', name: 'Sewa Raket Tambahan', price: 20000 },
-  { id: 'bola', name: 'Sewa Bola / Paddle', price: 15000 },
-]
-
-const MOBILE_METHOD_GROUPS: MobileMethodGroup[] = [
-  {
-    id: 'ewallet',
-    label: 'QRIS & E-WALLET',
-    methods: [
-      { id: 'qris', badge: 'QRIS', name: 'QRIS', description: 'Bayar dengan scan kode QR' },
-      { id: 'gopay', badge: 'GOPAY', name: 'GoPay', description: 'Konfirmasi lewat aplikasi GoPay' },
-      { id: 'shopeepay', badge: 'SPAY', name: 'ShopeePay', description: 'Bayar dari saldo ShopeePay' },
-      { id: 'ovo', badge: 'OVO', name: 'OVO', description: 'Konfirmasi lewat aplikasi OVO' },
-      { id: 'dana', badge: 'DANA', name: 'DANA', description: 'Bayar dari saldo DANA' },
-    ],
-  },
-  {
-    id: 'card',
-    label: 'KARTU',
-    methods: [{ id: 'credit_card', badge: 'CARD', name: 'Kartu kredit / debit', description: 'Pembayaran aman dengan kartu' }],
-  },
-  {
-    id: 'bank',
-    label: 'VIRTUAL ACCOUNT',
-    methods: [
-      { id: 'bca_va', badge: 'BCA', name: 'BCA Virtual Account', description: 'Transfer ke nomor VA BCA' },
-      { id: 'bni_va', badge: 'BNI', name: 'BNI Virtual Account', description: 'Transfer ke nomor VA BNI' },
-      { id: 'bri_va', badge: 'BRI', name: 'BRI Virtual Account', description: 'Transfer ke nomor VA BRI' },
-      { id: 'mandiri_va', badge: 'MANDIRI', name: 'Mandiri Virtual Account', description: 'Transfer ke nomor VA Mandiri' },
-      { id: 'permata_va', badge: 'PERMATA', name: 'Permata Virtual Account', description: 'Transfer ke nomor VA Permata' },
-    ],
-  },
-  {
-    id: 'retail',
-    label: 'GERAI RETAIL',
-    methods: [
-      { id: 'alfamart', badge: 'ALFA', name: 'Alfamart', description: 'Bayar melalui kasir Alfamart' },
-      { id: 'indomaret', badge: 'INDO', name: 'Indomaret', description: 'Bayar melalui kasir Indomaret' },
-    ],
-  },
+  { id: 'raket', name: 'Additional racket rental', price: 20000 },
+  { id: 'bola', name: 'Ball / paddle rental', price: 15000 },
 ]
 
 /* -------------------------------------------------------------------------
@@ -215,9 +99,14 @@ const hourOf = (time: string) => {
 }
 
 function PaymentPage() {
+  const { t, i18n } = useTranslation()
   const navigate = useNavigate()
   const location = useLocation()
   const isMobile = useIsMobile()
+  const extraItems = EXTRA_ITEMS.map((item) => ({
+    ...item,
+    name: t(item.id === 'raket' ? 'payment.extras.racket' : 'payment.extras.ballPaddle'),
+  }))
   const pendingParams = useMemo(() => new URLSearchParams(location.search), [location.search])
   const pendingBookingId = pendingParams.get('pendingBookingId') ?? ''
   const pendingBookingIds = useMemo(
@@ -240,10 +129,9 @@ function PaymentPage() {
   const isCartCheckout = cartItems.length > 0
   const cartItemsKey = cartItems.map((item) => `${item.resourceId}:${item.bookingDate}:${item.startTime}:${item.endTime}:${item.sportType}`).join('|')
 
-  const [method, setMethod] = useState<PaymentMethodId | null>(null)
+  const [selectedChannel, setSelectedChannel] = useState<PaymentChannel | null>(null)
 
-  // State khusus mobile: metode pembayaran & alat tambahan yang dicentang
-  const [mobileMethod, setMobileMethod] = useState<MobileMethodId | null>(null)
+  // State khusus mobile: alat tambahan yang dicentang
   const [selectedExtras] = useState<string[]>(['raket'])
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [pendingOrderModal, setPendingOrderModal] = useState<PendingOrderModalData | null>(readPendingOrder)
@@ -253,10 +141,7 @@ function PaymentPage() {
     if (!pendingOrderModal && !pendingBookingId && (!state.resourceId || !state.bookingDate)) navigate('/home', { replace: true })
   }, [navigate, pendingBookingId, pendingOrderModal, state.bookingDate, state.resourceId])
 
-  const selectedChannel: PaymentChannel | null = isMobile ? mobileMethod : method
-  const selectedMethodLabel = [...PAYMENT_GROUPS, ...MOBILE_METHOD_GROUPS]
-    .flatMap((group) => group.methods)
-    .find((item) => item.id === selectedChannel)?.name ?? 'Pembayaran Midtrans'
+  const selectedMethodLabel = selectedChannel ? t(`payment.methods.${selectedChannel}.name`) : t('payment.midtrans')
   const paymentMethod = !selectedChannel
     ? undefined
     : selectedChannel === 'qris'
@@ -307,10 +192,12 @@ function PaymentPage() {
   }, [cartItems, cartItemsKey, isCartCheckout, paymentMethod, selectedChannel, state.bookingDate, state.endTime, state.resourceId, state.sportType, state.time])
 
   /* ---------- Turunan data pesanan ---------- */
-  const date = state.date ?? DEFAULT_DATE
+  const date = state.date ?? new Intl.DateTimeFormat(i18n.language, {
+    weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
+  }).format(new Date())
   const startTime = state.time ?? DEFAULT_START
   const endTime = state.endTime ?? DEFAULT_END
-  const facilityName = state.facility?.name ?? 'Lapangan Futsal Premium'
+  const facilityName = state.facility?.name ?? t('history.facilities.futsal')
   const facilityLocation = state.facility?.location?.name ?? 'OBC Sport Center'
   const pendingBookings = isCartCheckout
     ? cartItems.map((item) => ({
@@ -383,7 +270,7 @@ function PaymentPage() {
 
         const firstBooking = details[0]
         const firstPayment = firstBooking?.payments[0]
-        if (!firstBooking) throw new Error('Booking tidak ditemukan.')
+        if (!firstBooking) throw new Error(t('payment.bookingNotFound'))
         const paymentCreatedAt = firstPayment?.createdAt ? new Date(firstPayment.createdAt).getTime() : Number.NaN
         const serverExpiry = firstBooking.lockedUntil ?? firstPayment?.expiredAt
         const serverExpiryTime = serverExpiry ? new Date(serverExpiry).getTime() : Number.NaN
@@ -402,7 +289,7 @@ function PaymentPage() {
           paymentUrl: firstPayment?.redirectUrl ?? undefined,
           date: firstBooking.bookingDate,
           time: `${firstBooking.startTime} - ${firstBooking.endTime}`,
-          paymentMethod: firstPayment?.method ?? firstPayment?.paymentType ?? 'Pembayaran Midtrans',
+          paymentMethod: firstPayment?.method ?? firstPayment?.paymentType ?? t('payment.midtrans'),
           bookings: details.map((booking) => ({
             id: booking.id,
             name: booking.resource.name,
@@ -431,7 +318,7 @@ function PaymentPage() {
     : subtotal
 
   /* ---------- Turunan data mobile ---------- */
-  const extrasTotal = EXTRA_ITEMS.filter((item) => selectedExtras.includes(item.id)).reduce(
+  const extrasTotal = extraItems.filter((item) => selectedExtras.includes(item.id)).reduce(
     (sum, item) => sum + item.price,
     0,
   )
@@ -464,11 +351,11 @@ function PaymentPage() {
   /* ---------- Handler ---------- */
   const handlePay = async () => {
     if (!state.resourceId || !state.bookingDate || !state.sportType) {
-      toast.error('Data fasilitas atau jadwal tidak ditemukan. Silakan pilih jadwal kembali.')
+      toast.error(t('payment.missingBooking'))
       return
     }
     if (!selectedChannel) {
-      toast.error('Pilih metode pembayaran terlebih dahulu.')
+      toast.error(t('payment.chooseMethod'))
       return
     }
 
@@ -505,7 +392,7 @@ function PaymentPage() {
           bookingType: 'regular',
           paymentChannel: selectedChannel,
           notes: selectedExtras.length > 0
-            ? `Tambahan yang dipilih: ${EXTRA_ITEMS.filter((item) => selectedExtras.includes(item.id)).map((item) => item.name).join(', ')}`
+            ? `${t('payment.extraRental')}: ${extraItems.filter((item) => selectedExtras.includes(item.id)).map((item) => item.name).join(', ')}`
             : undefined,
         })
 
@@ -553,7 +440,7 @@ function PaymentPage() {
       // (app.sandbox.midtrans.com/snap/...), tampilkan pesan agar mudah ditelusuri.
       // CATATAN BACKEND: bila pesan ini muncul, endpoint booking belum memanggil Core API (/v2/charge).
       if (isDirectChannel(selectedChannel)) {
-        toast.error('Server belum mengembalikan data pembayaran langsung (chargeResponse). Periksa endpoint booking.')
+        toast.error(t('payment.missingCharge'))
         setIsSubmitting(false)
         return
       }
@@ -584,7 +471,7 @@ function PaymentPage() {
         state: { bookingId: booking.bookingId, bookingIds },
       })
     } catch (error) {
-      toast.error(getApiErrorMessage(error, 'Booking gagal dibuat. Periksa jadwal dan coba lagi.'))
+      toast.error(getApiErrorMessage(error, t('payment.createFailed')))
       setIsSubmitting(false)
     }
   }
@@ -628,7 +515,7 @@ function PaymentPage() {
       <main className="grid h-[100dvh] w-screen place-items-center bg-[#F4F6F0]" role="status" aria-live="polite">
         <div className="text-center">
           <span className="mx-auto block h-9 w-9 animate-spin rounded-full border-4 border-[#DCE5D3] border-t-[#354B24]" />
-          <p className="mt-4 font-heading text-sm font-semibold text-[#354B24]">Memuat status pembayaran...</p>
+          <p className="mt-4 font-heading text-sm font-semibold text-[#354B24]">{t('payment.loadingStatus')}</p>
         </div>
       </main>
     )
@@ -639,7 +526,7 @@ function PaymentPage() {
       <main className="grid h-[100dvh] w-screen place-items-center bg-[#F4F6F0]" role="status" aria-live="polite">
         <div className="text-center">
           <span className="mx-auto block h-9 w-9 animate-spin rounded-full border-4 border-[#DCE5D3] border-t-[#354B24]" />
-          <p className="mt-4 font-heading text-sm font-semibold text-[#354B24]">Menyiapkan pembayaran...</p>
+          <p className="mt-4 font-heading text-sm font-semibold text-[#354B24]">{t('payment.preparing')}</p>
         </div>
       </main>
     )
@@ -651,7 +538,7 @@ function PaymentPage() {
         <>
         <MobileHeader
           variant="title"
-          title="Konfirmasi & Pembayaran"
+          title={t('payment.confirmTitle')}
           showShare
           showBottomNav={false}
         />
@@ -676,7 +563,7 @@ function PaymentPage() {
                 </p>
                 {isCartCheckout && (
                   <div className="mt-2 space-y-1 border-t border-[#E5E5E5] pt-2">
-                    <p className="text-[11px] font-semibold text-[#404F14]">{cartItems.length} booking dalam keranjang</p>
+                    <p className="text-[11px] font-semibold text-[#404F14]">{t('payment.cartCount', { count: cartItems.length })}</p>
                     {cartItems.map((item) => <p key={item.id} className="text-[11px] leading-4 text-[#6F6B6E]">{item.facilityName} · {item.startTime}-{item.endTime}</p>)}
                   </div>
                 )}
@@ -687,15 +574,15 @@ function PaymentPage() {
 
             <dl className="space-y-2 font-heading text-sm">
               <div className="flex items-center justify-between gap-3">
-                <dt className="text-[#6F6B6E]">Sewa Lapangan</dt>
+                <dt className="text-[#6F6B6E]">{t('payment.courtRental')}</dt>
                 <dd className="text-[#343133]">{formatRupiah(subtotal)}</dd>
               </div>
               <div className="flex items-center justify-between gap-3">
-                <dt className="text-[#6F6B6E]">Biaya Admin</dt>
+                <dt className="text-[#6F6B6E]">{t('payment.adminFee')}</dt>
                 <dd className="text-[#343133]">{formatRupiah(serviceFee)}</dd>
               </div>
               <div className="flex items-center justify-between gap-3">
-                <dt className="text-[#6F6B6E]">Sewa Tambahan</dt>
+                <dt className="text-[#6F6B6E]">{t('payment.extraRental')}</dt>
                 <dd className="text-[#343133]">{formatRupiah(extrasTotal)}</dd>
               </div>
             </dl>
@@ -704,7 +591,7 @@ function PaymentPage() {
 
             <div className="flex items-center justify-between">
               <span className="font-heading font-bold text-sm text-[#121212]">
-                Total Pembayaran
+                {t('payment.totalPayment')}
               </span>
               <span className={`${FONT_MONTSERRAT} font-bold text-lg text-[#404F14]`}>
                 {formatRupiah(mobileTotal)}
@@ -717,70 +604,17 @@ function PaymentPage() {
           <DeferredSection placeholderClassName="mt-6 min-h-[360px]">
             <div className="mt-6">
               <h2 className={`${FONT_MONTSERRAT} font-semibold text-base text-[#343133]`}>
-                Metode Pembayaran
+                {t('payment.choosePaymentMethod')}
               </h2>
 
-              <div role="radiogroup" aria-label="Metode pembayaran" className="mt-2 space-y-3">
-                {MOBILE_METHOD_GROUPS.map((group) => (
-                  <div key={group.id}>
-                    <h3 className={`${FONT_MONTSERRAT} px-1 font-bold text-[11px] text-[#404F14]`}>
-                      {group.label}
-                    </h3>
-
-                    <div className="mt-2 grid grid-cols-2 gap-2">
-                      {group.methods.map((item) => {
-                        const isActive = mobileMethod === item.id
-                        return (
-                          <button
-                            key={item.id}
-                            type="button"
-                            role="radio"
-                            aria-checked={isActive}
-                            onClick={() => setMobileMethod(item.id)}
-                            className={`flex min-h-[112px] min-w-0 flex-col items-start gap-2 rounded-xl border bg-white p-3 text-left cursor-pointer transition-colors ${
-                              isActive
-                                ? 'border-[#404F14] bg-[#F5FAF0] shadow-[0_0_0_1px_#404F14]'
-                                : 'border-[#D4D4D4] hover:border-[#9AAD3E]'
-                            }`}
-                          >
-                            <span className="flex w-full items-center justify-between gap-2">
-                              <span
-                                className={`flex h-5 min-w-10 shrink-0 items-center justify-center rounded px-1 text-[9px] font-heading font-bold ${
-                                  isActive
-                                    ? 'bg-[#E6F0E0] text-[#404F14]'
-                                    : 'bg-[#F0F0F0] text-[#6F6B6E]'
-                                }`}
-                              >
-                                {item.badge}
-                              </span>
-                              <span
-                                className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full ${
-                                  isActive ? 'border-2 border-[#404F14]' : 'border border-[#D4D4D4]'
-                                }`}
-                                aria-hidden="true"
-                              >
-                                {isActive && <span className="h-2 w-2 rounded-full bg-[#404F14]" />}
-                              </span>
-                            </span>
-                            <span className="block w-full break-words font-heading text-xs font-semibold leading-tight text-[#343133]">
-                              {item.name}
-                            </span>
-                            <span className="block w-full break-words text-[10px] leading-snug text-[#6F6B6E]">
-                              {item.description}
-                            </span>
-                          </button>
-                        )
-                      })}
-                    </div>
-                  </div>
-                ))}
+              <div className="mt-2">
+                <PaymentMethodSelector value={selectedChannel} onChange={setSelectedChannel} ariaLabel={t('payment.methodLabel')} />
               </div>
 
               {/* Peringatan cashless (sama dengan versi PC) */}
               <div className="mt-4 rounded-lg border border-[#C00000] bg-[#FDF2F2] px-2 py-2">
                 <p className="font-heading text-[10px] leading-4 text-[#C00000]">
-                  <span aria-hidden="true">⚠️</span> Sistem OBC Sport Center sepenuhnya cashless.
-                  Pembayaran di tempat (COD) tidak didukung untuk mengamankan slot secara real-time.
+                  <span aria-hidden="true">⚠️</span> {t('payment.cashlessNotice')}
                 </p>
               </div>
             </div>
@@ -795,7 +629,7 @@ function PaymentPage() {
             disabled={isSubmitting || !selectedChannel}
             className="h-12 w-full rounded-xl bg-[#CDF178] font-heading text-sm font-bold text-[#404F14] transition-colors active:bg-[#9AAD3E] disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer"
           >
-            {isSubmitting ? 'Memproses booking...' : selectedChannel ? 'Bayar Sekarang' : 'Pilih metode pembayaran'}
+            {isSubmitting ? t('payment.processingBooking') : selectedChannel ? t('payment.payNow') : t('payment.chooseMethod')}
           </button>
         </div>
         </div>
@@ -811,10 +645,10 @@ function PaymentPage() {
         {/* Lebar konten 1200px sesuai desain */}
         <main className="max-w-[1248px] mx-auto px-6 pt-6 pb-16">
           <h1 className={`${FONT_MONTSERRAT} font-bold text-[26px] leading-9 text-[#343133]`}>
-            Pembayaran &amp; Checkout
+            {t('payment.confirmTitle')}
           </h1>
           <p className="mt-0.5 font-heading text-[13px] leading-5 text-[#343133]">
-            Selesaikan transaksi Anda dengan memilih opsi pembayaran di bawah ini.
+            {t('payment.confirmDescription')}
           </p>
 
           <ScrollReveal>
@@ -822,68 +656,17 @@ function PaymentPage() {
             {/* ================= Kolom kiri: metode pembayaran ================= */}
             <section className="rounded-2xl border border-[#D4D4D4] bg-white p-5">
               <h2 className={`${FONT_MONTSERRAT} font-semibold text-base text-[#343133]`}>
-                Pilih Metode Pembayaran
+                {t('payment.choosePaymentMethod')}
               </h2>
 
-              <div role="radiogroup" aria-label="Metode pembayaran">
-                {PAYMENT_GROUPS.map((group, groupIndex) => (
-                  <div key={group.id} className={groupIndex === 0 ? 'mt-4' : 'mt-4'}>
-                    <h3 className={`${FONT_MONTSERRAT} font-bold text-[11px] text-[#404F14]`}>
-                      {group.label}
-                    </h3>
-
-                    <div className="mt-2 grid grid-cols-2 gap-2">
-                      {group.methods.map((item) => {
-                        const isActive = method === item.id
-                        return (
-                          <button
-                            key={item.id}
-                            type="button"
-                            role="radio"
-                            aria-checked={isActive}
-                            onClick={() => setMethod(item.id)}
-                            className={`flex min-h-[76px] min-w-0 items-center gap-3 rounded-lg bg-white px-3 py-2 text-left cursor-pointer transition-colors ${
-                              isActive
-                                ? 'border-2 border-[#404F14]'
-                                : 'border border-[#D4D4D4] hover:border-[#9AAD3E]'
-                            }`}
-                          >
-                            <span
-                              className={`flex h-5 w-14 shrink-0 items-center justify-center rounded text-[10px] font-heading font-bold ${
-                                isActive
-                                  ? 'bg-[#E6F0E0] text-[#404F14]'
-                                  : 'bg-[#F0F0F0] text-[#6F6B6E]'
-                              }`}
-                            >
-                              {item.badge}
-                            </span>
-                            <span className="min-w-0 flex-1">
-                              <span className="block break-words font-heading text-[13px] font-semibold leading-[18px] text-[#343133]">
-                                {item.name}
-                              </span>
-                              <span className="block break-words font-heading text-[10px] leading-[14px] text-[#6F6B6E]">
-                                {item.description}
-                              </span>
-                            </span>
-                            <span
-                              className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full ${
-                                isActive ? 'bg-[#404F14]' : 'border border-[#D4D4D4] bg-white'
-                              }`}
-                              aria-hidden="true"
-                            />
-                          </button>
-                        )
-                      })}
-                    </div>
-                  </div>
-                ))}
+              <div className="mt-4">
+                <PaymentMethodSelector value={selectedChannel} onChange={setSelectedChannel} ariaLabel={t('payment.methodLabel')} />
               </div>
 
               {/* Peringatan cashless */}
               <div className="mt-4 rounded-lg border border-[#C00000] bg-[#FDF2F2] px-2 py-2">
                 <p className="font-heading text-[10px] leading-4 text-[#C00000]">
-                  <span aria-hidden="true">⚠️</span> Sistem OBC Sport Center sepenuhnya cashless.
-                  Pembayaran di tempat (COD) tidak didukung untuk mengamankan slot secara real-time.
+                  <span aria-hidden="true">⚠️</span> {t('payment.cashlessNotice')}
                 </p>
               </div>
             </section>
@@ -892,17 +675,17 @@ function PaymentPage() {
             <div>
               <section className="rounded-2xl border border-[#D4D4D4] bg-white p-5">
                 <h2 className={`${FONT_MONTSERRAT} font-semibold text-base text-[#343133]`}>
-                  Detail Reservasi
+                  {t('payment.reservationDetails')}
                 </h2>
 
                 <dl className="mt-3 space-y-2 font-heading text-xs">
                   <div className="flex items-center justify-between gap-3">
-                    <dt className="text-[#6F6B6E]">Fasilitas</dt>
+                    <dt className="text-[#6F6B6E]">{t('payment.facility')}</dt>
                     <dd className="font-bold text-[#121212]">{facilityName}</dd>
                   </div>
                   <div className="flex items-center justify-between gap-3">
-                    <dt className="text-[#6F6B6E]">Tanggal</dt>
-                    <dd className="font-bold text-[#121212]">{isCartCheckout ? `${cartItems.length} paket booking` : date}</dd>
+                    <dt className="text-[#6F6B6E]">{t('payment.date')}</dt>
+                    <dd className="font-bold text-[#121212]">{isCartCheckout ? t('payment.bookingPackages', { count: cartItems.length }) : date}</dd>
                   </div>
                   {isCartCheckout && cartItems.map((item) => (
                     <div key={item.id} className="flex items-start justify-between gap-3">
@@ -911,9 +694,9 @@ function PaymentPage() {
                     </div>
                   ))}
                   <div className="flex items-center justify-between gap-3">
-                    <dt className="text-[#6F6B6E]">Waktu</dt>
+                    <dt className="text-[#6F6B6E]">{t('payment.time')}</dt>
                     <dd className="font-bold text-[#404F14]">
-                      {startTime} - {endTime} ({hours} Jam)
+                      {startTime} - {endTime} ({t('booking.durationHours', { count: hours })})
                     </dd>
                   </div>
                 </dl>
@@ -921,22 +704,22 @@ function PaymentPage() {
                 <hr className="my-3 border-[#D4D4D4]" />
 
                 <h2 className={`${FONT_MONTSERRAT} font-semibold text-base text-[#343133]`}>
-                  Rincian Biaya
+                  {t('payment.costDetails')}
                 </h2>
 
                 <dl className="mt-3 space-y-2 font-heading text-xs">
                   <div className="flex items-center justify-between gap-3">
                     <dt className="text-[#6F6B6E]">
-                      Sewa Lapangan (Rp {pricePerHour}k x {hours})
+                      {t('payment.courtRentalRate', { rate: pricePerHour, hours })}
                     </dt>
                     <dd className="text-[#343133]">{formatRupiah(subtotal)}</dd>
                   </div>
                   <div className="flex items-center justify-between gap-3">
-                    <dt className="text-[#404F14]">Promo ({PROMO_CODE})</dt>
+                    <dt className="text-[#404F14]">{t('payment.promotion', { code: t('payment.promoCode') })}</dt>
                     <dd className="font-bold text-[#404F14]">-{formatRupiah(promo)}</dd>
                   </div>
                   <div className="flex items-center justify-between gap-3">
-                    <dt className="text-[#6F6B6E]">Biaya Layanan</dt>
+                    <dt className="text-[#6F6B6E]">{t('payment.serviceFee')}</dt>
                     <dd className="text-[#343133]">{formatRupiah(serviceFee)}</dd>
                   </div>
                 </dl>
@@ -945,7 +728,7 @@ function PaymentPage() {
 
                 <div className="flex items-center justify-between pt-1">
                   <span className="font-heading font-bold text-[13px] text-[#121212]">
-                    Total Bayar
+                    {t('payment.totalPayment')}
                   </span>
                   <span className={`${FONT_MONTSERRAT} font-bold text-xl text-[#404F14]`}>
                     {formatRupiah(total)}
@@ -959,7 +742,7 @@ function PaymentPage() {
                 disabled={isSubmitting || !selectedChannel}
                 className="mt-4 h-10 w-full rounded-lg bg-[#CDF178] font-heading text-xs font-bold text-[#404F14] transition-colors hover:bg-[#9AAD3E] disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer"
               >
-                {isSubmitting ? 'Memproses booking...' : selectedChannel ? 'Konfirmasi & Bayar' : 'Pilih metode pembayaran'}
+                {isSubmitting ? t('payment.processingBooking') : selectedChannel ? t('payment.confirmAndPay') : t('payment.chooseMethod')}
               </button>
             </div>
           </div>

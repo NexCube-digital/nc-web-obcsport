@@ -6,6 +6,7 @@ import { useIsMobile } from '../../../hooks/useIsMobile'
 import { cancelBooking, getBookingDetails, type BookingDetails } from '../../../services/bookingService'
 import { getApiErrorMessage } from '../../../services/apiService'
 import { getMembershipDetail } from '../../../services/membershipService'
+import { useTranslation } from 'react-i18next'
 
 /* -------------------------------------------------------------------------
    Tipe data
@@ -31,6 +32,7 @@ const isPaidBooking = (booking: BookingDetails | null) => {
 }
 
 function PaymentCountdown({ expiresAt }: { expiresAt?: string }) {
+  const { t } = useTranslation()
   const [secondsLeft, setSecondsLeft] = useState(() =>
     expiresAt ? Math.max(0, Math.floor((new Date(expiresAt).getTime() - Date.now()) / 1000)) : 0,
   )
@@ -49,19 +51,20 @@ function PaymentCountdown({ expiresAt }: { expiresAt?: string }) {
   return (
     <>
       <span className="md:hidden">
-        Selesaikan pembayaran dalam:{' '}
+        {t('paymentStatus.finishIn')}{' '}
         <span className="font-bold">
-          {String(minutes).padStart(2, '0')}:{String(seconds).padStart(2, '0')} mins
+          {String(minutes).padStart(2, '0')}:{String(seconds).padStart(2, '0')}
         </span>
       </span>
       <span className="hidden md:inline">
-        Batas Waktu: {minutes} Menit {String(seconds).padStart(2, '0')} Detik
+        {t('paymentStatus.deadline')} {minutes} {t('paymentStatus.minutes')} {String(seconds).padStart(2, '0')} {t('paymentStatus.seconds')}
       </span>
     </>
   )
 }
 
 function InformationOrder() {
+  const { t, i18n } = useTranslation()
   const navigate = useNavigate()
   const location = useLocation()
   const isMobile = useIsMobile()
@@ -86,6 +89,9 @@ function InformationOrder() {
     && ['pending', 'failed'].includes(payment?.status ?? ''),
   )
   const total = payment?.amount ?? booking?.pricing.totalPrice ?? 0
+  const statusText = t(`paymentStatus.statuses.${booking?.status}`, {
+    defaultValue: booking?.status ?? t('paymentStatus.loadingStatus'),
+  })
   const transactionId = payment?.midtransOrderId ?? booking?.id ?? bookingId
   const expiresAt = payment?.expiredAt ?? booking?.lockedUntil ?? undefined
   const redirectUrl = payment?.redirectUrl
@@ -153,7 +159,7 @@ function InformationOrder() {
             return
           }
         } catch (error) {
-          if (active) setErrorMessage(getApiErrorMessage(error, 'Status membership tidak dapat dimuat.'))
+          if (active) setErrorMessage(getApiErrorMessage(error, t('paymentStatus.membershipLoadFailed')))
         }
         if (active) timeout = window.setTimeout(() => void refreshMembership(), 4000)
       }
@@ -182,7 +188,7 @@ function InformationOrder() {
           return
         }
       } catch (error) {
-        if (active) setErrorMessage(getApiErrorMessage(error, 'Status pembayaran tidak dapat dimuat.'))
+        if (active) setErrorMessage(getApiErrorMessage(error, t('paymentStatus.statusLoadFailed')))
       }
 
       if (active) timeout = window.setTimeout(() => void refresh(), 4000)
@@ -193,7 +199,7 @@ function InformationOrder() {
       active = false
       if (timeout) window.clearTimeout(timeout)
     }
-  }, [bookingId, bookingIdsKey, membershipId, navigate])
+  }, [bookingId, bookingIdsKey, membershipId, navigate, t])
 
   /* ---------- Handler ---------- */
   const handleCreditCardPayment = () => {
@@ -207,16 +213,16 @@ function InformationOrder() {
     if (!booking || !canChangePaymentMethod || isChangingPaymentMethod) return
 
     const confirmed = window.confirm(
-      'Pesanan pending saat ini akan dibatalkan dan slotnya dilepas sebelum Anda memilih metode pembayaran baru. Lanjutkan?',
+      t('paymentStatus.confirmChange'),
     )
     if (!confirmed) return
 
     setIsChangingPaymentMethod(true)
     setErrorMessage('')
     try {
-      await cancelBooking(booking.id, 'Pelanggan mengganti metode pembayaran')
+      await cancelBooking(booking.id, t('paymentStatus.changeReason'))
       const bookingDate = booking.bookingDate.slice(0, 10)
-      const displayDate = new Intl.DateTimeFormat('id-ID', {
+      const displayDate = new Intl.DateTimeFormat(i18n.language, {
         weekday: 'long',
         day: 'numeric',
         month: 'long',
@@ -244,7 +250,7 @@ function InformationOrder() {
         },
       })
     } catch (error) {
-      setErrorMessage(getApiErrorMessage(error, 'Metode pembayaran belum dapat diganti. Silakan coba lagi.'))
+      setErrorMessage(getApiErrorMessage(error, t('paymentStatus.changeFailed')))
     } finally {
       setIsChangingPaymentMethod(false)
     }
@@ -293,7 +299,7 @@ function InformationOrder() {
         })
       }
     } catch (error) {
-      setErrorMessage(getApiErrorMessage(error, 'Status pembayaran tidak dapat dimuat.'))
+      setErrorMessage(getApiErrorMessage(error, t('paymentStatus.statusLoadFailed')))
     } finally {
       setIsChecking(false)
     }
@@ -306,27 +312,27 @@ function InformationOrder() {
           <section className="rounded-xl border border-[#DCE8D6] bg-[#F7FAF5] p-6 text-center md:p-10">
             <CheckCircle2 size={58} strokeWidth={1.8} className="mx-auto text-[#39712F]" aria-hidden="true" />
             <p className="mt-4 inline-flex rounded-full bg-[#E6F0E0] px-3 py-1.5 font-heading text-xs font-bold text-[#265021]">
-              PEMBAYARAN BERHASIL
+              {t('paymentStatus.paid')}
             </p>
             <h1 className={`${FONT_MONTSERRAT} mt-3 text-2xl font-bold text-[#252920]`}>
-              Pesanan sudah dibayar
+              {t('paymentStatus.paidTitle')}
             </h1>
             <p className="mt-2 text-sm text-[#686D60]">
-              Pembayaran Anda telah dikonfirmasi. Detail pesanan tercatat di riwayat booking.
+              {t('paymentStatus.paidDescription')}
             </p>
             <div className="mt-6 border-t border-[#DCE8D6] pt-5 text-left">
               <div className="flex justify-between gap-4 text-sm">
-                <span className="text-[#686D60]">Total dibayar</span>
+                <span className="text-[#686D60]">{t('paymentStatus.totalPaid')}</span>
                 <strong>{formatRupiah(total)}</strong>
               </div>
               <div className="mt-3 flex justify-between gap-4 text-sm">
-                <span className="text-[#686D60]">ID transaksi</span>
+                <span className="text-[#686D60]">{t('paymentStatus.transactionId')}</span>
                 <strong className="break-all text-right">{transactionId}</strong>
               </div>
               {booking?.paidAt && (
                 <div className="mt-3 flex justify-between gap-4 text-sm">
-                  <span className="text-[#686D60]">Waktu pembayaran</span>
-                  <strong className="text-right">{new Date(booking.paidAt).toLocaleString('id-ID')}</strong>
+                  <span className="text-[#686D60]">{t('paymentStatus.paymentTime')}</span>
+                  <strong className="text-right">{new Date(booking.paidAt).toLocaleString(i18n.language)}</strong>
                 </div>
               )}
             </div>
@@ -336,7 +342,7 @@ function InformationOrder() {
             onClick={() => navigate('/history')}
             className="mt-5 min-h-11 rounded-lg bg-[#354B24] px-5 font-heading text-sm font-bold text-white hover:bg-[#26391A]"
           >
-            Buka Riwayat Pesanan
+            {t('paymentStatus.openHistory')}
           </button>
         </main>
       </div>
@@ -365,7 +371,7 @@ function InformationOrder() {
             <div className="flex h-[140px] w-[140px] flex-col items-center justify-center rounded-xl bg-[#F1F4EA] text-center">
               <Clock size={28} className="text-[#404F14]" aria-hidden="true" />
               <span className="mt-2 font-heading text-xs font-bold text-[#404F14]">
-                {booking?.status ?? 'Memuat status'}
+                {statusText}
               </span>
             </div>
             {paymentChannel !== 'credit_card' && (
@@ -375,7 +381,7 @@ function InformationOrder() {
                 disabled={!redirectUrl}
                 className="mt-4 inline-flex items-center gap-2 rounded-lg border border-[#404F14] bg-white px-3 py-1.5 font-heading text-[11px] font-bold text-[#404F14] cursor-pointer active:bg-[#F5FAF3]"
               >
-                {paymentChannel === 'ovo' ? 'Lanjutkan Pembayaran OVO' : 'Buka Pembayaran Midtrans'}
+                {paymentChannel === 'ovo' ? t('paymentStatus.continueOvo') : t('paymentStatus.openMidtrans')}
               </button>
             )}
           </section>
@@ -383,13 +389,13 @@ function InformationOrder() {
           {/* Total nominal transfer */}
           <section className="mt-3 rounded-xl border border-[#D4D4D4] bg-white px-3 py-2.5">
             <div className="flex items-center justify-between gap-3">
-                            <span className="font-heading text-xs text-[#6F6B6E]">Total Pembayaran</span>
+                            <span className="font-heading text-xs text-[#6F6B6E]">{t('paymentStatus.totalPayment')}</span>
               <span className={`${FONT_MONTSERRAT} text-lg font-bold text-[#121212]`}>
                 {formatRupiah(total)}
               </span>
             </div>
             <p className="mt-1 text-right font-heading text-[9px] leading-3 text-[#6F6B6E]">
-              Status diperbarui otomatis dari notifikasi pembayaran Midtrans.
+              {t('paymentStatus.autoUpdate')}
             </p>
           </section>
 
@@ -399,7 +405,7 @@ function InformationOrder() {
               onClick={handleCreditCardPayment}
               className="mt-3 h-11 w-full rounded-xl bg-[#CDF178] font-heading text-xs font-bold text-[#404F14]"
             >
-              Masukkan Detail Kartu
+              {t('paymentStatus.enterCard')}
             </button>
           )}
           {canChangePaymentMethod && (
@@ -409,20 +415,20 @@ function InformationOrder() {
               disabled={isChangingPaymentMethod}
               className="mt-3 h-10 w-full rounded-lg border border-[#404F14] bg-white font-heading text-xs font-bold text-[#404F14] disabled:opacity-60"
             >
-              {isChangingPaymentMethod ? 'Membatalkan pesanan...' : 'Ganti Metode Pembayaran'}
+              {isChangingPaymentMethod ? t('paymentStatus.cancelingOrder') : t('paymentStatus.changeMethod')}
             </button>
           )}
 
           {/* Petunjuk scan */}
           {bookingIds.length > 1 && (
             <p className="mt-3 font-heading text-[11px] font-bold text-[#404F14]">
-              Menampilkan {bookingIds.length} pesanan
+              {t('paymentStatus.ordersShown', { count: bookingIds.length })}
             </p>
           )}
-          <h2 className="mt-3 font-heading text-xs font-bold text-[#121212]">Status Pembayaran</h2>
+          <h2 className="mt-3 font-heading text-xs font-bold text-[#121212]">{t('paymentStatus.paymentStatus')}</h2>
           {errorMessage && <p role="alert" className="mt-1 text-xs text-red-700">{errorMessage}</p>}
           <p className="mt-1 font-heading text-[11px] leading-4 text-[#6F6B6E]">
-            {isChecking ? 'Memeriksa status...' : 'Halaman ini akan berpindah otomatis setelah Midtrans mengonfirmasi pembayaran.'}
+            {isChecking ? t('paymentStatus.checking') : t('paymentStatus.autoRedirect')}
           </p>
         </div>
           </ScrollReveal>
@@ -435,7 +441,7 @@ function InformationOrder() {
             disabled={isChecking}
             className="h-10 w-full rounded-xl bg-[#CDF178] font-heading text-xs font-bold text-[#404F14] transition-colors active:bg-[#9AAD3E] cursor-pointer"
           >
-            {isChecking ? 'Memeriksa...' : 'Cek Status Pembayaran'}
+            {isChecking ? t('paymentStatus.checking') : t('paymentStatus.checkPayment')}
           </button>
         </div>
       </div>}
@@ -448,11 +454,11 @@ function InformationOrder() {
           <ScrollReveal className="w-full">
           <div className="text-center">
             <h1 className={`${FONT_MONTSERRAT} text-[26px] font-bold leading-9 text-[#343133]`}>
-              Status Pembayaran
+              {t('paymentStatus.paymentStatus')}
             </h1>
             {bookingIds.length > 1 && (
               <p className="mt-1 font-heading text-xs font-bold text-[#404F14]">
-                Menampilkan {bookingIds.length} pesanan
+                {t('paymentStatus.ordersShown', { count: bookingIds.length })}
               </p>
             )}
             <span
@@ -470,7 +476,7 @@ function InformationOrder() {
               <div className="flex h-[180px] w-[180px] flex-col items-center justify-center rounded-2xl border border-[#D4D4D4] bg-white">
                 <Clock size={38} className="text-[#404F14]" aria-hidden="true" />
                 <p className="mt-3 max-w-[150px] text-center font-heading text-xs font-bold text-[#404F14]">
-                  {booking?.status ?? 'Memuat status'}
+                  {statusText}
                 </p>
               </div>
               {paymentChannel !== 'credit_card' && (
@@ -480,22 +486,22 @@ function InformationOrder() {
                   disabled={!redirectUrl}
                   className="mt-4 cursor-pointer font-heading text-xs font-bold text-[#265021] underline underline-offset-2 disabled:opacity-50"
                 >
-                  {paymentChannel === 'ovo' ? 'Lanjutkan Pembayaran OVO' : 'Ganti Metode Pembayaran'}
+                  {paymentChannel === 'ovo' ? t('paymentStatus.continueOvo') : t('paymentStatus.changeMethod')}
                 </button>
               )}
               <p className="mt-2 text-center font-heading text-[10px] text-[#6F6B6E]">
-                Pembayaran diproses oleh Sistem
+                {t('paymentStatus.processedBy')}
               </p>
             </div>
 
             {/* Kanan: detail */}
             <div className="min-w-0 flex-1">
-              <p className="font-heading text-xs text-[#343133]">Total Pembayaran</p>
+              <p className="font-heading text-xs text-[#343133]">{t('paymentStatus.totalPayment')}</p>
               <p className={`${FONT_MONTSERRAT} text-[28px] font-bold leading-9 text-[#404F14]`}>
                 {formatRupiah(total)}
               </p>
 
-              <p className="mt-4 font-heading text-xs text-[#343133]">ID Transaksi</p>
+              <p className="mt-4 font-heading text-xs text-[#343133]">{t('paymentStatus.transactionId')}</p>
               <div className="mt-1 flex h-[38px] items-center justify-between rounded-md border border-[#D4D4D4] bg-[#FDFCF7] px-2.5">
                 <span className="font-heading text-[13px] font-bold text-[#121212]">
                   {transactionId}
@@ -505,7 +511,7 @@ function InformationOrder() {
                   onClick={handleCopy}
                   className="cursor-pointer font-heading text-xs font-bold text-[#265021] hover:text-[#404F14]"
                 >
-                  {copied ? 'Tersalin' : 'Copy'}
+                  {copied ? t('paymentStatus.copied') : t('paymentStatus.copy')}
                 </button>
               </div>
 
@@ -515,7 +521,7 @@ function InformationOrder() {
                   onClick={handleCreditCardPayment}
                   className="mt-4 h-11 w-full rounded-lg bg-[#CDF178] font-heading text-sm font-bold text-[#404F14]"
                 >
-                  Masukkan Detail Kartu
+                  {t('paymentStatus.enterCard')}
                 </button>
               )}
               {canChangePaymentMethod && (
@@ -525,13 +531,13 @@ function InformationOrder() {
                   disabled={isChangingPaymentMethod}
                   className="mt-4 h-10 w-full rounded-lg border border-[#404F14] bg-white font-heading text-xs font-bold text-[#404F14] disabled:opacity-60"
                 >
-                  {isChangingPaymentMethod ? 'Membatalkan pesanan...' : 'Ganti Metode Pembayaran'}
+                  {isChangingPaymentMethod ? t('paymentStatus.cancelingOrder') : t('paymentStatus.changeMethod')}
                 </button>
               )}
 
-              <h2 className="mt-4 font-heading text-xs font-bold text-[#121212]">Status Transaksi</h2>
+              <h2 className="mt-4 font-heading text-xs font-bold text-[#121212]">{t('paymentStatus.transactionStatus')}</h2>
               <p className="mt-1.5 font-heading text-[11px] leading-[14px] text-[#343133]">
-                {errorMessage || (isChecking ? 'Memeriksa status pembayaran...' : 'Status diperbarui otomatis setelah pembayaran diterima.')}
+                {errorMessage || (isChecking ? t('paymentStatus.checking') : t('paymentStatus.updatedAutomatically'))}
               </p>
             </div>
           </section>
@@ -542,7 +548,7 @@ function InformationOrder() {
             disabled={isChecking}
             className="mx-auto mt-6 block h-10 w-full max-w-[320px] cursor-pointer rounded-lg bg-[#CDF178] font-heading text-xs text-[#404F14] transition-colors hover:bg-[#9AAD3E]"
           >
-            {isChecking ? 'Memeriksa...' : 'Cek Status Pembayaran'}
+            {isChecking ? t('paymentStatus.checking') : t('paymentStatus.checkPayment')}
           </button>
           </ScrollReveal>
         </main>

@@ -1,5 +1,6 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { X } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 
 /* -------------------------------------------------------------------------
    Tipe data
@@ -158,6 +159,7 @@ function AmenityIcon({ name }: { name: FacilityIconKey }) {
 
 
 function OrderModal({ facility, onClose, onOrder }: OrderModalProps): ReactNode {
+  const { t } = useTranslation()
   const [selection, setSelection] = useState<{ facilityKey: string; optionId: string } | null>(null)
 
   // Tutup dengan Esc + kunci scroll halaman saat modal terbuka
@@ -176,6 +178,8 @@ function OrderModal({ facility, onClose, onOrder }: OrderModalProps): ReactNode 
   if (!facility) return null
 
   const facilityKey = `${facility.id}:${facility.name}`
+  const isTableSelection = facility.selectionTitle === 'Pilih Meja'
+    || facility.selectionTitle === t('orderModal.chooseTableTitle')
   const sports = facility.sports.filter((s) => !isVoli(s))
   const selectedSport = selection?.facilityKey === facilityKey
     ? selection.optionId
@@ -210,13 +214,13 @@ function OrderModal({ facility, onClose, onOrder }: OrderModalProps): ReactNode 
               {facility.name}
             </h2>
             <p className="font-heading text-xs leading-4 text-black sm:text-sm">
-              {facility.selectionTitle === 'Pilih Meja' ? 'Pilih meja yang ingin dipesan' : 'Pilih kategori olahraga yang Anda mau'}
+              {t(isTableSelection ? 'orderModal.chooseTable' : 'orderModal.chooseSport')}
             </p>
           </div>
           <button
             type="button"
             onClick={onClose}
-            aria-label="Tutup"
+            aria-label={t('orderModal.close')}
             className="flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-full border border-[#D4D4D4] bg-white text-obc-charcoal transition-colors hover:border-[#9AAD3E] hover:bg-[#F1F4EA] hover:text-obc-green focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-obc-olive"
           >
             <X size={19} strokeWidth={2.25} aria-hidden="true" />
@@ -234,12 +238,12 @@ function OrderModal({ facility, onClose, onOrder }: OrderModalProps): ReactNode 
 
         {/* ================= Isi ================= */}
         <div className="shrink-0 px-5 pb-4 pt-3 sm:px-12 sm:pb-6 sm:pt-5 md:pb-5 md:pt-5 lg:px-14">
-          <h3 className="font-heading text-base text-black">{facility.selectionTitle ?? 'Pilih Cabang Olahraga'}</h3>
+          <h3 className="font-heading text-base text-black">{t(isTableSelection ? 'orderModal.chooseTableTitle' : 'orderModal.chooseSportTitle')}</h3>
 
           <div
             className="mt-2.5 grid grid-cols-2 gap-2 sm:mt-3 sm:flex sm:flex-wrap sm:gap-2.5"
             role="radiogroup"
-            aria-label={facility.selectionTitle === 'Pilih Meja' ? 'Pilih meja' : 'Cabang olahraga'}
+            aria-label={t(isTableSelection ? 'orderModal.chooseTableLabel' : 'orderModal.chooseSportLabel')}
           >
             {sports.map((sport) => {
               const active = sport.id === selectedSport
@@ -266,14 +270,14 @@ function OrderModal({ facility, onClose, onOrder }: OrderModalProps): ReactNode 
           {/* Spesifikasi */}
           <div className="mt-3 rounded-xl border border-dashed border-[#343133] px-3 py-2.5 sm:mt-4 sm:px-8 sm:py-4">
             <p className="font-heading text-xs leading-[18px] text-black sm:text-sm sm:leading-[21px]">
-              <strong className="font-semibold">Spesifikasi {facility.name}</strong>:{' '}
+              <strong className="font-semibold">{t('orderModal.specification', { name: facility.name })}</strong>:{' '}
               {facility.specification}
             </p>
           </div>
 
           {/* Fasilitas */}
           <h4 className={`${FONT_MONTSERRAT} mt-3 text-sm font-bold text-[#265021] sm:mt-4`}>
-            Fasilitas Lapangan
+            {t('orderModal.amenities')}
           </h4>
           <ul className="mt-2 flex flex-wrap gap-1.5 sm:gap-2">
             {facility.amenities.map((item) => (
@@ -299,7 +303,7 @@ function OrderModal({ facility, onClose, onOrder }: OrderModalProps): ReactNode 
             disabled={!selectedSport}
             className="mx-auto mt-4 block h-10 w-full max-w-[370px] cursor-pointer rounded-md bg-[#CDF178] font-heading text-xs text-[#343133] transition-colors hover:bg-[#9AAD3E] disabled:cursor-not-allowed disabled:opacity-60 sm:mt-5"
           >
-            Pesan Sekarang
+            {t('orderModal.orderNow')}
           </button>
         </div>
       </div>

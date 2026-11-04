@@ -4,24 +4,26 @@ import { Link, useNavigate } from 'react-router-dom'
 import MobileHeader from '../../components/layout/MobileHeader'
 import { useAuth } from '../../hooks/useAuth'
 import { logoutCustomer } from '../../services/authService'
+import { useTranslation } from 'react-i18next'
 
 interface ProfileLink {
-	label: string
-	description: string
+	labelKey: string
+	descriptionKey: string
 	href: string
 	icon: LucideIcon
 }
 
 const PROFILE_LINKS: ProfileLink[] = [
-	{ label: 'Pengaturan Profil', description: 'Ubah informasi dan keamanan akun', href: '/pengaturan', icon: Settings },
-	{ label: 'Riwayat', description: 'Lihat transaksi dan pemesanan', href: '/history', icon: Clock3 },
-	{ label: 'Bantuan', description: 'Temukan jawaban dan dukungan', href: '/bantuan', icon: CircleHelp },
+	{ labelKey: 'settings', descriptionKey: 'settingsDescription', href: '/pengaturan', icon: Settings },
+	{ labelKey: 'history', descriptionKey: 'historyDescription', href: '/history', icon: Clock3 },
+	{ labelKey: 'help', descriptionKey: 'helpDescription', href: '/bantuan', icon: CircleHelp },
 ]
 
 function ProfileMobile() {
 	const navigate = useNavigate()
+	const { t } = useTranslation()
 	const { user } = useAuth()
-	const userName = user?.name ?? 'Akun OBC'
+	const userName = user?.name ?? t('profileMobile.defaultName')
 	const initials = userName
 		.trim()
 		.split(/\s+/)
@@ -40,7 +42,7 @@ function ProfileMobile() {
 
 	return (
 		<div className="min-h-[100dvh] bg-[#FDFCF7] pb-28 font-body text-[#343133] md:flex md:flex-col md:justify-center md:pb-0">
-			<MobileHeader variant="title" title="Profil" />
+			<MobileHeader variant="title" title={t('profileMobile.title')} />
 
 			<main className="mx-auto w-full max-w-md px-4 pt-5 sm:max-w-xl sm:px-6 sm:pt-8 md:max-w-5xl md:px-8 md:py-12">
 				<div className="md:grid md:grid-cols-[minmax(300px,380px)_1fr] md:items-start md:gap-10 lg:gap-14">
@@ -63,15 +65,15 @@ function ProfileMobile() {
 								<h1 className="truncate font-heading text-lg font-bold leading-tight sm:text-xl md:whitespace-normal md:text-2xl">
 									{userName}
 								</h1>
-								<p className="mt-1 text-xs text-white/75 sm:text-sm">Kelola akun dan aktivitas Anda</p>
+								<p className="mt-1 text-xs text-white/75 sm:text-sm">{t('profileMobile.description')}</p>
 							</div>
 						</div>
 					</section>
 
 					{/* ================= Menu ================= */}
-					<nav aria-label="Menu profil" className="mt-5 md:mt-0">
+					<nav aria-label={t('profileMobile.navigation')} className="mt-5 md:mt-0">
 						<ul className="space-y-3 md:space-y-4">
-							{PROFILE_LINKS.map(({ label, description, href, icon: Icon }) => (
+							{PROFILE_LINKS.map(({ labelKey, descriptionKey, href, icon: Icon }) => (
 								<li key={href}>
 									<Link
 										to={href}
@@ -82,10 +84,10 @@ function ProfileMobile() {
 										</span>
 										<span className="min-w-0 flex-1">
 											<span className="block font-heading text-sm font-semibold text-[#343133] sm:text-base md:text-lg">
-												{label}
+												{t(`profileMobile.${labelKey}`)}
 											</span>
 											<span className="mt-0.5 block text-xs text-[#6F6B6E] sm:text-sm">
-												{description}
+												{t(`profileMobile.${descriptionKey}`)}
 											</span>
 										</span>
 										<ChevronRight
@@ -107,10 +109,10 @@ function ProfileMobile() {
 									</span>
 									<span className="min-w-0 flex-1">
 										<span className="block font-heading text-sm font-semibold text-[#C41E1E] sm:text-base md:text-lg">
-											Keluar
+											{t('profileMobile.logout')}
 										</span>
 										<span className="mt-0.5 block text-xs text-[#6F6B6E] sm:text-sm">
-											Keluar dari akun Anda
+											{t('profileMobile.logoutDescription')}
 										</span>
 									</span>
 									<ChevronRight

@@ -12,6 +12,8 @@ import { getSportsFacilities } from '../../services/facilityService'
 import { useAuth } from '../../hooks/useAuth'
 import type { SportsFacility } from '../../services/facilityService'
 import { getImageUrl } from '../../utils/imageUrl'
+import { useTranslation } from 'react-i18next'
+import type { TFunction } from 'i18next'
 
 const Court = lazy(() => import('./home/Court'))
 const Information = lazy(() => import('./home/Information'))
@@ -21,19 +23,6 @@ const OrderModal = lazy(() => import('../../components/ui/OrderModal'))
 /* -------------------------------------------------------------------------
    Tipe data
    ------------------------------------------------------------------------- */
-const AMENITY_LABELS: Record<string, string> = {
-  toilet: 'Toilet',
-  led: 'Lampu LED',
-  foodcourt: 'Foodcourt',
-  mushola: 'Mushola',
-  musholla: 'Mushola',
-  parkir: 'Parkir',
-  parkir_luas: 'Parkir Luas',
-  shower: 'Kamar Mandi',
-  loker: 'Loker',
-  wifi: 'Wi-Fi',
-}
-
 const AMENITY_ICONS: Record<string, 'toilet' | 'led' | 'foodcourt' | 'mushola' | 'parkir'> = {
   toilet: 'toilet',
   led: 'led',
@@ -45,28 +34,36 @@ const AMENITY_ICONS: Record<string, 'toilet' | 'led' | 'foodcourt' | 'mushola' |
 }
 
 function HomePage() {
+  const { t } = useTranslation()
   const { user } = useAuth()
-  const userName = user?.name ?? 'Akun OBC'
+  const userName = user?.name ?? t('common.myAccount')
   const [searchQuery, setSearchQuery] = useState('')
   const [submittedSearch, setSubmittedSearch] = useState('')
   const [selectedFacility, setSelectedFacility] = useState<FacilityCard | null>(null)
   const [previewImage, setPreviewImage] = useState<{ src: string; alt: string } | null>(null)
   const [isImageZoomed, setIsImageZoomed] = useState(false)
-  const [apiFacilities, setApiFacilities] = useState<FacilityCard[]>()
+  const [apiFacilities, setApiFacilities] = useState<FacilityCard[]>([])
+  const [facilityLoadStatus, setFacilityLoadStatus] = useState<'loading' | 'ready' | 'error'>('loading')
+  const [facilityRetry, setFacilityRetry] = useState(0)
   const navigate = useNavigate()
 
   useEffect(() => {
     let active = true
+    setFacilityLoadStatus('loading')
     getSportsFacilities()
       .then((resources) => {
-        if (active) setApiFacilities(toFacilityCards(resources))
+        if (!active) return
+        setApiFacilities(toFacilityCards(resources, t))
+        setFacilityLoadStatus('ready')
       })
       .catch(() => {
-        if (active) setApiFacilities(undefined)
+        if (!active) return
+        setApiFacilities([])
+        setFacilityLoadStatus('error')
       })
 
     return () => { active = false }
-  }, [])
+  }, [facilityRetry, t])
 
   useEffect(() => {
     if (!previewImage) return
@@ -103,13 +100,18 @@ function HomePage() {
         id: selectedFacility.id,
         name: selectedFacility.name,
         image: selectedFacility.image,
-        sports: selectedFacility.bookingOptions ?? selectedFacility.sportTypes?.map(toSportOption).filter((sport) => sport.id !== 'volleyball') ?? [],
+        sports: (selectedFacility.bookingOptions ?? selectedFacility.sportTypes?.map((sport) => toSportOption(sport, t)).filter((sport) => sport.id !== 'volleyball') ?? []).map((sport) => ({
+          ...sport,
+          label: sport.id.startsWith('meja-')
+            ? t('home.facilities.table', { number: sport.id.replace('meja-', '') })
+            : t(`home.sports.${sport.sportType ?? sport.id}`, { defaultValue: sport.label }),
+        })),
         specification: selectedFacility.description || '',
         selectionTitle: selectedFacility.selectionTitle,
         amenities: selectedFacility.amenities?.length
           ? selectedFacility.amenities.map((amenity, index) => ({
               id: `${amenity}-${index}`,
-              label: AMENITY_LABELS[amenity] ?? amenity.replaceAll('_', ' '),
+              label: t(`home.amenities.${amenity === 'musholla' ? 'mushola' : amenity}`, { defaultValue: amenity.replaceAll('_', ' ') }),
               icon: AMENITY_ICONS[amenity] ?? 'parkir',
             }))
           : [],
@@ -145,6 +147,8 @@ function HomePage() {
             onPreviewImage={setPreviewImage}
             onSelectFacility={setSelectedFacility}
             facilities={apiFacilities}
+              loadStatus={facilityLoadStatus}
+              onRetry={() => setFacilityRetry((current) => current + 1)}
           />
         </DeferredSection>
       </main>
@@ -182,7 +186,7 @@ function HomePage() {
             <button
               type="button"
               onClick={() => setIsImageZoomed((zoomed) => !zoomed)}
-              aria-label={isImageZoomed ? 'Perkecil gambar' : 'Perbesar gambar'}
+              aria-label={isImageZoomed ? t('landing.zoomOut') : t('landing.zoomIn')}
               className="flex h-11 w-11 items-center justify-center rounded-full bg-white/15 text-white transition-colors hover:bg-white/25"
             >
               {isImageZoomed ? <ZoomOut size={22} /> : <ZoomIn size={22} />}
@@ -190,7 +194,7 @@ function HomePage() {
             <button
               type="button"
               onClick={() => setPreviewImage(null)}
-              aria-label="Tutup gambar"
+              aria-label={t('landing.closeImage')}
               className="flex h-11 w-11 items-center justify-center rounded-full bg-white/15 text-white transition-colors hover:bg-white/25"
             >
               <X size={22} />
@@ -209,20 +213,6 @@ function HomePage() {
   )
 }
 
-const SPORT_LABELS: Record<string, string> = {
-  futsal: 'Futsal',
-  badminton: 'Badminton',
-  basketball: 'Basket',
-  volleyball: 'Voli',
-  pickleball: 'Pickleball',
-  tennis: 'Tenis',
-  billiard: 'Biliard',
-  sepakbola: 'Sepak Bola',
-  swimming: 'Renang',
-  event: 'Event',
-  other: 'Lainnya',
-}
-
 const SPORT_ICONS = {
   futsal: 'futsal',
   badminton: 'badminton',
@@ -237,26 +227,26 @@ const SPORT_ICONS = {
   other: 'sepakbola',
 } as const
 
-function toSportOption(sportType: string) {
+function toSportOption(sportType: string, t: TFunction) {
   return {
     id: sportType,
-    label: SPORT_LABELS[sportType] ?? sportType,
+    label: t(`home.sports.${sportType}`, { defaultValue: sportType }),
     icon: SPORT_ICONS[sportType as keyof typeof SPORT_ICONS] ?? 'sepakbola',
   }
 }
 
-function toFacilityCard(resource: SportsFacility): FacilityCard {
+function toFacilityCard(resource: SportsFacility, t: TFunction): FacilityCard {
   const sportNames = resource.sportTypes
     .filter((sport) => sport !== 'volleyball')
-    .map((sport) => SPORT_LABELS[sport] ?? sport)
+    .map((sport) => t(`home.sports.${sport}`, { defaultValue: sport }))
   const image = getImageUrl(resource.imageUrl ?? resource.gallery?.[0]) ?? ''
 
   return {
     id: resource.id,
     name: resource.name,
     description: sportNames.join(', ') || resource.description || resource.resourceType,
-    badge: 'TERSEDIA',
-    buttonLabel: 'Booking Sekarang',
+    badge: t('booking.available'),
+    buttonLabel: t('booking.bookCourt'),
     image,
     sportTypes: resource.sportTypes,
     slotMinutes: resource.slotMinutes,
@@ -267,33 +257,33 @@ function toFacilityCard(resource: SportsFacility): FacilityCard {
   }
 }
 
-function toFacilityCards(resources: SportsFacility[]): FacilityCard[] {
+function toFacilityCards(resources: SportsFacility[], t: TFunction): FacilityCard[] {
   const resourcesBySlug = new Map(resources.map((resource) => [resource.slug, resource]))
   const facilities: FacilityCard[] = []
   const appendResource = (slug: string, name: string, sportTypes?: string[]) => {
     const resource = resourcesBySlug.get(slug)
     if (!resource) return
-    const card = toFacilityCard(resource)
+    const card = toFacilityCard(resource, t)
     card.name = name
     if (sportTypes) {
       card.sportTypes = sportTypes
-      card.description = sportTypes.map((sport) => SPORT_LABELS[sport] ?? sport).join(', ')
+      card.description = sportTypes.map((sport) => t(`home.sports.${sport}`, { defaultValue: sport })).join(', ')
     }
     facilities.push(card)
   }
 
-  appendResource('lapangan-f1', 'Lapang F1')
+  appendResource('lapangan-f1', t('home.facilities.courtF1'))
 
   const f2 = resourcesBySlug.get('lapangan-f2')
   let footballCard: FacilityCard | undefined
   if (f2) {
     const selectableSports = f2.sportTypes.filter((sport) => sport !== 'other' && sport !== 'sepakbola')
-    appendResource('lapangan-f2', 'Lapang F2', selectableSports)
+    appendResource('lapangan-f2', t('home.facilities.courtF2'), selectableSports)
     if (f2.sportTypes.includes('sepakbola')) {
-      footballCard = toFacilityCard(f2)
+      footballCard = toFacilityCard(f2, t)
       footballCard.key = `${f2.id}-sepakbola`
-      footballCard.name = 'Lapang Sepakbola'
-      footballCard.description = 'Sepak bola di Lapang F2'
+      footballCard.name = t('home.facilities.soccerF2')
+      footballCard.description = t('home.facilities.soccerDescription')
       footballCard.sportTypes = ['sepakbola']
     }
   }
@@ -306,16 +296,16 @@ function toFacilityCards(resources: SportsFacility[]): FacilityCard[] {
     if (!firstTable) return
 
     const tableNumber = (slug: string, index: number) => slug.match(/-(\d+)$/)?.[1] ?? String(index + 1)
-    const room = toFacilityCard(firstTable)
+    const room = toFacilityCard(firstTable, t)
     room.name = name
-    room.description = `${tables.length} meja tersedia`
+    room.description = t('home.facilities.tablesAvailable', { count: tables.length })
     room.sportTypes = [sportType]
-    room.selectionTitle = 'Pilih Meja'
+    room.selectionTitle = t('orderModal.chooseTableTitle')
     room.bookingOptions = tables.map((table, index) => {
       const number = tableNumber(table.slug, index)
       return {
         id: `meja-${number}`,
-        label: `Meja ${number}`,
+        label: t('home.facilities.table', { number }),
         icon,
         resourceId: table.id,
         sportType,
@@ -324,8 +314,8 @@ function toFacilityCards(resources: SportsFacility[]): FacilityCard[] {
     facilities.push(room)
   }
 
-  appendTableRoom('biliard', 'Ruang Billiard', 'billiard', 'biliard')
-  appendTableRoom('tenis-meja', 'Ruang Tenis Meja', 'tennis', 'tenismeja')
+  appendTableRoom('biliard', t('home.facilities.billiardsRoom'), 'billiard', 'biliard')
+  appendTableRoom('tenis-meja', t('home.facilities.tableTennisRoom'), 'tennis', 'tenismeja')
   if (footballCard) facilities.push(footballCard)
 
   return facilities

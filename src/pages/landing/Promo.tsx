@@ -1,39 +1,16 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
+import { useTranslation } from 'react-i18next'
 import { X, ZoomIn, ZoomOut } from 'lucide-react'
 import studentPromo from '../../assets/promo/Famplet_Futsal_&_Basket.png'
 import membershipPromo from '../../assets/promo/Famplet_Membership.png'
 import pickleballPromo from '../../assets/promo/Famplet_Pickleball.png'
 
-interface PromoItem {
-	id: string
-	image: string
-	title: string
-	description: string
-}
-
-const PROMOS: PromoItem[] = [
-	{
-		id: 'promo-1',
-		image: studentPromo,
-		title: 'Promo Pelajar Futsal & Basket',
-		description: 'Harga spesial untuk pelajar SD, SMP, dan SMA.',
-	},
-	{
-		id: 'promo-2',
-		image: membershipPromo,
-		title: 'Sports Membership',
-		description: 'Diskon 20% untuk pembayaran 4 pertemuan sekaligus.',
-	},
-	{
-		id: 'promo-3',
-		image: pickleballPromo,
-		title: 'Coaching Class Pickleball',
-		description: 'Pilih kelas Basic, Intermediate, atau Advance.',
-	},
-]
+const PROMO_IMAGES = [studentPromo, membershipPromo, pickleballPromo]
 
 function Promo() {
+	const { t } = useTranslation()
+	const promos = t('landing.promos', { returnObjects: true }) as Array<{ title: string; description: string }>
 	const [previewImage, setPreviewImage] = useState<{ src: string; alt: string } | null>(null)
 	const [isImageZoomed, setIsImageZoomed] = useState(false)
 
@@ -99,13 +76,13 @@ function Promo() {
 	return (
 		<section className="mx-auto max-w-[1384px] px-4 pt-10 sm:px-6 sm:pt-12">
 			<h2 className="font-['Montserrat',sans-serif] text-base font-bold text-[#265021] min-[360px]:text-lg sm:text-xl">
-				Promosi &amp; Event Terbaru
+				{t('landing.promoTitle')}
 			</h2>
 
 			<div className="-mx-4 mt-4 flex snap-x snap-mandatory gap-4 overflow-x-auto overscroll-x-contain px-4 pt-1 pb-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:-mx-6 sm:px-6 min-[1200px]:mx-0 min-[1200px]:grid min-[1200px]:grid-cols-3 min-[1200px]:gap-5 min-[1200px]:overflow-visible min-[1200px]:px-0 min-[1200px]:pb-0">
-				{PROMOS.map((promo) => (
+				{promos.map((promo, index) => (
 					<article
-						key={promo.id}
+						key={PROMO_IMAGES[index]}
 						className="flex w-[min(360px,88vw)] min-w-[300px] shrink-0 snap-start items-center gap-4 rounded-lg border border-[#E5E5E5] bg-white p-3 shadow-[0_2px_8px_rgba(0,0,0,0.04)] sm:gap-5 sm:p-4 min-[1200px]:w-auto min-[1200px]:min-w-0 min-[1200px]:p-4"
 					>
 						<div className="h-[150px] w-[112px] shrink-0 overflow-hidden rounded-md bg-[#F2F4EF] sm:h-[168px] sm:w-[126px] min-[1200px]:h-[160px] min-[1200px]:w-[120px]">
@@ -113,13 +90,13 @@ function Promo() {
 								type="button"
 								onClick={() => {
 									setIsImageZoomed(false)
-									setPreviewImage({ src: promo.image, alt: promo.title })
+									setPreviewImage({ src: PROMO_IMAGES[index], alt: promo.title })
 								}}
-								aria-label={`Perbesar gambar ${promo.title}`}
+								aria-label={t('landing.zoomImage', { title: promo.title })}
 								className="h-full w-full cursor-zoom-in focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#404F14]"
 							>
 								<img
-									src={promo.image}
+									src={PROMO_IMAGES[index]}
 									alt=""
 									className="h-full w-full object-contain"
 									loading="lazy"
@@ -129,7 +106,7 @@ function Promo() {
 						</div>
 						<div className="min-w-0 flex-1">
 							<span className="inline-block rounded bg-[#E6F0E0] px-2.5 py-1.5 text-[11px] font-bold leading-none text-[#404F14] font-heading">
-								PROMO SPESIAL
+								{t('landing.promoBadge')}
 							</span>
 							<h3 className="mt-2 break-words font-['Montserrat',sans-serif] text-sm font-semibold leading-snug text-[#265021] sm:text-base">
 								{promo.title}
@@ -158,7 +135,7 @@ function Promo() {
 							<button
 								type="button"
 								onClick={() => setIsImageZoomed((zoomed) => !zoomed)}
-								aria-label={isImageZoomed ? 'Perkecil gambar' : 'Perbesar gambar'}
+								aria-label={isImageZoomed ? t('landing.zoomOut') : t('landing.zoomIn')}
 								className="flex h-11 w-11 items-center justify-center rounded-full bg-white/15 text-white transition-colors hover:bg-white/25 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
 							>
 								{isImageZoomed ? <ZoomOut size={22} /> : <ZoomIn size={22} />}
@@ -167,7 +144,7 @@ function Promo() {
 								ref={closeButtonRef}
 								type="button"
 								onClick={closePreview}
-								aria-label="Tutup gambar"
+								aria-label={t('landing.closeImage')}
 								className="flex h-11 w-11 items-center justify-center rounded-full bg-white/15 text-white transition-colors hover:bg-white/25 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
 							>
 								<X size={22} />

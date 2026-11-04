@@ -8,7 +8,7 @@ import NavbarDashboard from '../../../components/layout/Navbar'
 import DeferredSection from '../../../components/layout/DeferredSection'
 import DeferredFooter from '../../../components/layout/DeferredFooter'
 import ScrollReveal from '../../../components/animation/ScrollReveal'
-import member from '../../../assets/bfe838718c7f801119930d28d3d286f12b853b5e.jpg'
+import member from '../../../assets/images/member.webp'
 import { getApiErrorMessage } from '../../../services/apiService'
 import { getMembershipPackages, type MembershipPackage, type MembershipSchedule } from '../../../services/membershipService'
 

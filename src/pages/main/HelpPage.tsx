@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Plus, Search } from 'lucide-react'
 import NavbarDashboard from '../../components/layout/Navbar'
 import MobileHeader from '../../components/layout/MobileHeader'
@@ -18,50 +19,25 @@ interface FaqItem {
 /* -------------------------------------------------------------------------
    Data (ganti dengan data dari API / services/faqService.js)
    ------------------------------------------------------------------------- */
-const FAQ_ITEMS: FaqItem[] = [
-  {
-    id: 'batal-pemesanan',
-    question: 'Bagaimana cara membatalkan pemesanan?',
-    answer:
-      'Pembatalan sewa lapangan dapat dilakukan maksimal 24 jam sebelum jadwal main melalui menu Riwayat Transaksi.',
-  },
-  {
-    id: 'akademi-futsal',
-    question: 'Apakah tersedia akademi pelatihan futsal?',
-    answer:
-      'Ya! OBC Academy menyediakan pelatihan berlisensi internasional untuk kelompok umur anak hingga remaja.',
-  },
-  {
-    id: 'e-ticket-qr',
-    question: 'Bagaimana cara menggunakan e-ticket QR Code?',
-    answer:
-      'Cukup tunjukkan QR Code dari detail transaksi Anda ke petugas kasir saat tiba di OBC Sport Center.',
-  },
-  {
-    id: 'kartu-kredit',
-    question: 'Apakah OBC mendukung pembayaran kartu kredit?',
-    answer:
-      'Ya, kami mendukung transaksi digital menggunakan QRIS otomatis, transfer bank, dan kartu kredit.',
-  },
-]
-
 // TODO: ganti dengan nomor WhatsApp customer service yang sebenarnya
 const CS_WHATSAPP_NUMBER = '628123456789'
-const CS_WHATSAPP_MESSAGE = 'Halo, saya butuh bantuan terkait layanan OBC Sport Center.'
 
 function HelpPage() {
+  const { t, i18n } = useTranslation()
+  const faqItems = t('help.faqs', { returnObjects: true }) as FaqItem[]
   const [searchQuery, setSearchQuery] = useState('')
   const isMobile = useIsMobile()
 
   // State khusus mobile: FAQ yang sedang terbuka (awal: item pertama, sesuai desain)
-  const [openFaqId, setOpenFaqId] = useState<string | null>(FAQ_ITEMS[0].id)
+  const [openFaqId, setOpenFaqId] = useState<string | null>(() => faqItems[0]?.id ?? null)
 
-  const filteredFaqs = FAQ_ITEMS.filter((faq) =>
-    faq.question.toLowerCase().includes(searchQuery.toLowerCase())
+  const normalizedSearch = searchQuery.toLocaleLowerCase(i18n.resolvedLanguage?.startsWith('en') ? 'en-US' : 'id-ID')
+  const filteredFaqs = faqItems.filter((faq) =>
+    faq.question.toLocaleLowerCase(i18n.resolvedLanguage?.startsWith('en') ? 'en-US' : 'id-ID').includes(normalizedSearch)
   )
 
   const handleContactWhatsApp = () => {
-    const url = `https://wa.me/${CS_WHATSAPP_NUMBER}?text=${encodeURIComponent(CS_WHATSAPP_MESSAGE)}`
+    const url = `https://wa.me/${CS_WHATSAPP_NUMBER}?text=${encodeURIComponent(t('help.whatsappMessage'))}`
     window.open(url, '_blank')
   }
 
@@ -75,7 +51,7 @@ function HelpPage() {
         <NavbarDashboard />
       )}
       {isMobile && (
-        <MobileHeader variant="title" title="Bantuan & QnA" />
+        <MobileHeader variant="title" title={t('help.title')} />
       )}
 
       {/* ===================================================================
@@ -84,7 +60,7 @@ function HelpPage() {
           =================================================================== */}
       {isMobile && <div className="px-4 pt-5 pb-44">
         <p className="mt-2 font-heading text-xs text-[#6F6B6E]">
-          Pertanyaan populer dan panduan pusat olahraga
+          {t('help.description')}
         </p>
 
         {/* Pencarian */}
@@ -98,7 +74,7 @@ function HelpPage() {
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Cari solusi permasalahan Anda disini..."
+            placeholder={t('help.searchPlaceholder')}
             className="h-12 w-full rounded-full border border-[#D4D4D4] bg-white pl-11 pr-4 text-sm placeholder:text-[#6F6B6E] focus:outline-none focus:border-[#404F14]"
           />
         </div>
@@ -140,7 +116,7 @@ function HelpPage() {
 
           {filteredFaqs.length === 0 && (
             <p className="text-sm text-[#6F6B6E] py-6 text-center">
-              Tidak ada pertanyaan yang cocok dengan pencarian Anda.
+              {t('help.noResults')}
             </p>
           )}
         </div>
@@ -155,7 +131,7 @@ function HelpPage() {
             onClick={handleContactWhatsApp}
             className="h-12 w-full rounded-xl bg-[#CDF178] font-heading text-sm font-bold text-[#404F14] transition-colors active:bg-[#9AAD3E] cursor-pointer"
           >
-            Hubungi Admin Hub via WhatsApp
+            {t('help.contactButton')}
           </button>
         </div>
       </div>}
@@ -166,12 +142,12 @@ function HelpPage() {
       {/* Lebar konten 1068px sesuai desain */}
       {!isMobile && <main className="max-w-[1116px] mx-auto px-6 pt-5 pb-16">
         <span className="inline-block rounded-full bg-[#E8EDE3] px-3 py-2 text-xs font-heading font-bold text-[#404F14] tracking-wide">
-          DUKUNGAN PELANGGAN &amp; FAQ
+          {t('help.eyebrow')}
         </span>
 
         {/* Lebar dibatasi supaya judul pecah jadi 2 baris seperti desain */}
         <h1 className="mt-4 max-w-[440px] font-heading font-bold text-4xl leading-tight text-[#343133]">
-          Ada yang Bisa Kami Bantu?
+          {t('help.heroTitle')}
         </h1>
 
         {/* Kolom kiri 540px, kolom kanan fleksibel (480px), jarak 48px */}
@@ -183,7 +159,7 @@ function HelpPage() {
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Cari solusi permasalahan Anda disini..."
+              placeholder={t('help.searchPlaceholder')}
               className="w-full h-[45px] rounded-lg border border-[#D4D4D4] bg-white px-3 text-sm placeholder:text-[#6F6B6E] focus:outline-none focus:border-[#404F14]"
             />
 
@@ -202,7 +178,7 @@ function HelpPage() {
 
               {filteredFaqs.length === 0 && (
                 <p className="text-sm text-[#6F6B6E] py-6 text-center">
-                  Tidak ada pertanyaan yang cocok dengan pencarian Anda.
+                  {t('help.noResults')}
                 </p>
               )}
             </div>
@@ -211,18 +187,16 @@ function HelpPage() {
           {/* ================= Kolom kanan: hubungi customer service ================= */}
           <div className="lg:mt-4 rounded-2xl border border-[#D4D4D4] bg-white p-8 shadow-[0_4px_16px_rgba(0,0,0,0.08)]">
             <h2 className="font-heading font-bold text-lg text-[#343133]">
-              Hubungi Customer Service
+              {t('help.customerServiceTitle')}
             </h2>
             <p className="mt-4 text-sm text-[#343133] leading-relaxed">
-              Butuh bantuan mendesak terkait transaksi atau sewa lapangan kelompok
-              besar / turnamen korporat? Hubungi tim support admin kami melalui pesan
-              langsung WhatsApp.
+              {t('help.customerServiceDescription')}
             </p>
 
             <div className="mt-5 flex items-center gap-2">
               <span className="h-2.5 w-2.5 rounded-full bg-[#22C55E]" />
               <span className="text-sm font-heading font-bold text-[#404F14]">
-                Admin WhatsApp Sedang Online (Respons Cepat)
+                {t('help.onlineStatus')}
               </span>
             </div>
 
@@ -232,7 +206,7 @@ function HelpPage() {
               onClick={handleContactWhatsApp}
               className="mt-5 w-full max-w-[306px] h-10 rounded-lg bg-[#CDF178] text-sm font-heading font-bold text-[#404F14] hover:bg-[#9AAD3E] transition-colors cursor-pointer"
             >
-              Hubungi Hub WhatsApp Kami
+              {t('help.contactButton')}
             </button>
           </div>
         </div>

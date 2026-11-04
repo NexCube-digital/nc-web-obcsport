@@ -5,6 +5,7 @@ import ScrollReveal from '../../../components/animation/ScrollReveal'
 import { useIsMobile } from '../../../hooks/useIsMobile'
 import { getBookingDetails, type BookingDetails } from '../../../services/bookingService'
 import lapangF1 from '../../../assets/layanan/Lapang F1.png'
+import { useTranslation } from 'react-i18next'
 
 /* -------------------------------------------------------------------------
    Tipe data
@@ -32,15 +33,10 @@ const DEFAULT_FACILITY = 'Badminton VIP Court'
 const DEFAULT_SCHEDULE = 'Sabtu, 14 Mar (09:00 - 11:00)'
 const DEFAULT_TOTAL = 160000
 
-const TROUBLESHOOT_STEPS: string[] = [
-  'Pastikan koneksi internet Anda stabil sebelum memindai QRIS.',
-  'Selesaikan pembayaran dalam kurun waktu kurang dari 15 menit setelah QR dibuat.',
-  'Apabila saldo Anda terpotong namun status belum berubah, hubungi Admin OBC via WhatsApp.',
-]
-
 const formatRupiah = (value: number) => `Rp ${value.toLocaleString('id-ID')}`
 
 function FailedOrder() {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const location = useLocation()
   const isMobile = useIsMobile()
@@ -97,8 +93,8 @@ function FailedOrder() {
           id: booking.resource.id,
           name: booking.resource.name,
           description: booking.resource.name,
-          badge: 'TERSEDIA',
-          buttonLabel: 'Booking Sekarang',
+          badge: t('booking.available'),
+          buttonLabel: t('booking.bookCourt'),
           image: lapangF1,
           sportTypes: [booking.sportType],
         },
@@ -106,7 +102,10 @@ function FailedOrder() {
     })
   }
 
-  if (!booking) return <div role="status" className="px-4 py-8 text-center text-sm text-[#6B6B6B]">Memuat status booking...</div>
+  if (!booking) return <div role="status" className="px-4 py-8 text-center text-sm text-[#6B6B6B]">{t('paymentResult.loading')}</div>
+
+  const troubleshootingSteps = t('paymentResult.troubleshootingSteps', { returnObjects: true }) as string[]
+  const statusLabel = t(`paymentResult.${booking.status}`, { defaultValue: booking.status })
 
   return (
     <>
@@ -121,7 +120,7 @@ function FailedOrder() {
         <ScrollReveal className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-4 pt-3">
         <div
           role="img"
-          aria-label="Pembayaran gagal"
+          aria-label={t('paymentResult.failedTitle')}
           className="grid h-20 w-full place-items-center text-[#E02424]"
         >
           <CircleX
@@ -135,19 +134,18 @@ function FailedOrder() {
         {/* Judul & deskripsi, rata tengah */}
         <div className="mt-3 text-center">
           <span className="inline-block rounded-full bg-[#FDE8E8] px-3 py-1.5 font-heading text-[10px] font-bold leading-none text-[#E02424]">
-            TRANSAKSI {booking?.status.toUpperCase() ?? 'GAGAL'}
+            {t('paymentResult.failedStatus', { status: statusLabel.toUpperCase() })}
           </span>
           <h1 className={`${FONT_MONTSERRAT} mt-2 text-lg font-bold leading-6 text-[#343133]`}>
-            Pembayaran Tidak Berhasil
+            {t('paymentResult.failedTitle')}
           </h1>
           {bookingIds.length > 1 && (
             <p className="mt-1 font-heading text-[11px] font-bold text-[#E02424]">
-              {bookingIds.length} pesanan perlu diperiksa
+              {t('paymentResult.failedCount', { count: bookingIds.length })}
             </p>
           )}
           <p className="mt-1.5 font-heading text-[11px] leading-4 text-[#343133]">
-            Transaksi tidak berhasil diselesaikan. Silakan pilih jadwal lain untuk membuat
-            booking baru. Jika saldo telah terpotong, hubungi Admin OBC.
+            {t('paymentResult.failedDescription')}
           </p>
         </div>
 
@@ -155,7 +153,7 @@ function FailedOrder() {
         <section className="mt-3 rounded-2xl border border-[#D4D4D4] bg-white p-3 shadow-[0_4px_16px_rgba(0,0,0,0.08)]">
           <div className="flex items-center justify-between gap-3">
             <h2 className={`${FONT_MONTSERRAT} text-sm font-semibold leading-5 text-[#343133]`}>
-              Informasi Pesanan Gagal
+              {t('paymentResult.failedOrderInfo')}
             </h2>
             <button
               type="button"
@@ -163,7 +161,7 @@ function FailedOrder() {
               aria-expanded={isOrderDetailsOpen}
               className="flex shrink-0 cursor-pointer items-center gap-1 font-heading text-[11px] font-bold text-[#404F14]"
             >
-              {isOrderDetailsOpen ? 'Ringkas' : 'Lihat selengkapnya'}
+              {isOrderDetailsOpen ? t('paymentResult.collapse') : t('paymentResult.expand')}
               <ChevronDown
                 size={15}
                 aria-hidden="true"
@@ -175,13 +173,13 @@ function FailedOrder() {
           {isOrderDetailsOpen && <>
           <dl className="mt-3 space-y-2 font-heading text-xs">
             <div className="flex items-center justify-between gap-3">
-              <dt className="text-[#343133]">Kode Booking</dt>
+              <dt className="text-[#343133]">{t('paymentResult.bookingCode')}</dt>
               <dd className="font-bold text-[#E02424] line-through">{bookingCode}</dd>
             </div>
             <div className="flex items-center justify-between gap-3">
-              <dt className="text-[#343133]">Status Transaksi</dt>
+              <dt className="text-[#343133]">{t('paymentResult.bookingStatus')}</dt>
               <dd className="rounded bg-[#E53E3E] px-2 py-1 text-[9px] font-bold leading-none text-white">
-                {booking?.status.toUpperCase() ?? 'FAILED'}
+                {statusLabel.toUpperCase()}
               </dd>
             </div>
           </dl>
@@ -190,11 +188,11 @@ function FailedOrder() {
 
           <dl className="space-y-2 font-heading text-xs">
             <div className="flex items-center justify-between gap-3">
-              <dt className="shrink-0 text-[#343133]">Fasilitas / Lapangan</dt>
+              <dt className="shrink-0 text-[#343133]">{t('paymentResult.facility')}</dt>
               <dd className="text-right font-bold text-[#121212]">{facility}</dd>
             </div>
             <div className="flex items-center justify-between gap-3">
-              <dt className="shrink-0 text-[#343133]">Jadwal Main</dt>
+              <dt className="shrink-0 text-[#343133]">{t('paymentResult.schedule')}</dt>
               <dd className="text-right font-bold text-[#121212]">{schedule}</dd>
             </div>
           </dl>
@@ -204,7 +202,7 @@ function FailedOrder() {
 
           <div className="flex items-center justify-between">
             <span className="font-heading text-sm font-bold text-[#121212]">
-              Total Harus Dibayar
+              {t('paymentResult.totalDue')}
             </span>
             <span className={`${FONT_MONTSERRAT} text-xl font-bold text-[#343133]`}>
               {formatRupiah(total)}
@@ -214,10 +212,10 @@ function FailedOrder() {
 
         {/* Langkah penyelesaian masalah */}
         <h2 className="mt-3 font-heading text-[11px] font-bold text-[#121212]">
-          Langkah Penyelesaian Masalah:
+          {t('paymentResult.troubleshooting')}
         </h2>
         <ol className="mt-1.5 space-y-1 font-heading text-[10px] leading-3.5 text-[#343133]">
-          {TROUBLESHOOT_STEPS.map((step, index) => (
+          {troubleshootingSteps.map((step, index) => (
             <li key={step}>
               {index + 1}. {step}
             </li>
@@ -231,7 +229,7 @@ function FailedOrder() {
             onClick={handleRetry}
             className="h-10 w-full cursor-pointer rounded-xl bg-[#CDF178] font-heading text-xs font-bold text-[#404F14] transition-colors active:bg-[#9AAD3E]"
           >
-            Coba Bayar Kembali
+            {t('paymentResult.retryPayment')}
           </button>
           <a
             href={ADMIN_WA_URL}
@@ -239,7 +237,7 @@ function FailedOrder() {
             rel="noreferrer"
             className="flex h-10 w-full items-center justify-center rounded-xl border border-[#404F14] bg-white font-heading text-xs font-bold text-[#404F14] transition-colors active:bg-[#F5FAF3]"
           >
-            Hubungi Admin OBC
+            {t('paymentResult.contactAdmin')}
           </a>
         </div>
         </ScrollReveal>
@@ -257,25 +255,24 @@ function FailedOrder() {
             {/* ================= Kiri: penjelasan ================= */}
             <div>
               <span className="inline-block rounded-full bg-[#FDE8E8] px-3 py-2 font-heading text-[11px] font-bold leading-none text-[#E02424]">
-                TRANSAKSI {booking?.status.toUpperCase() ?? 'GAGAL'}
+                {t('paymentResult.failedStatus', { status: statusLabel.toUpperCase() })}
               </span>
 
               <h1
                 className={`${FONT_MONTSERRAT} mt-6 text-[38px] font-bold leading-[48px] text-[#343133]`}
               >
-                Pembayaran Tidak Berhasil
+                {t('paymentResult.failedTitle')}
               </h1>
 
               <p className="mt-6 font-heading text-[15px] leading-6 text-[#343133]">
-                Transaksi tidak berhasil diselesaikan. Silakan pilih jadwal lain untuk membuat
-                booking baru. Jika saldo telah terpotong, hubungi Admin OBC.
+                {t('paymentResult.failedDescription')}
               </p>
 
               <h2 className="mt-6 font-heading text-[13px] font-bold text-[#121212]">
-                Langkah Penyelesaian Masalah:
+                {t('paymentResult.troubleshooting')}
               </h2>
               <ol className="mt-3 space-y-2.5 font-heading text-xs leading-[18px] text-[#343133]">
-                {TROUBLESHOOT_STEPS.map((step, index) => (
+                {troubleshootingSteps.map((step, index) => (
                   <li key={step}>
                     {index + 1}. {step}
                   </li>
@@ -288,7 +285,7 @@ function FailedOrder() {
                   onClick={handleRetry}
                   className="h-10 w-[220px] shrink-0 cursor-pointer rounded-lg bg-[#CDF178] px-3 font-heading text-xs text-[#404F14] transition-colors hover:bg-[#9AAD3E]"
                 >
-                  Coba Bayar Kembali
+                  {t('paymentResult.retryPayment')}
                 </button>
                 <a
                   href={ADMIN_WA_URL}
@@ -296,7 +293,7 @@ function FailedOrder() {
                   rel="noreferrer"
                   className="flex h-10 w-[176px] shrink-0 items-center justify-center rounded-lg border border-[#404F14] bg-white px-2 font-heading text-xs font-bold text-[#404F14] transition-colors hover:bg-[#F5FAF3]"
                 >
-                  Hubungi Admin OBC
+                  {t('paymentResult.contactAdmin')}
                 </a>
               </div>
             </div>
@@ -304,18 +301,18 @@ function FailedOrder() {
             {/* ================= Kanan: info pesanan gagal ================= */}
             <section className="rounded-2xl border border-[#D4D4D4] bg-white p-8 shadow-[0_4px_16px_rgba(0,0,0,0.08)]">
               <h2 className={`${FONT_MONTSERRAT} text-xl font-semibold leading-7 text-[#343133]`}>
-                Informasi Pesanan Gagal
+                {t('paymentResult.failedOrderInfo')}
               </h2>
 
               <dl className="mt-3 space-y-2.5 font-heading text-sm">
                 <div className="flex items-center justify-between gap-3">
-                  <dt className="text-[#343133]">Kode Booking</dt>
+                  <dt className="text-[#343133]">{t('paymentResult.bookingCode')}</dt>
                   <dd className="font-bold text-[#E02424] line-through">{bookingCode}</dd>
                 </div>
                 <div className="flex items-center justify-between gap-3">
-                  <dt className="text-[#343133]">Status Transaksi</dt>
+                  <dt className="text-[#343133]">{t('paymentResult.bookingStatus')}</dt>
                   <dd className="rounded bg-[#E53E3E] px-2 py-1 text-[9px] font-bold leading-none text-white">
-                    {booking?.status.toUpperCase() ?? 'FAILED'}
+                    {statusLabel.toUpperCase()}
                   </dd>
                 </div>
               </dl>
@@ -324,11 +321,11 @@ function FailedOrder() {
 
               <dl className="space-y-2.5 font-heading text-sm">
                 <div className="flex items-center justify-between gap-3">
-                  <dt className="text-[#343133]">Fasilitas / Lapangan</dt>
+                  <dt className="text-[#343133]">{t('paymentResult.facility')}</dt>
                   <dd className="font-bold text-[#121212]">{facility}</dd>
                 </div>
                 <div className="flex items-center justify-between gap-3">
-                  <dt className="text-[#343133]">Jadwal Main</dt>
+                  <dt className="text-[#343133]">{t('paymentResult.schedule')}</dt>
                   <dd className="font-bold text-[#121212]">{schedule}</dd>
                 </div>
               </dl>
@@ -337,7 +334,7 @@ function FailedOrder() {
 
               <div className="flex items-center justify-between pt-1">
                 <span className="font-heading text-sm font-bold text-[#121212]">
-                  Total Harus Dibayar
+                  {t('paymentResult.totalDue')}
                 </span>
                 <span className={`${FONT_MONTSERRAT} text-[22px] font-bold text-[#343133]`}>
                   {formatRupiah(total)}

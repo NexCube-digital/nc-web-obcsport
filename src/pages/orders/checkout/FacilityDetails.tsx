@@ -1,5 +1,6 @@
 import { Bath, Landmark, Lightbulb, ParkingCircle, Star, Utensils } from 'lucide-react'
-import lapangF1 from '../../../assets/layanan/Lapang F1.png'
+import lapangF1 from '../../../assets/images/lapang/Lapang F1.webp'
+import { useTranslation } from 'react-i18next'
 
 interface PriceTier {
   id: string
@@ -9,7 +10,7 @@ interface PriceTier {
 
 interface FacilityChip {
   id: string
-  label: string
+  labelKey: string
   icon: React.ReactNode
 }
 
@@ -18,17 +19,17 @@ const COURT_RATING = '4.8 / 5.0'
 const COURT_REVIEW_COUNT = '(120 Ulasan Terverifikasi)'
 
 const FACILITY_CHIPS: FacilityChip[] = [
-  { id: 'toilet', label: 'Toilet T3-T5', icon: <Bath size={14} /> },
-  { id: 'led', label: 'LED Light', icon: <Lightbulb size={14} /> },
-  { id: 'foodcourt', label: 'Foodcourt', icon: <Utensils size={14} /> },
-  { id: 'mushola', label: 'Mushola', icon: <Landmark size={14} /> },
-  { id: 'parkir', label: 'Parkir', icon: <ParkingCircle size={14} /> },
+  { id: 'toilet', labelKey: 'toilet', icon: <Bath size={14} /> },
+  { id: 'led', labelKey: 'led', icon: <Lightbulb size={14} /> },
+  { id: 'foodcourt', labelKey: 'foodcourt', icon: <Utensils size={14} /> },
+  { id: 'mushola', labelKey: 'mushola', icon: <Landmark size={14} /> },
+  { id: 'parkir', labelKey: 'parkir', icon: <ParkingCircle size={14} /> },
 ]
 
 const MOBILE_RATING_DETAILS = [
-  { id: 'kondisi', label: 'Kondisi Lapangan', value: '4.9/5' },
-  { id: 'wc', label: 'Kebersihan WC', value: '4.7/5' },
-  { id: 'pendukung', label: 'Fasilitas Pendukung', value: '4.8/5' },
+  { id: 'kondisi', labelKey: 'courtCondition', value: '4.9/5' },
+  { id: 'wc', labelKey: 'restroomCleanliness', value: '4.7/5' },
+  { id: 'pendukung', labelKey: 'supportingFacilities', value: '4.8/5' },
 ]
 
 interface FacilityDetailsProps {
@@ -41,6 +42,8 @@ interface FacilityDetailsProps {
 }
 
 function FacilityDetails({ variant, facilityName = COURT_NAME, image = lapangF1, locationName = 'OBC Sport Center', priceTiers = [], isPriceLoading = false }: FacilityDetailsProps) {
+  const { t } = useTranslation()
+  const amenityLabel = (chip: FacilityChip) => `${t(`home.amenities.${chip.labelKey}`)}${chip.id === 'toilet' ? ' T3-T5' : ''}`
   return (
     variant === 'mobile' ? (
       <div>
@@ -50,10 +53,10 @@ function FacilityDetails({ variant, facilityName = COURT_NAME, image = lapangF1,
 
         <div className="mt-4 grid grid-cols-3 gap-2">
           {isPriceLoading && (
-            <p className="col-span-3 text-center text-[10px] text-[#6F6B6E]">Memuat harga...</p>
+            <p className="col-span-3 text-center text-[10px] text-[#6F6B6E]">{t('booking.priceLoading')}</p>
           )}
           {!isPriceLoading && priceTiers.length === 0 && (
-            <p className="col-span-3 text-center text-[10px] text-[#6F6B6E]">Harga belum tersedia.</p>
+            <p className="col-span-3 text-center text-[10px] text-[#6F6B6E]">{t('booking.priceUnavailable')}</p>
           )}
           {priceTiers.map((tier) => (
             <div key={tier.id} className="rounded-md border border-[#D4D4D4] bg-white px-2 py-1.5">
@@ -63,7 +66,7 @@ function FacilityDetails({ variant, facilityName = COURT_NAME, image = lapangF1,
           ))}
         </div>
 
-        <h2 className="mt-4 font-heading text-xs font-bold text-[#265021]">Fasilitas Lapangan</h2>
+        <h2 className="mt-4 font-heading text-xs font-bold text-[#265021]">{t('booking.courtFacilities')}</h2>
         <div className="mt-2 flex flex-wrap gap-2">
           {FACILITY_CHIPS.map((chip) => (
             <span
@@ -71,7 +74,7 @@ function FacilityDetails({ variant, facilityName = COURT_NAME, image = lapangF1,
               className="inline-flex items-center gap-1.5 rounded-full border border-[#E5E5E5] bg-white px-3 py-1.5 text-xs text-[#343133]"
             >
               {chip.icon}
-              {chip.label}
+              {amenityLabel(chip)}
             </span>
           ))}
         </div>
@@ -79,12 +82,12 @@ function FacilityDetails({ variant, facilityName = COURT_NAME, image = lapangF1,
         <div className="mt-4 flex items-center gap-4 rounded-lg border border-[#D4D4D4] bg-white px-4 py-3">
           <div className="flex flex-col items-center">
             <span className="font-heading text-3xl font-bold leading-none text-[#265021]">4.8</span>
-            <span className="mt-1 text-xs text-[#6F6B6E]">120 Ulasan</span>
+            <span className="mt-1 text-xs text-[#6F6B6E]">{t('booking.ratingCount', { count: 120 })}</span>
           </div>
           <ul className="space-y-1 text-xs text-[#343133]">
             {MOBILE_RATING_DETAILS.map((detail) => (
               <li key={detail.id}>
-                {detail.label}: {detail.value}
+                {t(`booking.${detail.labelKey}`)}: {detail.value}
               </li>
             ))}
           </ul>
@@ -106,10 +109,10 @@ function FacilityDetails({ variant, facilityName = COURT_NAME, image = lapangF1,
 
         <div className="mt-6 grid grid-cols-3 gap-1.5">
           {isPriceLoading && (
-            <p className="col-span-3 text-center text-[10px] text-[#6F6B6E]">Memuat harga...</p>
+            <p className="col-span-3 text-center text-[10px] text-[#6F6B6E]">{t('booking.priceLoading')}</p>
           )}
           {!isPriceLoading && priceTiers.length === 0 && (
-            <p className="col-span-3 text-center text-[10px] text-[#6F6B6E]">Harga belum tersedia.</p>
+            <p className="col-span-3 text-center text-[10px] text-[#6F6B6E]">{t('booking.priceUnavailable')}</p>
           )}
           {priceTiers.map((tier) => (
             <div key={tier.id} className="rounded-md border border-[#D4D4D4] bg-white px-1.5 py-1">
@@ -119,7 +122,7 @@ function FacilityDetails({ variant, facilityName = COURT_NAME, image = lapangF1,
           ))}
         </div>
 
-        <h2 className="mt-6 font-heading text-xs font-bold text-[#265021]">Fasilitas Lapangan</h2>
+        <h2 className="mt-6 font-heading text-xs font-bold text-[#265021]">{t('booking.courtFacilities')}</h2>
         <div className="mt-2 flex flex-wrap gap-2">
           {FACILITY_CHIPS.map((chip) => (
             <span
@@ -127,7 +130,7 @@ function FacilityDetails({ variant, facilityName = COURT_NAME, image = lapangF1,
               className="inline-flex items-center gap-1.5 rounded-full border border-[#E5E5E5] bg-white px-3 py-1.5 text-xs text-[#343133]"
             >
               {chip.icon}
-              {chip.label}
+              {amenityLabel(chip)}
             </span>
           ))}
         </div>

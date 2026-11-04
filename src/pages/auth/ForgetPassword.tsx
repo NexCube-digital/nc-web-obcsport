@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { ArrowLeft, CircleCheck } from 'lucide-react'
 import { toast } from 'sonner'
 import loginIllustration from '../../assets/figma/login.jpg'
@@ -7,6 +8,7 @@ import logo from '../../assets/logo/unit bisnis/LOGO OBC SPORT CENTER.png'
 import { forgotPasswordCustomer } from '../../services/authService'
 
 function ForgetPassword() {
+	const { t } = useTranslation()
 	const [email, setEmail] = useState('')
 	const [isSubmitted, setIsSubmitted] = useState(false)
 	const [isLoading, setIsLoading] = useState(false)
@@ -14,7 +16,7 @@ function ForgetPassword() {
 	const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
 		event.preventDefault()
 		if (!email.trim()) {
-			toast.error('Masukkan alamat email Anda.')
+			toast.error(t('recovery.missingEmail'))
 			return
 		}
 
@@ -22,9 +24,9 @@ function ForgetPassword() {
 		try {
 			await forgotPasswordCustomer(email.trim())
 			setIsSubmitted(true)
-			toast.success('Tautan reset kata sandi telah dikirim ke email Anda.')
+			toast.success(t('recovery.success'))
 		} catch (err: any) {
-			const msg = err.response?.data?.error?.message || err.message || 'Gagal mengirim instruksi reset.'
+			const msg = err.response?.data?.error?.message || err.message || t('recovery.failed')
 			toast.error(msg)
 		} finally {
 			setIsLoading(false)
@@ -43,13 +45,13 @@ function ForgetPassword() {
 
 				<div className="mt-12">
 					<span className="font-heading text-xs font-bold uppercase tracking-wide text-[#404F14]">
-						Pemulihan Akun
+						{t('recovery.eyebrow')}
 					</span>
 					<h1 className="mt-3 max-w-xl font-heading text-4xl font-bold leading-tight text-[#343133]">
-						Kembali mengakses akun OBC Anda
+						{t('recovery.title')}
 					</h1>
 					<p className="mt-4 max-w-lg text-base leading-relaxed text-[#6F6B6E]">
-						Masukkan email akun Anda untuk memulai proses pemulihan kata sandi.
+						{t('recovery.description')}
 					</p>
 					<div className="mt-8 h-[clamp(220px,42vh,400px)] overflow-hidden rounded-2xl bg-[#A9AD86]">
 						<img
@@ -71,24 +73,24 @@ function ForgetPassword() {
 					</Link>
 
 					<h2 className="font-heading text-2xl font-bold text-[#343133] md:text-3xl">
-						Lupa Kata Sandi?
+						{t('recovery.pageTitle')}
 					</h2>
 					<p className="mt-2 text-sm leading-relaxed text-[#6F6B6E] md:text-base">
-						Masukkan alamat email yang terhubung ke akun Anda. Kami akan mengirimkan tautan pemulihan kata sandi.
+						{t('recovery.pageDescription')}
 					</p>
 
 					{isSubmitted ? (
 						<div role="status" className="mt-8 rounded-xl border border-[#D4D4D4] bg-white p-5">
 							<CircleCheck size={28} className="text-[#404F14]" aria-hidden="true" />
-							<p className="mt-3 font-heading font-bold text-[#343133]">Tautan Terkirim</p>
+							<p className="mt-3 font-heading font-bold text-[#343133]">{t('recovery.sentTitle')}</p>
 							<p className="mt-1 break-all text-sm leading-relaxed text-[#6F6B6E]">
-								Instruksi pengaturan ulang kata sandi telah dikirim ke <strong>{email}</strong>. Silakan periksa folder masuk (atau spam) email Anda.
+								{t('recovery.sentDescription', { email })}
 							</p>
 						</div>
 					) : (
 						<form onSubmit={handleSubmit} className="mt-8">
 							<label htmlFor="recovery-email" className="mb-2 block text-sm font-heading font-bold text-[#343133]">
-								Alamat Email
+								{t('recovery.email')}
 							</label>
 							<input
 								id="recovery-email"
@@ -106,7 +108,7 @@ function ForgetPassword() {
 								disabled={isLoading}
 								className="mt-5 h-12 w-full cursor-pointer rounded-lg bg-[#CDF178] font-heading text-sm font-bold text-[#404F14] shadow-[0_2px_6px_rgba(0,0,0,0.15)] transition-colors hover:bg-[#BDE35F] disabled:opacity-50"
 							>
-								{isLoading ? 'Mengirim Instruksi...' : 'Kirim Instruksi Reset'}
+								{isLoading ? t('recovery.sending') : t('recovery.submit')}
 							</button>
 						</form>
 					)}
@@ -116,7 +118,7 @@ function ForgetPassword() {
 						className="mt-6 inline-flex items-center gap-2 font-heading text-sm font-bold text-[#404F14] hover:underline"
 					>
 						<ArrowLeft size={16} aria-hidden="true" />
-						Kembali ke Login
+						{t('recovery.backToLogin')}
 					</Link>
 				</div>
 			</main>

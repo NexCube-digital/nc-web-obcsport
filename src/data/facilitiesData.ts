@@ -1,10 +1,10 @@
-import lapangF1 from '../assets/layanan/Lapang F1.png'
-import lapangF2 from '../assets/layanan/Lapang F2.png'
-import futsalF2 from '../assets/layanan/Futsal F2.png'
-import mejaBilliard from '../assets/layanan/Meja Billiard.png'
-import tenisMeja from '../assets/layanan/tenis-meja-mockup.png'
-import pickleball from '../assets/layanan/pickleball-mockup.png'
-import sepakBola from '../assets/layanan/sepak-bola-mockup.png'
+import lapangF1 from '../assets/images/lapang/Lapang F1.webp'
+import lapangF2 from '../assets/images/lapang/Lapang F2.webp'
+import futsalF2 from '../assets/images/lapang/Lapang F2.webp'
+import mejaBilliard from '../assets/images/lapang/Meja Billiard.webp'
+import tenisMeja from '../assets/images/lapang/lapang-bola.webp'
+import pickleball from '../assets/images/lapang/lapang-bola.webp'
+import sepakBola from '../assets/images/lapang/lapang-bola.webp'
 
 export interface SportStory {
   id: string

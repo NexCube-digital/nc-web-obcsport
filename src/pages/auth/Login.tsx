@@ -1,13 +1,67 @@
 import { useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { Eye, EyeOff, House } from 'lucide-react'
 import { toast } from 'sonner'
-import loginIllustration from '../../assets/figma/login.jpg'
-import logo from '../../assets/logo/unit bisnis/LOGO OBC SPORT CENTER.png'
+import loginIllustration from '../../assets/images/login.webp'
+import logo from '../../assets/logo/unit bisnis/sport.webp'
 import { useIsMobile } from '../../hooks/useIsMobile'
 import ScrollReveal from '../../components/animation/ScrollReveal'
 import { getApiErrorMessage } from '../../services/apiService'
-import { loginCustomer, loginGoogleCustomer } from '../../services/authService'
+import { loginAutomatically, loginGoogleCustomer, type StaffAuthSession } from '../../services/authService'
+
+const COMPRO_APP_URL = (import.meta.env.VITE_COMPRO_APP_URL || 'http://localhost:5174').replace(/\/+$/, '')
+
+function handoffStaffSession(
+  session: StaffAuthSession,
+  rememberMe: boolean,
+  bridgeWindow: Window,
+  messages: { sessionFailed: string; timeout: string },
+): Promise<void> {
+  const comproOrigin = new URL(COMPRO_APP_URL).origin
+
+  return new Promise((resolve, reject) => {
+    let bridgeReady = false
+    let sessionSent = false
+
+    const cleanup = () => {
+      window.removeEventListener('message', handleMessage)
+      window.clearTimeout(timeoutId)
+    }
+
+    const sendSession = () => {
+      if (!bridgeReady || sessionSent) return
+      sessionSent = true
+      bridgeWindow.postMessage({ type: 'OBC_STAFF_SESSION', session, rememberMe }, comproOrigin)
+    }
+
+    const handleMessage = (event: MessageEvent<{ type?: string }>) => {
+      if (event.source !== bridgeWindow || event.origin !== comproOrigin) return
+
+      if (event.data?.type === 'OBC_STAFF_BRIDGE_READY') {
+        bridgeReady = true
+        sendSession()
+      } else if (event.data?.type === 'OBC_STAFF_SESSION_STORED') {
+        cleanup()
+        bridgeWindow.close()
+        resolve()
+      } else if (event.data?.type === 'OBC_STAFF_BRIDGE_ERROR') {
+        cleanup()
+        bridgeWindow.close()
+        reject(new Error(messages.sessionFailed))
+      }
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      cleanup()
+      bridgeWindow.close()
+      reject(new Error(messages.timeout))
+    }, 20_000)
+
+    window.addEventListener('message', handleMessage)
+    bridgeWindow.location.replace(`${COMPRO_APP_URL}/auth/bridge`)
+  })
+}
 
 /* Ikon Google */
 function GoogleIcon() {
@@ -27,6 +81,7 @@ function PasswordVisibilityIcon({ visible }: { visible: boolean }) {
 }
 
 function LoginPage() {
+  const { t } = useTranslation()
   const [showPassword, setShowPassword] = useState(false)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -47,19 +102,32 @@ function LoginPage() {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     if (!email || !password) {
-      toast.error('Silakan isi email dan kata sandi')
+      toast.error(t('auth.missingCredentials'))
       return
     }
 
+    const bridgeWindow = window.open('about:blank', '_blank')
     setIsSubmitting(true)
     try {
-      await loginCustomer(email.trim(), password, rememberMe)
-      toast.success('Berhasil masuk.')
-      // Tunggu event listener terdeteksi
-      await new Promise(resolve => setTimeout(resolve, 100))
-      navigateAfterLogin()
+      const result = await loginAutomatically(email.trim(), password, rememberMe)
+      if (result.principalType === 'staff') {
+        if (!bridgeWindow) {
+          throw new Error('Izinkan pop-up untuk melanjutkan login staff.')
+        }
+        await handoffStaffSession(result.session, rememberMe, bridgeWindow, {
+          sessionFailed: t('auth.staffSessionFailed'),
+          timeout: t('auth.staffHandoffTimeout'),
+        })
+        window.location.assign(`${COMPRO_APP_URL}/dashboard`)
+      } else {
+        bridgeWindow?.close()
+        toast.success(t('auth.loginSuccess'))
+        await new Promise(resolve => setTimeout(resolve, 100))
+        navigateAfterLogin()
+      }
     } catch (error) {
-      toast.error(getApiErrorMessage(error, 'Login gagal. Periksa koneksi dan coba lagi.'))
+      toast.error(getApiErrorMessage(error, t('auth.loginFailed')))
+      bridgeWindow?.close()
     } finally {
       setIsSubmitting(false)
     }
@@ -70,7 +138,7 @@ function LoginPage() {
       const google = (window as any).google
       const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || ''
       if (!clientId) {
-        toast.info('Google Client ID belum dikonfigurasi di env frontend.')
+        toast.info(t('auth.googleClientMissing'))
         return
       }
 
@@ -79,12 +147,12 @@ function LoginPage() {
         callback: async (response: any) => {
           setIsSubmitting(true)
           try {
-            await loginGoogleCustomer(response.credential)
-            toast.success('Berhasil masuk dengan Google!')
+            await loginGoogleCustomer(response.credential, rememberMe)
+            toast.success(t('auth.googleSuccess'))
             // Navigate immediately - user should be in storage by now
             navigateAfterLogin()
           } catch (err: any) {
-            toast.error(getApiErrorMessage(err, 'Gagal login via Google.'))
+            toast.error(getApiErrorMessage(err, t('auth.googleFailed')))
           } finally {
             setIsSubmitting(false)
           }
@@ -92,7 +160,7 @@ function LoginPage() {
       })
       google.accounts.id.prompt()
     } else {
-      toast.info('Google Sign-In sedang dimuat, silakan coba beberapa saat lagi.')
+      toast.info(t('auth.googleLoading'))
     }
   }
 
@@ -115,19 +183,19 @@ function LoginPage() {
         </Link>
 
         <h1 className="mt-[clamp(10px,3.5vh,40px)] text-[clamp(20px,3.6vh,28px)] font-bold leading-tight text-[#404F14]">
-          Selamat Datang Kembali
+          {t('auth.welcomeBack')}
         </h1>
         <p className="mt-1.5 font-body text-[clamp(12px,2vh,15px)] leading-snug text-[#6F6B6E]">
-          Masuk dengan akun Anda untuk mulai memesan lapangan
+          {t('auth.loginDescription')}
         </p>
 
         <form onSubmit={handleSubmit} className="mt-[clamp(10px,2.6vh,28px)]">
-          <Link to="/" aria-label="Kembali ke Home" className="-mt-4 mb-1 ml-auto flex w-fit items-center gap-1.5 rounded-lg px-2 py-1.5 text-sm font-semibold text-[#404F14] transition-colors hover:bg-[#E8EDE3]">
+          <Link to="/" aria-label={t('common.backToHome')} className="-mt-4 mb-1 ml-auto flex w-fit items-center gap-1.5 rounded-lg px-2 py-1.5 text-sm font-semibold text-[#404F14] transition-colors hover:bg-[#E8EDE3]">
             <House size={17} aria-hidden="true" />
-            Home
+            {t('common.home')}
           </Link>
           <label htmlFor="m-email" className="mb-[clamp(3px,0.9vh,8px)] block text-xs font-bold text-[#121212]">
-            Alamat Email
+            {t('auth.email')}
           </label>
           <input
             id="m-email"
@@ -136,13 +204,13 @@ function LoginPage() {
             autoComplete="username"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            placeholder="nama@email.com"
+            placeholder={t('auth.emailPlaceholder')}
             disabled={isSubmitting}
             className="h-[clamp(40px,6.8vh,54px)] w-full rounded-xl border border-[#E5E5E5] bg-white px-4 font-body text-sm text-[#343133] placeholder:text-[#8A8688] focus:outline-none focus:border-[#404F14]"
           />
 
           <label htmlFor="m-password" className="mb-[clamp(3px,0.9vh,8px)] mt-[clamp(8px,2.2vh,20px)] block text-xs font-bold text-[#121212]">
-            Kata Sandi
+            {t('auth.password')}
           </label>
           <div className="relative">
             <input
@@ -150,14 +218,14 @@ function LoginPage() {
               type={showPassword ? 'text' : 'password'}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••"
+              placeholder={t('auth.passwordPlaceholder')}
               disabled={isSubmitting}
               className="h-[clamp(40px,6.8vh,54px)] w-full rounded-xl border border-[#E5E5E5] bg-white pl-4 pr-12 font-body text-sm text-[#343133] placeholder:text-[#8A8688] focus:outline-none focus:border-[#404F14]"
             />
             <button
               type="button"
               onClick={() => setShowPassword((prev) => !prev)}
-              aria-label={showPassword ? 'Sembunyikan kata sandi' : 'Tampilkan kata sandi'}
+              aria-label={showPassword ? t('auth.hidePassword') : t('auth.showPassword')}
               className="absolute right-4 top-1/2 -translate-y-1/2 text-[#343133] cursor-pointer"
             >
               <PasswordVisibilityIcon visible={showPassword} />
@@ -173,13 +241,13 @@ function LoginPage() {
                 onChange={(e) => setRememberMe(e.target.checked)}
                 className="h-4 w-4 accent-[#404F14]"
               />
-              Ingat saya
+              {t('auth.rememberMe')}
             </label>
             <Link
               to="/forgot-password"
               className="shrink-0 text-xs font-bold text-[#404F14] underline underline-offset-2"
             >
-              Lupa Kata Sandi?
+              {t('auth.forgotPassword')}
             </Link>
           </div>
 
@@ -188,12 +256,12 @@ function LoginPage() {
             disabled={isSubmitting}
             className="mt-[clamp(8px,1.8vh,20px)] h-[clamp(40px,6.8vh,54px)] w-full rounded-xl bg-[#CDF178] text-base font-bold text-[#343133] shadow-[0_6px_16px_rgba(154,173,62,0.35)] active:bg-[#9AAD3E] transition-colors cursor-pointer disabled:opacity-50"
           >
-            {isSubmitting ? 'Memproses...' : 'Masuk Sekarang'}
+            {isSubmitting ? t('auth.processing') : t('auth.loginNow')}
           </button>
         </form>
         <div className="mt-[clamp(8px,1.8vh,20px)] flex items-center gap-3">
           <span className="h-px flex-1 bg-[#D4D4D4]" />
-          <span className="font-body text-xs text-[#343133]">Atau</span>
+          <span className="font-body text-xs text-[#343133]">{t('auth.or')}</span>
           <span className="h-px flex-1 bg-[#D4D4D4]" />
         </div>
 
@@ -203,16 +271,16 @@ function LoginPage() {
           className="mt-[clamp(8px,1.8vh,20px)] flex h-[clamp(40px,6.8vh,54px)] w-full items-center justify-center gap-2 rounded-xl border border-[#D4D4D4] bg-white text-sm font-bold text-[#121212] active:bg-[#FDFCF7] transition-colors cursor-pointer"
         >
           <GoogleIcon />
-          Masuk dengan Google
+          {t('auth.loginGoogle')}
         </button>
 
         <p className="mt-[clamp(10px,2.4vh,28px)] text-center font-body text-sm text-[#343133]">
-          Belum punya akun?{' '}
+          {t('auth.noAccount')}{' '}
           <Link
             to="/register"
             className="font-heading font-bold text-[#404F14] underline underline-offset-2"
           >
-            Daftar Sekarang
+            {t('auth.registerNow')}
           </Link>
         </p>
       </div>
@@ -229,11 +297,10 @@ function LoginPage() {
             <ScrollReveal delay={0} className="flex min-h-0 flex-1 flex-col lg:block lg:flex-none">
             <div className="mx-auto flex min-h-0 w-full max-w-[560px] flex-1 flex-col text-center lg:mx-0 lg:block lg:max-w-none lg:flex-none lg:text-left">
               <h1 className="shrink-0 font-heading text-[clamp(24px,3.6vh,48px)] font-bold leading-tight text-[#343133] lg:text-[clamp(28px,4.8vh,48px)]">
-                Kembali Berolahraga Bersama Komunitas OBC
+                {t('auth.desktopTitle')}
               </h1>
               <p className="mx-auto mt-[clamp(8px,1.5vh,20px)] max-w-xl shrink-0 text-[clamp(13px,1.8vh,18px)] leading-relaxed text-[#6F6B6E] lg:mx-0 lg:text-[clamp(14px,2vh,18px)]">
-                Kelola jadwal sewa lapangan, pantau status membership akademi Anda, dan
-                dapatkan penawaran diskon khusus pengguna terdaftar secara instan.
+                {t('auth.desktopDescription')}
               </p>
 
               {/* Tablet: ilustrasi mengisi sisa tinggi (flex-1), disembunyikan jika layar pendek.
@@ -241,7 +308,7 @@ function LoginPage() {
               <div className="relative mt-[clamp(12px,2.4vh,32px)] min-h-0 flex-1 overflow-hidden rounded-2xl bg-[#A9AD86] max-lg:max-h-[42vh] max-lg:[@media(max-height:820px)]:hidden lg:h-[clamp(140px,36vh,400px)] lg:flex-none">
                 <img
                   src={loginIllustration}
-                  alt="Ilustrasi olahraga OBC Sport Center"
+                  alt={t('auth.illustrationAlt')}
                   className="absolute inset-0 h-full w-full object-cover"
                 />
               </div>
@@ -253,15 +320,15 @@ function LoginPage() {
             <div className="mx-auto w-full max-w-[560px] rounded-2xl border border-[#D4D4D4] bg-white p-[clamp(16px,3.2vh,40px)] shadow-[0_4px_20px_rgba(0,0,0,0.08)] lg:mx-0 lg:max-w-none lg:p-[clamp(16px,3.6vh,40px)]">
               <div className="flex items-center justify-between gap-3">
                 <h2 className="font-heading text-[clamp(20px,3.2vh,30px)] font-bold text-[#343133]">
-                  Selamat Datang Kembali
+                  {t('auth.welcomeBack')}
                 </h2>
-                <Link to="/" aria-label="Kembali ke Home" className="flex shrink-0 items-center gap-2 rounded-lg px-2.5 py-2 text-sm font-semibold leading-none text-[#404F14] transition-colors hover:bg-[#F5FAF3]">
+                <Link to="/" aria-label={t('common.backToHome')} className="flex shrink-0 items-center gap-2 rounded-lg px-2.5 py-2 text-sm font-semibold leading-none text-[#404F14] transition-colors hover:bg-[#F5FAF3]">
                   <House size={18} className="shrink-0" aria-hidden="true" />
-                  <span>Home</span>
+                  <span>{t('common.home')}</span>
                 </Link>
               </div>
               <p className="mt-1 text-[clamp(13px,1.9vh,17px)] text-[#343133]">
-                Masukkan akun Anda untuk melanjutkan booking
+                {t('auth.loginDescription')}
               </p>
 
               <form
@@ -273,14 +340,14 @@ function LoginPage() {
                     htmlFor="email"
                     className="mb-[clamp(4px,0.8vh,8px)] block text-[clamp(12px,1.7vh,15px)] font-heading font-bold text-[#343133]"
                   >
-                    Email
+                    {t('auth.email')}
                   </label>
                   <input
                     id="email"
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="Masukan email Anda"
+                    placeholder={t('auth.emailPlaceholder')}
                     disabled={isSubmitting}
                     className="w-full rounded-lg border border-[#D4D4D4] bg-[#FDFCF7] px-4 py-[clamp(9px,1.8vh,18px)] text-[clamp(13px,1.9vh,17px)] placeholder:text-[#343133] focus:outline-none focus:border-[#404F14]"
                   />
@@ -291,7 +358,7 @@ function LoginPage() {
                     htmlFor="password"
                     className="mb-[clamp(4px,0.8vh,8px)] block text-[clamp(12px,1.7vh,15px)] font-heading font-bold text-[#343133]"
                   >
-                    Kata Sandi
+                    {t('auth.password')}
                   </label>
                   <div className="relative">
                     <input
@@ -299,14 +366,14 @@ function LoginPage() {
                       type={showPassword ? 'text' : 'password'}
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      placeholder="Masukan kata sandi Anda"
+                      placeholder={t('auth.passwordPlaceholder')}
                       disabled={isSubmitting}
                       className="w-full rounded-lg border border-[#D4D4D4] bg-[#FDFCF7] px-4 py-[clamp(9px,1.8vh,18px)] pr-12 text-[clamp(13px,1.9vh,17px)] placeholder:text-[#343133] focus:outline-none focus:border-[#404F14]"
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword((prev) => !prev)}
-                      aria-label={showPassword ? 'Sembunyikan kata sandi' : 'Tampilkan kata sandi'}
+                      aria-label={showPassword ? t('auth.hidePassword') : t('auth.showPassword')}
                       className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer p-2 text-[#404F14]"
                     >
                       <PasswordVisibilityIcon visible={showPassword} />
@@ -323,10 +390,10 @@ function LoginPage() {
                       onChange={(e) => setRememberMe(e.target.checked)}
                       className="h-4 w-4 accent-[#404F14]"
                     />
-                    Ingat saya
+                    {t('auth.rememberMe')}
                   </label>
                   <Link to="/forgot-password" className="shrink-0 text-[clamp(12px,1.7vh,15px)] font-bold text-[#404F14] underline underline-offset-2">
-                    Lupa Kata Sandi?
+                    {t('auth.forgotPassword')}
                   </Link>
                 </div>
 
@@ -335,18 +402,18 @@ function LoginPage() {
                   disabled={isSubmitting}
                   className="w-full rounded-lg bg-[#CDF178] py-[clamp(10px,1.9vh,18px)] text-[clamp(14px,2vh,17px)] font-heading font-bold text-[#404F14] shadow-[0_2px_6px_rgba(0,0,0,0.15)] hover:bg-[#9AAD3E] transition-colors cursor-pointer disabled:opacity-50"
                 >
-                  {isSubmitting ? 'Memproses...' : 'Masuk Ke Akun'}
+                  {isSubmitting ? t('auth.processing') : t('auth.loginNow')}
                 </button>
               </form>
               <p className="mt-[clamp(8px,1.6vh,20px)] text-center text-[clamp(13px,1.8vh,16px)] text-[#343133]">
-                Belum punya akun?{' '}
+                {t('auth.noAccount')}{' '}
                 <Link to="/register" className="font-heading font-bold text-[#404F14]">
-                  Daftar Sekarang
+                  {t('auth.registerNow')}
                 </Link>
               </p>
 
               <p className="mt-[clamp(4px,0.9vh,12px)] text-center text-[clamp(12px,1.6vh,14px)] text-[#343133]">
-                Atau
+                {t('auth.or')}
               </p>
 
               <button
@@ -355,7 +422,7 @@ function LoginPage() {
                 className="mx-auto mt-[clamp(6px,1.1vh,12px)] flex w-full max-w-[300px] items-center justify-center gap-2 rounded-md border border-[#D4D4D4] bg-white py-[clamp(7px,1.3vh,12px)] font-heading text-[clamp(13px,1.8vh,16px)] font-bold text-[#121212] hover:bg-[#FDFCF7] transition-colors cursor-pointer"
               >
                 <GoogleIcon />
-                Masuk dengan Google
+                {t('auth.loginGoogle')}
               </button>
             </div>
             </ScrollReveal>

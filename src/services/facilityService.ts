@@ -67,6 +67,7 @@ export interface FacilityAvailability {
 export async function getSportsFacilities(tenant = 'obc-sport') {
 	const response = await api.get<ApiSuccess<SportsFacility[]>>('/sports/resources', {
 		params: { tenant },
+		timeout: 10_000,
 	})
 	return response.data.data
 }

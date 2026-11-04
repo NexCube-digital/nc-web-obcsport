@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { ChevronLeft, CheckCheck } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import NavbarDashboard from '../components/layout/Navbar'
 import DeferredFooter from '../components/layout/DeferredFooter'
 import MobileHeader from '../components/layout/MobileHeader'
@@ -10,6 +11,7 @@ import { useNotifications } from '../hooks/useNotifications'
 const EASE = 'ease-[cubic-bezier(0.22,1,0.36,1)]'
 
 function NotificationsPage() {
+  const { t, i18n } = useTranslation()
   const navigate = useNavigate()
   const isMobile = useIsMobile()
   const [currentPage, setCurrentPage] = useState(1)
@@ -36,7 +38,7 @@ function NotificationsPage() {
 
   return (
     <div className="min-h-screen bg-white">
-      {isMobile && <MobileHeader variant="title" title="Notifikasi" />}
+      {isMobile && <MobileHeader variant="title" title={t('notifications.title')} />}
       {!isMobile && <NavbarDashboard />}
 
       <main className={`${isMobile ? 'pb-20' : ''}`}>
@@ -46,12 +48,12 @@ function NotificationsPage() {
               <button
                 type="button"
                 onClick={() => navigate(-1)}
-                aria-label="Kembali"
+                aria-label={t('common.back')}
                 className={`p-1 text-[#004000] hover:bg-[#F1F4EA] rounded transition-colors duration-200 ${EASE}`}
               >
                 <ChevronLeft size={24} />
               </button>
-              <h1 className="font-heading font-bold text-3xl text-[#121212]">Notifikasi</h1>
+              <h1 className="font-heading font-bold text-3xl text-[#121212]">{t('notifications.title')}</h1>
             </div>
 
             {unreadCount > 0 && (
@@ -61,7 +63,7 @@ function NotificationsPage() {
                 className="mb-4 inline-flex items-center gap-2 rounded-lg bg-[#CDF178] px-4 py-2 text-sm font-heading font-semibold text-[#404F14] hover:bg-[#9AAD3E] transition-colors"
               >
                 <CheckCheck size={16} />
-                Tandai semua sebagai dibaca
+                {t('notifications.markAllReadLong')}
               </button>
             )}
           </div>
@@ -76,7 +78,7 @@ function NotificationsPage() {
                 className="mb-3 w-full flex items-center justify-center gap-2 rounded-lg bg-[#CDF178] px-4 py-2 text-sm font-heading font-semibold text-[#404F14] hover:bg-[#9AAD3E] transition-colors"
               >
                 <CheckCheck size={16} />
-                Tandai semua dibaca
+                {t('notifications.markAllRead')}
               </button>
             )}
           </div>
@@ -100,8 +102,8 @@ function NotificationsPage() {
               <div className="mb-3 h-16 w-16 rounded-full bg-[#F1F4EA] flex items-center justify-center">
                 <CheckCheck size={32} className="text-[#9AAD3E]" />
               </div>
-              <p className="text-sm font-heading font-semibold text-[#121212]">Tidak ada notifikasi</p>
-              <p className="mt-1 text-xs text-[#6F6B6E]">Anda sudah menangani semua notifikasi</p>
+              <p className="text-sm font-heading font-semibold text-[#121212]">{t('notifications.emptyTitle')}</p>
+              <p className="mt-1 text-xs text-[#6F6B6E]">{t('notifications.allCaughtUp')}</p>
             </div>
           )}
 
@@ -129,7 +131,7 @@ function NotificationsPage() {
                         {notification.message}
                       </p>
                       <p className="mt-2 text-xs text-[#9CA3AF]">
-                        {new Date(notification.createdAt).toLocaleDateString('id-ID', {
+                        {new Date(notification.createdAt).toLocaleDateString(i18n.resolvedLanguage?.startsWith('en') ? 'en-US' : 'id-ID', {
                           weekday: 'long',
                           year: 'numeric',
                           month: 'long',
@@ -148,7 +150,7 @@ function NotificationsPage() {
                         }}
                         className="mt-1 shrink-0 text-xs font-heading font-semibold text-[#004000] hover:underline"
                       >
-                        Tandai dibaca
+                        {t('notifications.markRead')}
                       </button>
                     )}
                   </div>
@@ -165,7 +167,7 @@ function NotificationsPage() {
                 disabled={currentPage === 1}
                 className="rounded-lg border border-[#E5E5E5] bg-white px-3 py-2 text-sm font-heading disabled:opacity-50 hover:bg-[#F1F4EA] transition-colors"
               >
-                Sebelumnya
+                {t('common.previous')}
               </button>
 
               <div className="flex items-center gap-1">
@@ -190,7 +192,7 @@ function NotificationsPage() {
                 disabled={currentPage === pagination.pages}
                 className="rounded-lg border border-[#E5E5E5] bg-white px-3 py-2 text-sm font-heading disabled:opacity-50 hover:bg-[#F1F4EA] transition-colors"
               >
-                Berikutnya
+                {t('common.next')}
               </button>
             </div>
           )}

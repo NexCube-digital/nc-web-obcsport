@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Check } from 'lucide-react'
 import { toast } from 'sonner'
 import NavbarDashboard from '../../components/layout/Navbar'
@@ -32,6 +33,7 @@ function maskEmail(email: string): string {
 }
 
 function ProfilePage() {
+  const { t } = useTranslation()
   const { user } = useAuth()
   const [fullName, setFullName] = useState(user?.name ?? '')
   const [username, setUsername] = useState(user?.email?.split('@')[0] ?? '')
@@ -71,9 +73,9 @@ function ProfilePage() {
         username: username || undefined,
         bio: bio || undefined,
       })
-      toast.success('Profil berhasil diperbarui!')
+      toast.success(t('account.profileUpdated'))
     } catch (err: any) {
-      const msg = err.response?.data?.error?.message || err.message || 'Gagal memperbarui profil.'
+      const msg = err.response?.data?.error?.message || err.message || t('account.updateProfileFailed')
       toast.error(msg)
     } finally {
       setIsSaving(false)
@@ -82,25 +84,25 @@ function ProfilePage() {
 
   return (
     <div className="flex min-h-screen flex-col bg-[#FDFCF8] font-body text-[#343133]">
-      <NavbarDashboard userName={fullName || 'Pengguna'} />
+      <NavbarDashboard userName={fullName || t('common.myAccount')} />
 
       {/* Lebar konten 1200px sesuai desain */}
       <main className="mx-auto w-full max-w-[1248px] flex-1 px-6 pt-8 pb-16">
-        <h1 className="font-heading text-3xl font-bold text-[#121212]">Profil Anda</h1>
+        <h1 className="font-heading text-3xl font-bold text-[#121212]">{t('account.profileTitle')}</h1>
         <p className="mt-1 text-sm text-[#6F6B6E]">
-          Informasi akun Anda yang digunakan untuk reservasi lapangan dan membership.
+          {t('account.profileDescription')}
         </p>
 
         <div className="mt-6 space-y-6">
           {/* ================= Informasi Profil ================= */}
           <section className={`${CARD_CLASS} pb-8`}>
-            <h2 className={CARD_TITLE_CLASS}>Informasi Profil</h2>
+            <h2 className={CARD_TITLE_CLASS}>{t('account.profileInfoTitle')}</h2>
 
             {/* Foto profil */}
             <div className="mt-5 flex items-center gap-4 pb-5 border-b border-dashed border-[#E5E5E5]">
               <div className="h-[72px] w-[72px] shrink-0 overflow-hidden rounded-full border-2 border-[#C7C7D9]">
                 {photoUrl ? (
-                  <img src={photoUrl} alt="Foto profil" className="h-full w-full object-cover" />
+                  <img src={photoUrl} alt={t('account.profilePhotoAlt')} className="h-full w-full object-cover" />
                 ) : (
                   <span className="flex h-full w-full items-center justify-center bg-[#9AAD3E] font-heading text-xl font-bold text-white">
                     {getInitials(fullName || 'User')}
@@ -109,10 +111,10 @@ function ProfilePage() {
               </div>
               <div>
                 <p className="font-heading text-base font-semibold text-[#121212]">
-                  {fullName || 'Pengguna OBC'}
+                  {fullName || t('common.myAccount')}
                 </p>
                 <p className="text-xs text-[#6F6B6E]">
-                  Member OBC Sport Center
+                  {t('account.memberLabel')}
                 </p>
               </div>
             </div>
@@ -121,7 +123,7 @@ function ProfilePage() {
             <div className="mt-5 grid md:grid-cols-2 gap-4">
               <div>
                 <label htmlFor="fullName" className={LABEL_CLASS}>
-                  Nama Lengkap
+                  {t('account.name')}
                 </label>
                 <input
                   id="fullName"
@@ -133,7 +135,7 @@ function ProfilePage() {
               </div>
               <div>
                 <label htmlFor="username" className={LABEL_CLASS}>
-                  Username
+                  {t('account.username')}
                 </label>
                 <input
                   id="username"
@@ -148,7 +150,7 @@ function ProfilePage() {
             {/* Bio */}
             <div className="mt-4">
               <label htmlFor="bio" className={LABEL_CLASS}>
-                Bio Singkat
+                {t('account.shortBio')}
               </label>
               <textarea
                 id="bio"
@@ -165,7 +167,7 @@ function ProfilePage() {
                 disabled={isSaving}
                 className="rounded-lg bg-[#CDF178] px-6 py-2 text-sm font-heading font-bold text-[#404F14] hover:bg-[#9AAD3E] transition-colors cursor-pointer disabled:opacity-50"
               >
-                {isSaving ? 'Menyimpan...' : 'Simpan Profil'}
+                {isSaving ? t('account.savingChanges') : t('account.saveChanges')}
               </button>
             </div>
           </section>
@@ -173,7 +175,7 @@ function ProfilePage() {
           {/* ================= Email ================= */}
           <DeferredSection startAfterScroll placeholderClassName="min-h-[100px]">
           <section className={`${CARD_CLASS} pb-6`}>
-            <h2 className={CARD_TITLE_CLASS}>Email</h2>
+            <h2 className={CARD_TITLE_CLASS}>{t('account.email')}</h2>
 
             <div className="mt-4 flex items-center gap-2.5">
               <input
@@ -181,12 +183,12 @@ function ProfilePage() {
                 type="text"
                 value={maskEmail(email || user?.email || '')}
                 readOnly
-                aria-label="Alamat email"
+                aria-label={t('account.email')}
                 className={`${INPUT_CLASS} flex-1 bg-gray-50`}
               />
               <span className="inline-flex h-[39px] shrink-0 items-center gap-1.5 rounded-lg border border-[#DCEFE0] bg-[#EEF8F0] px-4 font-heading text-sm font-semibold text-[#004000]">
                 <Check size={12} strokeWidth={3} />
-                Terverifikasi
+                {t('account.emailVerified')}
               </span>
             </div>
           </section>

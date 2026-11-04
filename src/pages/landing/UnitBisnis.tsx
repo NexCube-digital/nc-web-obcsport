@@ -1,18 +1,8 @@
 import { useEffect, useState } from 'react'
 import { ArrowRight, Building2 } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { getPublicBusinessUnits } from '../../services/businessUnitPublicService'
 import { getImageUrl } from '../../utils/imageUrl'
-
-/* PERUBAHAN: teks ditulis langsung (tanpa i18n) supaya tidak muncul key mentah */
-const TEXT = {
-	badge: 'Bisnis Kami',
-	title: 'Beragam Layanan dalam Satu Ekosistem',
-	booking: 'Booking Now',
-	detail: 'Detail Unit',
-	loading: 'Memuat unit bisnis...',
-	empty: 'Belum ada unit bisnis yang ditampilkan.',
-	error: 'Unit bisnis belum dapat dimuat.',
-}
 
 type Unit = {
 	id: string
@@ -31,6 +21,7 @@ type UnitCardProps = {
 }
 
 function UnitCard({ unit }: UnitCardProps) {
+	const { t } = useTranslation()
 	return (
 		<article
 			className="group relative flex flex-col items-center rounded-[14px] border border-transparent bg-white p-3 pt-[22px] text-center shadow-[0_4px_10px_rgba(0,0,0,0.12)] transition-all duration-300 hover:-translate-y-1 hover:border-[#b8e28a] hover:bg-[#f0f7e6] hover:shadow-[0_12px_28px_rgba(0,64,0,0.12)] md:rounded-[20px] md:p-5 md:pt-6"
@@ -40,7 +31,7 @@ function UnitCard({ unit }: UnitCardProps) {
 					<img
 						className="block max-h-full max-w-full object-contain transition-transform duration-300 group-hover:scale-105"
 						src={unit.image}
-						alt={`Logo ${unit.name}`}
+						alt={t('landing.businessLogoAlt', { name: unit.name })}
 						loading="lazy"
 						decoding="async"
 					/>
@@ -54,10 +45,10 @@ function UnitCard({ unit }: UnitCardProps) {
 				</h3>
 				<div className="mt-1.5 flex w-full flex-col items-stretch gap-1.5 md:mt-2.5 md:flex-row md:items-center md:justify-between md:gap-2">
 					<a className={bookingClass} href={unit.link} target="_blank" rel="noreferrer">
-						{TEXT.booking}
+						{t('landing.businessBooking')}
 					</a>
 					<a className={detailClass} href={unit.link} target="_blank" rel="noreferrer">
-						{TEXT.detail} <ArrowRight size={14} />
+						{t('landing.businessDetail')} <ArrowRight size={14} />
 					</a>
 				</div>
 			</div>
@@ -66,6 +57,7 @@ function UnitCard({ unit }: UnitCardProps) {
 }
 
 export default function UnitBisnis() {
+	const { t } = useTranslation()
 	const [units, setUnits] = useState<Unit[]>([])
 	const [isLoading, setIsLoading] = useState(true)
 	const [hasError, setHasError] = useState(false)
@@ -101,10 +93,10 @@ export default function UnitBisnis() {
 			id="layanan"
 		>
 			<span className={`${FONT} mb-1 block text-center text-[16px] font-medium text-black md:mb-3 md:text-[18px] md:font-semibold md:uppercase md:tracking-[1.4px] md:text-[#000000CC]`}>
-				{TEXT.badge}
+				{t('landing.businessBadge')}
 			</span>
 			<h2 className={`${FONT} mx-auto w-full max-w-[1098px] text-center text-[22px] font-semibold leading-[30px] text-black md:text-[28px] md:font-bold md:leading-[40px] md:tracking-[1px] lg:text-[36px] lg:leading-[45px] lg:tracking-[1.5px]`}>
-				{TEXT.title}
+				{t('landing.businessTitle')}
 			</h2>
 			<div className="mx-auto mt-4 w-full max-w-[812px] border-t border-[#00000080] md:border-t-2" aria-hidden="true" />
 			<div className="mt-6 flex w-full flex-wrap justify-center gap-[14px] md:mt-[clamp(16px,3.5svh,28px)] md:gap-5">
@@ -114,9 +106,9 @@ export default function UnitBisnis() {
 					</div>
 				))}
 			</div>
-			{isLoading && <p className="mt-6 text-center text-sm text-[#62665f]">{TEXT.loading}</p>}
-			{!isLoading && hasError && <p role="status" className="mt-6 text-center text-sm text-[#62665f]">{TEXT.error}</p>}
-			{!isLoading && !hasError && units.length === 0 && <p className="mt-6 text-center text-sm text-[#62665f]">{TEXT.empty}</p>}
+			{isLoading && <p className="mt-6 text-center text-sm text-[#62665f]">{t('landing.businessLoading')}</p>}
+			{!isLoading && hasError && <p role="status" className="mt-6 text-center text-sm text-[#62665f]">{t('landing.businessError')}</p>}
+			{!isLoading && !hasError && units.length === 0 && <p className="mt-6 text-center text-sm text-[#62665f]">{t('landing.businessEmpty')}</p>}
 		</section>
 	)
 }

@@ -74,7 +74,12 @@ VITE_API_BASE_URL=http://localhost:3000/api/v1
 
 # Google OAuth Client ID (Google Cloud Console - Web Application)
 VITE_GOOGLE_CLIENT_ID=your-google-client-id.apps.googleusercontent.com
+
+# URL aplikasi Compro untuk login staff/admin
+VITE_COMPRO_APP_URL=http://localhost:5174
 ```
+
+Untuk production, isi `VITE_COMPRO_APP_URL` dengan origin aplikasi Compro.
 
 ---
 

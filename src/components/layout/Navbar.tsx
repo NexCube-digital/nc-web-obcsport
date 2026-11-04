@@ -3,7 +3,7 @@ import { ChevronDown, CircleHelp, History, LogOut, Settings, ShoppingCart } from
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
-import logo from '../../assets/logo/unit bisnis/LOGO OBC SPORT CENTER.png'
+import logo from '../../assets/logo/unit bisnis/sport.webp'
 import { useIsMobile } from '../../hooks/useIsMobile'
 import { useAuth } from '../../hooks/useAuth'
 import { logoutCustomer } from '../../services/authService'
@@ -114,7 +114,7 @@ function Navbar({
   const isMobile = useIsMobile()
   const { t, i18n } = useTranslation()
   const { user } = useAuth()
-  const displayName = user?.name ?? userName ?? 'Akun OBC'
+  const displayName = user?.name ?? userName ?? t('common.myAccount')
   const displayImage = profileImage ?? user?.avatarUrl
 
   // State dropdown bahasa dan menu user
@@ -270,7 +270,7 @@ function Navbar({
               <button
                 type="button"
                 onClick={() => setIsCartOpen(true)}
-                aria-label="Keranjang"
+                aria-label={t('common.cart')}
                 aria-haspopup="dialog"
                 aria-expanded={isCartOpen}
                 className={`group relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[#404F14] transition-[background-color,color,transform] duration-200 ${EASE} hover:bg-[#F1F4EA] hover:text-[#004000] active:scale-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#004000] motion-reduce:transition-none`}
@@ -283,7 +283,7 @@ function Navbar({
                   className={`transition-transform duration-200 ${EASE} group-hover:-translate-y-px group-hover:scale-110 motion-reduce:transition-none`}
                 />
                 {cartItems.length > 0 && (
-                  <span className="absolute right-0 top-0 grid min-h-4 min-w-4 -translate-y-1/3 translate-x-1/3 place-items-center rounded-full bg-[#9AAD3E] px-1 text-[9px] font-bold leading-none text-white" aria-label={`${cartItems.length} booking dalam keranjang`}>
+                  <span className="absolute right-0 top-0 grid min-h-4 min-w-4 -translate-y-1/3 translate-x-1/3 place-items-center rounded-full bg-[#9AAD3E] px-1 text-[9px] font-bold leading-none text-white" aria-label={t('common.bookingsInCart', { count: cartItems.length })}>
                     {cartItems.length > 99 ? '99+' : cartItems.length}
                   </span>
                 )}
@@ -297,7 +297,7 @@ function Navbar({
                 ref={userTriggerRef}
                 type="button"
                 onClick={() => setIsUserOpen((open) => !open)}
-                aria-label={`Menu pengguna, ${displayName}`}
+                aria-label={`${t('common.myAccount')}, ${displayName}`}
                 aria-haspopup="menu"
                 aria-expanded={isUserOpen}
                 className={`group flex items-center gap-2.5 rounded-full border py-1 pl-1 pr-3 transition-[background-color,border-color,box-shadow,transform] duration-200 ${EASE} active:scale-[0.97] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#004000] motion-reduce:transition-none ${
@@ -328,7 +328,7 @@ function Navbar({
               {/* Dropdown selalu ter-render agar bisa dianimasikan masuk & keluar */}
               <div
                 role="menu"
-                aria-label="Menu pengguna"
+                aria-label={t('common.myAccount')}
                 aria-hidden={!isUserOpen}
                 className={`absolute right-0 top-full z-50 mt-2 w-64 origin-top-right overflow-hidden rounded-xl border border-[#E5E5E5] bg-white shadow-[0_8px_24px_rgba(0,0,0,0.12)] ${dropdownBase} ${
                   isUserOpen ? dropdownOpen : dropdownClosed
@@ -476,9 +476,9 @@ function Navbar({
                 await removeBackendCartItem(id)
                 const items = await syncBackendCart()
                 setCartItems(items)
-                toast.success('Booking berhasil dihapus dari keranjang.')
+                toast.success(t('common.cartItemRemoved'))
               } catch (error) {
-                toast.error(error instanceof Error ? error.message : 'Item keranjang gagal dihapus.')
+                toast.error(error instanceof Error ? error.message : t('common.cartItemRemoveFailed'))
               }
             }}
             onCheckout={(items) => {

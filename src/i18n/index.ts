@@ -27,4 +27,6 @@ i18n.on('languageChanged', (language) => {
   document.documentElement.lang = language
 })
 
+document.documentElement.lang = i18n.resolvedLanguage ?? i18n.language
+
 export default i18n

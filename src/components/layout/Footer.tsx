@@ -1,18 +1,19 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { ArrowUp, Globe, Headphones, Mail, MapPin } from 'lucide-react'
 import { api } from '../../services/apiService'
 import logo from '../../assets/logo/obclogo.webp'
-import lapangF1Image from '../../assets/layanan/Lapang F1.webp'
+import lapangF1Image from '../../assets/images/lapang/Lapang F1.webp'
 import whatsappIcon from '../../assets/icon/whatsapp2.svg'
 
 const NAVIGASI_LINKS = [
-	{ label: 'Beranda', to: '/' },
-	{ label: 'Sewa Event', to: '/event' },
-	{ label: 'Membership', to: '/membership' },
-	{ label: 'Riwayat Transaksi', to: '/history' },
-	{ label: 'Bantuan & QnA', to: '/bantuan' },
-	{ label: 'Kontak', to: '#kontak' },
+	{ label: 'common.home', to: '/' },
+	{ label: 'common.eventRental', to: '/event' },
+	{ label: 'common.membership', to: '/membership' },
+	{ label: 'common.transactionHistory', to: '/history' },
+	{ label: 'common.help', to: '/bantuan' },
+	{ label: 'common.contact', to: '#kontak' },
 ]
 
 const UNIT_LINKS = [
@@ -114,6 +115,7 @@ const backTopClass =
 	'place-items-center rounded-full border-[0.5px] border-[#008C00] bg-[#004000] text-[#CDF178] shadow-lg transition-transform hover:-translate-y-1'
 
 function Footer() {
+	const { t, i18n } = useTranslation()
 	const [contact, setContact] = useState<ContactDetails>(CONTACT)
 	const scrollToTop = () => window.scrollTo({ top: 0, behavior: 'smooth' })
 
@@ -169,7 +171,7 @@ function Footer() {
 						<div className="relative order-1 col-span-2 flex w-full flex-col items-center md:order-none md:col-span-3 md:flex-row md:justify-between md:gap-4 lg:col-span-1 lg:flex-col lg:items-start lg:justify-start lg:gap-3 [@media(max-width:1023px)_and_(max-height:640px)]:flex-row [@media(max-width:1023px)_and_(max-height:640px)]:justify-between [@media(max-width:1023px)_and_(max-height:640px)]:gap-2">
 							<Link
 								to="/"
-								aria-label="Beranda"
+								aria-label={t('common.home')}
 								className="inline-flex items-center justify-center md:h-[95px] md:justify-start"
 							>
 								{/* Logo diperbesar lewat scale supaya padding bawaan gambar tidak membuatnya terlihat kecil */}
@@ -219,7 +221,7 @@ function Footer() {
 							<button
 								type="button"
 								onClick={scrollToTop}
-								aria-label="Kembali ke atas"
+								aria-label={t('common.backToTop')}
 								className={`${backTopClass} hidden h-[clamp(32px,5svh,40px)] w-[clamp(32px,5svh,40px)] [@media(max-width:1023px)_and_(max-height:640px)]:grid`}
 							>
 								<ArrowUp className="h-4 w-4" />
@@ -228,17 +230,17 @@ function Footer() {
 
 						{/* Perusahaan */}
 						<div className="order-3 px-2 md:order-none md:px-0">
-							<h3 className={headingClass}>Perusahaan</h3>
+							<h3 className={headingClass}>{t('footer.company')}</h3>
 							<ul className={listClass}>
 								{NAVIGASI_LINKS.map((link) => (
 									<li key={link.to}>
 										{link.to.startsWith('#') ? (
 											<a href={link.to} className={linkClass}>
-												{link.label}
+												{t(link.label)}
 											</a>
 										) : (
 											<Link to={link.to} className={linkClass}>
-												{link.label}
+												{t(link.label)}
 											</Link>
 										)}
 									</li>
@@ -248,7 +250,7 @@ function Footer() {
 
 						{/* Unit bisnis */}
 						<div className="order-4 px-2 md:order-none md:px-0">
-							<h3 className={headingClass}>Unit Bisnis</h3>
+							<h3 className={headingClass}>{t('footer.businessUnits')}</h3>
 							<ul className={listClass}>
 								{UNIT_LINKS.map((unit) => (
 									<li key={unit.to}>
@@ -264,7 +266,7 @@ function Footer() {
 						<div className="order-2 col-span-2 px-2 md:order-none md:col-span-1 md:px-0">
 							<h3 className={`${headingClass} flex items-center gap-2 lg:gap-1`}>
 								<Headphones size={14} />
-								Hubungi Kami
+								{t('footer.contactUs')}
 							</h3>
 							<ul className="mt-[clamp(4px,calc(1.4svh_-_1px),16px)] flex flex-col gap-[clamp(3px,calc(1.6svh_-_4px),14px)] font-['Montserrat'] text-[clamp(11px,1.7svh,13px)] font-medium leading-[clamp(14px,2.3svh,20px)] tracking-[0px] text-white md:mt-4 md:gap-3 md:text-[13px] md:leading-5 lg:mt-[15px] lg:gap-[15px] lg:text-[12px] lg:leading-4">
 								<li className="flex items-center gap-3 md:gap-2">
@@ -298,7 +300,7 @@ function Footer() {
 					<button
 						type="button"
 						onClick={scrollToTop}
-						aria-label="Kembali ke atas"
+						aria-label={t('common.backToTop')}
 						className={`${backTopClass} grid h-[44px] w-[36px]`}
 					>
 						<ArrowUp className="h-5 w-[15px]" />
@@ -310,7 +312,7 @@ function Footer() {
 					<button
 						type="button"
 						onClick={scrollToTop}
-						aria-label="Kembali ke atas"
+						aria-label={t('common.backToTop')}
 						className={`${backTopClass} grid h-[clamp(32px,5svh,40px)] w-[clamp(32px,5svh,40px)] md:h-10 md:w-10`}
 					>
 						<ArrowUp className="h-4 w-4" />
@@ -336,25 +338,25 @@ function Footer() {
 				<div className="shrink-0 lg:border-t lg:border-white/10">
 					<div className="mx-auto flex w-full max-w-[1246px] flex-col items-center gap-1 px-4 pb-[clamp(6px,1.8svh,20px)] pt-1 text-center font-['Montserrat'] text-[11px] font-normal leading-4 tracking-[0px] text-white md:gap-1.5 md:px-6 md:pb-5 md:pt-2 md:text-[12px] lg:h-[70px] lg:min-h-[70px] lg:flex-row lg:justify-between lg:gap-4 lg:px-10 lg:py-5 lg:text-left xl:px-12">
 						{/* Mobile/tablet: teks hak cipta diringkas, tanpa pilihan bahasa */}
-						<p className="lg:hidden">© {new Date().getFullYear()} OBC Group. Hak cipta dilindungi undang-undang.</p>
+						<p className="lg:hidden">© {new Date().getFullYear()} OBC Group. {t('footer.rights')}</p>
 						<p className="lg:hidden">
-							Dikembangkan oleh <NexcubeLink />
+							{t('footer.developedBy')} <NexcubeLink />
 						</p>
 
 						{/* Desktop: teks asli */}
 						<p className="hidden lg:block">
-							© {new Date().getFullYear()} Onny Barber Center Group. Hak cipta dilindungi undang-undang.
+							© {new Date().getFullYear()} Onny Barber Center Group. {t('footer.rights')}
 						</p>
 
 						<p className="hidden lg:block">
-							Dikembangkan oleh <NexcubeLink />
+							{t('footer.developedBy')} <NexcubeLink />
 						</p>
 
 						{/* Bahasa + ikon sosial versi desktop; di mobile/tablet ikon sosial sudah ada di bagian atas */}
 						<div className="hidden items-center gap-6 lg:flex">
 							<span className="flex items-center gap-2">
 								<Globe width={15.5} height={15.5} className="text-white" />
-								Bahasa Indonesia (ID)
+								{i18n.language === 'en' ? t('footer.english') : t('footer.indonesian')}
 							</span>
 							<div className="flex items-center gap-5">
 								<a href={contact.whatsapp} target="_blank" rel="noreferrer" aria-label="WhatsApp OBC Group" className="text-white transition-colors hover:text-[#CDF178]">
