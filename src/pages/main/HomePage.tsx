@@ -104,7 +104,7 @@ function HomePage() {
           ...sport,
           label: sport.id.startsWith('meja-')
             ? t('home.facilities.table', { number: sport.id.replace('meja-', '') })
-            : t(`home.sports.${sport.sportType ?? sport.id}`, { defaultValue: sport.label }),
+            : t(`home.sports.${('sportType' in sport ? sport.sportType : undefined) ?? sport.id}`, { defaultValue: sport.label }),
         })),
         specification: selectedFacility.description || '',
         selectionTitle: selectedFacility.selectionTitle,
@@ -141,16 +141,18 @@ function HomePage() {
           <Event onPreviewImage={setPreviewImage} />
         </DeferredSection>
 
-        <DeferredSection placeholderClassName="min-h-[680px] md:min-h-[1000px] lg:min-h-[720px]">
-          <Court
-            submittedSearch={submittedSearch}
-            onPreviewImage={setPreviewImage}
-            onSelectFacility={setSelectedFacility}
-            facilities={apiFacilities}
+        <Suspense fallback={<div aria-hidden="true" className="min-h-[680px] md:min-h-[1000px] lg:min-h-[720px]" />}>
+          <ScrollReveal>
+            <Court
+              submittedSearch={submittedSearch}
+              onPreviewImage={setPreviewImage}
+              onSelectFacility={setSelectedFacility}
+              facilities={apiFacilities}
               loadStatus={facilityLoadStatus}
               onRetry={() => setFacilityRetry((current) => current + 1)}
-          />
-        </DeferredSection>
+            />
+          </ScrollReveal>
+        </Suspense>
       </main>
 
       <DeferredFooter />
@@ -260,7 +262,7 @@ function toFacilityCard(resource: SportsFacility, t: TFunction): FacilityCard {
 function toFacilityCards(resources: SportsFacility[], t: TFunction): FacilityCard[] {
   const resourcesBySlug = new Map(resources.map((resource) => [resource.slug, resource]))
   const facilities: FacilityCard[] = []
-  const appendResource = (slug: string, name: string, sportTypes?: string[]) => {
+  const appendResource = (slug: string, name: string, sportTypes?: string[], description?: string) => {
     const resource = resourcesBySlug.get(slug)
     if (!resource) return
     const card = toFacilityCard(resource, t)
@@ -269,54 +271,43 @@ function toFacilityCards(resources: SportsFacility[], t: TFunction): FacilityCar
       card.sportTypes = sportTypes
       card.description = sportTypes.map((sport) => t(`home.sports.${sport}`, { defaultValue: sport })).join(', ')
     }
+    if (description) card.description = description
     facilities.push(card)
   }
 
   appendResource('lapangan-f1', t('home.facilities.courtF1'))
+  appendResource('lapangan-f2', t('home.facilities.courtF2'))
+  appendResource('lapang-sepak-bola', t('home.facilities.soccerField'), undefined, t('home.facilities.soccerDescription'))
 
-  const f2 = resourcesBySlug.get('lapangan-f2')
-  let footballCard: FacilityCard | undefined
-  if (f2) {
-    const selectableSports = f2.sportTypes.filter((sport) => sport !== 'other' && sport !== 'sepakbola')
-    appendResource('lapangan-f2', t('home.facilities.courtF2'), selectableSports)
-    if (f2.sportTypes.includes('sepakbola')) {
-      footballCard = toFacilityCard(f2, t)
-      footballCard.key = `${f2.id}-sepakbola`
-      footballCard.name = t('home.facilities.soccerF2')
-      footballCard.description = t('home.facilities.soccerDescription')
-      footballCard.sportTypes = ['sepakbola']
-    }
-  }
-
-  const appendTableRoom = (slugPrefix: 'biliard' | 'tenis-meja', name: string, sportType: string, icon: 'biliard' | 'tenismeja') => {
+  const appendTableRoom = (slugs: string[], name: string, sportType: string, icon: 'biliard' | 'tenismeja') => {
     const tables = resources
-      .filter((resource) => resource.slug.startsWith(`${slugPrefix}-`))
+      .filter((resource) => slugs.some((slug) => resource.slug === slug || resource.slug.startsWith(`${slug}-`)))
       .sort((left, right) => left.slug.localeCompare(right.slug, 'id'))
-    const firstTable = tables[0]
-    if (!firstTable) return
+    const roomResource = tables.find((resource) => slugs.includes(resource.slug)) ?? tables[0]
+    if (!roomResource) return
 
-    const tableNumber = (slug: string, index: number) => slug.match(/-(\d+)$/)?.[1] ?? String(index + 1)
-    const room = toFacilityCard(firstTable, t)
+    const tableCount = roomResource.parallelUnits ?? tables.length
+    const room = toFacilityCard(roomResource, t)
     room.name = name
-    room.description = t('home.facilities.tablesAvailable', { count: tables.length })
+    room.description = t('home.facilities.tablesAvailable', { count: tableCount })
     room.sportTypes = [sportType]
     room.selectionTitle = t('orderModal.chooseTableTitle')
-    room.bookingOptions = tables.map((table, index) => {
-      const number = tableNumber(table.slug, index)
+    room.bookingOptions = Array.from({ length: tableCount }, (_, index) => {
+      const table = tables.length > 1 ? tables[index] : roomResource
+      const number = table?.slug.match(/-(\d+)$/)?.[1] ?? String(index + 1)
       return {
         id: `meja-${number}`,
         label: t('home.facilities.table', { number }),
         icon,
-        resourceId: table.id,
+        resourceId: table?.id ?? roomResource.id,
         sportType,
       }
     })
     facilities.push(room)
   }
 
-  appendTableRoom('biliard', t('home.facilities.billiardsRoom'), 'billiard', 'biliard')
-  appendTableRoom('tenis-meja', t('home.facilities.tableTennisRoom'), 'tennis', 'tenismeja')
-  if (footballCard) facilities.push(footballCard)
+  appendTableRoom(['ruang-biliard', 'biliard'], t('home.facilities.billiardsRoom'), 'billiard', 'biliard')
+  appendTableRoom(['tenis-meja'], t('home.facilities.tableTennisRoom'), 'table_tennis', 'tenismeja')
 
   return facilities
 }

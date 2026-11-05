@@ -46,6 +46,14 @@ function getContentValue(value: unknown, fallback: string): string {
 	return typeof value === 'string' && value.trim() ? value.trim() : fallback
 }
 
+function whatsappHref(value: string): string {
+	const contact = value.trim()
+	if (/^https?:\/\//i.test(contact)) return contact
+	const digits = contact.replace(/\D/g, '')
+	const internationalNumber = digits.startsWith('0') ? `62${digits.slice(1)}` : digits
+	return internationalNumber ? `https://wa.me/${internationalNumber}` : ''
+}
+
 function InstagramLogo({ className = 'h-[16px] w-[16px]' }: { className?: string }) {
 	return (
 		<svg viewBox="0 0 24 24" aria-hidden="true" className={`${className} fill-none stroke-current stroke-[1.8]`}>
@@ -130,9 +138,10 @@ function Footer() {
 			const contactContent = sections.find((section) => section.sectionKey === 'site-contact')?.content
 			setContact((current) => ({
 				...current,
-				whatsapp: getContentValue(socialContent?.whatsapp, current.whatsapp),
-				instagram: getContentValue(socialContent?.instagram, current.instagram),
-				tiktok: getContentValue(socialContent?.tiktok, current.tiktok),
+				whatsapp: getContentValue(contactContent?.whatsapp, getContentValue(socialContent?.whatsapp, current.whatsapp)),
+				whatsappPic: getContentValue(contactContent?.whatsappPic, current.whatsappPic),
+				instagram: getContentValue(contactContent?.instagram, getContentValue(socialContent?.instagram, current.instagram)),
+				tiktok: getContentValue(contactContent?.tiktok, getContentValue(socialContent?.tiktok, current.tiktok)),
 				email: getContentValue(contactContent?.email, current.email),
 				address: getContentValue(contactContent?.address, current.address),
 				maps: getContentValue(contactContent?.maps, current.maps),
@@ -183,7 +192,7 @@ function Footer() {
 							</Link>
 							<div className="mt-[clamp(10px,2svh,20px)] flex items-center justify-center gap-3 md:mt-0 md:justify-end md:gap-4 lg:justify-start lg:pt-1 [@media(max-width:1023px)_and_(max-height:640px)]:mt-0 [@media(max-width:1023px)_and_(max-height:640px)]:gap-2">
 								<a
-									href={contact.whatsapp}
+									href={whatsappHref(contact.whatsapp)}
 									target="_blank"
 									rel="noreferrer"
 									aria-label="WhatsApp OBC Group"
@@ -359,7 +368,7 @@ function Footer() {
 								{i18n.language === 'en' ? t('footer.english') : t('footer.indonesian')}
 							</span>
 							<div className="flex items-center gap-5">
-								<a href={contact.whatsapp} target="_blank" rel="noreferrer" aria-label="WhatsApp OBC Group" className="text-white transition-colors hover:text-[#CDF178]">
+								<a href={whatsappHref(contact.whatsapp)} target="_blank" rel="noreferrer" aria-label="WhatsApp OBC Group" className="text-white transition-colors hover:text-[#CDF178]">
 									<WhatsAppSocialIcon className="h-[16.5px] w-[16.5px]" />
 								</a>
 								<a href={contact.tiktok} target="_blank" rel="noreferrer" aria-label="TikTok OBC Group" className="text-white transition-colors hover:text-[#CDF178]">

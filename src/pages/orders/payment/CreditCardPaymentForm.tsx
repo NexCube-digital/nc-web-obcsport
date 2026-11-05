@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react'
-import { CreditCard, LoaderCircle, ShieldCheck } from 'lucide-react'
+import { LoaderCircle, ShieldCheck } from 'lucide-react'
+import creditCardImage from '../../../assets/images/payment/creditcard.webp'
 import { chargeBookingByCreditCard } from '../../../services/bookingService'
 import { getApiErrorMessage } from '../../../services/apiService'
 import { authenticateMidtransCard, tokenizeMidtransCard } from '../../../services/paymentService'
@@ -75,8 +76,8 @@ function CreditCardPaymentForm({ bookingId, amount, onPaymentStarted }: CreditCa
 	return (
 		<section className="rounded-xl border border-[#D4D4D4] bg-white p-4 md:p-5">
 			<div className="flex items-start gap-3">
-				<span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#E6F0E0] text-[#404F14]">
-					<CreditCard size={20} aria-hidden="true" />
+				<span className="flex h-10 w-14 shrink-0 items-center justify-center">
+					<img src={creditCardImage} alt="" aria-hidden="true" className="h-10 w-14 object-contain" />
 				</span>
 				<div>
 					<h2 className="font-heading text-base font-bold text-[#343133]">{t('payment.card.title')}</h2>

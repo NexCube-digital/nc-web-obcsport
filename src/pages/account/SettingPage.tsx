@@ -14,6 +14,8 @@ import {
   uploadAvatar,
 } from '../../services/accountService'
 import { useAuth } from '../../hooks/useAuth'
+import usePublicSiteContact from '../../hooks/usePublicSiteContact'
+import { getWhatsAppHref } from '../../services/siteContactService'
 import { getImageUrl } from '../../utils/imageUrl'
 
 const PhotoCropModal = lazy(() => import('./Photocropmodal'))
@@ -25,15 +27,12 @@ interface HelpLink {
   id: string
   label: string
   href?: string // rute internal
-  external?: string // tautan luar (mis. WhatsApp)
 }
-
-const CS_WHATSAPP_URL = 'https://wa.me/628123456789'
 
 const HELP_LINKS: HelpLink[] = [
   { id: 'panduan', label: 'account.helpBooking', href: '/bantuan' },
   { id: 'syarat', label: 'account.helpTerms', href: '/syarat-ketentuan' },
-  { id: 'admin', label: 'account.helpContact', external: CS_WHATSAPP_URL },
+  { id: 'admin', label: 'account.helpContact' },
 ]
 
 const MAX_PHOTO_SIZE = 2 * 1024 * 1024 // 2MB
@@ -61,6 +60,8 @@ function SettingsPage() {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const { user } = useAuth()
+  const contact = usePublicSiteContact()
+  const contactWhatsAppUrl = getWhatsAppHref(contact.whatsapp)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   // State profil
@@ -194,8 +195,8 @@ function SettingsPage() {
   }
 
   const handleHelpLink = (link: HelpLink) => {
-    if (link.external) {
-      window.open(link.external, '_blank')
+    if (link.id === 'admin') {
+      if (contactWhatsAppUrl) window.open(contactWhatsAppUrl, '_blank', 'noopener,noreferrer')
       return
     }
     if (link.href) navigate(link.href)
@@ -418,7 +419,8 @@ function SettingsPage() {
                   <button
                     type="button"
                     onClick={() => handleHelpLink(link)}
-                    className="flex w-full items-center justify-between py-4 text-left text-sm text-[#121212] hover:text-[#004000] transition-colors cursor-pointer"
+                    disabled={link.id === 'admin' && !contactWhatsAppUrl}
+                    className="flex w-full items-center justify-between py-4 text-left text-sm text-[#121212] hover:text-[#004000] transition-colors cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     <span>{t(link.label)}</span>
                     <ArrowRight size={14} aria-hidden="true" />

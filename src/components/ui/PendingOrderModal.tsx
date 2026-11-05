@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react'
 import { Check, ChevronDown, Copy, House } from 'lucide-react'
 import type { DirectPaymentInfo } from '../../services/paymentService'
 import { useTranslation } from 'react-i18next'
+import usePublicSiteContact from '../../hooks/usePublicSiteContact'
+import { getWhatsAppHref } from '../../services/siteContactService'
 
 export interface PendingBookingItem {
   id: string
@@ -24,7 +26,6 @@ interface PendingOrderModalProps {
   onContinuePayment?: () => void
 }
 
-const ADMIN_WA_URL = 'https://wa.me/6281234567890'
 const FONT_MONTSERRAT = "font-['Montserrat',sans-serif]"
 const formatRupiah = (value: number) => `Rp ${value.toLocaleString('id-ID')}`
 
@@ -42,6 +43,8 @@ function PendingOrderModal({
   onContinuePayment,
 }: PendingOrderModalProps) {
   const { t } = useTranslation()
+  const contact = usePublicSiteContact()
+  const adminWhatsAppUrl = getWhatsAppHref(contact.whatsapp)
   const [copiedValue, setCopiedValue] = useState<string | null>(null)
   const [isInstructionsOpen, setIsInstructionsOpen] = useState(false)
 
@@ -214,9 +217,9 @@ function PendingOrderModal({
           <button type="button" onClick={onOpenOrderStatus} className="min-h-9 rounded-lg bg-[#354B24] px-3 font-heading text-[11px] font-bold text-white sm:min-h-10 sm:min-w-40 sm:text-xs">
             {t('payment.pending.information')}
           </button>
-          <a href={ADMIN_WA_URL} target="_blank" rel="noreferrer" className={`flex min-h-9 items-center justify-center rounded-lg bg-[#CDF178] px-3 text-center font-heading text-[11px] font-bold text-[#404F14] sm:min-h-10 sm:min-w-40 sm:text-xs ${canContinuePayment ? 'col-span-2 sm:col-span-1' : ''}`}>
+          {adminWhatsAppUrl && <a href={adminWhatsAppUrl} target="_blank" rel="noreferrer" className={`flex min-h-9 items-center justify-center rounded-lg bg-[#CDF178] px-3 text-center font-heading text-[11px] font-bold text-[#404F14] sm:min-h-10 sm:min-w-40 sm:text-xs ${canContinuePayment ? 'col-span-2 sm:col-span-1' : ''}`}>
             {t('payment.pending.whatsappHelp')}
-          </a>
+          </a>}
         </footer>
       </section>
     </div>

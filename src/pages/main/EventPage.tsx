@@ -4,6 +4,8 @@ import DeferredFooter from '../../components/layout/DeferredFooter'
 import DeferredSection from '../../components/layout/DeferredSection'
 import ScrollReveal from '../../components/animation/ScrollReveal'
 import whatsappIcon from '../../assets/icon/whatsapp2.svg'
+import usePublicSiteContact from '../../hooks/usePublicSiteContact'
+import { getWhatsAppHref } from '../../services/siteContactService'
 
 /* -------------------------------------------------------------------------
    Tipe data
@@ -21,15 +23,15 @@ interface ReservationStep {
 // Font heading di desain terlihat seperti Montserrat, pastikan sudah di-load
 const FONT_MONTSERRAT = "font-['Montserrat',sans-serif]"
 
-// TODO: ganti dengan nomor WhatsApp PIC Event yang sebenarnya
-const PIC_WHATSAPP_NUMBER = '628123456789'
-
 function OrderPage() {
   const { t } = useTranslation()
+  const contact = usePublicSiteContact()
+  const eventWhatsAppUrl = getWhatsAppHref(contact.whatsappPic || contact.whatsapp)
   const reservationSteps = t('event.steps', { returnObjects: true }) as ReservationStep[]
   const handleContactWhatsApp = () => {
-    const url = `https://wa.me/${PIC_WHATSAPP_NUMBER}?text=${encodeURIComponent(t('event.whatsappMessage'))}`
-    window.open(url, '_blank')
+    if (!eventWhatsAppUrl) return
+    const separator = eventWhatsAppUrl.includes('?') ? '&' : '?'
+    window.open(`${eventWhatsAppUrl}${separator}text=${encodeURIComponent(t('event.whatsappMessage'))}`, '_blank', 'noopener,noreferrer')
   }
 
   return (
@@ -114,7 +116,8 @@ function OrderPage() {
             <button
               type="button"
               onClick={handleContactWhatsApp}
-              className="mt-auto w-full h-10 rounded-lg bg-[#CDF178] text-[13px] font-heading font-semibold text-[#343133] hover:bg-[#9AAD3E] transition-colors cursor-pointer"
+              disabled={!eventWhatsAppUrl}
+              className="mt-auto w-full h-10 rounded-lg bg-[#CDF178] text-[13px] font-heading font-semibold text-[#343133] hover:bg-[#9AAD3E] transition-colors cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
             >
               {t('event.contactButton')}
             </button>

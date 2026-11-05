@@ -6,6 +6,8 @@ import MobileHeader from '../../components/layout/MobileHeader'
 import DeferredFooter from '../../components/layout/DeferredFooter'
 import DeferredSection from '../../components/layout/DeferredSection'
 import { useIsMobile } from '../../hooks/useIsMobile'
+import usePublicSiteContact from '../../hooks/usePublicSiteContact'
+import { getWhatsAppHref } from '../../services/siteContactService'
 
 /* -------------------------------------------------------------------------
    Tipe data
@@ -19,11 +21,10 @@ interface FaqItem {
 /* -------------------------------------------------------------------------
    Data (ganti dengan data dari API / services/faqService.js)
    ------------------------------------------------------------------------- */
-// TODO: ganti dengan nomor WhatsApp customer service yang sebenarnya
-const CS_WHATSAPP_NUMBER = '628123456789'
-
 function HelpPage() {
   const { t, i18n } = useTranslation()
+  const contact = usePublicSiteContact()
+  const supportWhatsAppUrl = getWhatsAppHref(contact.whatsapp)
   const faqItems = t('help.faqs', { returnObjects: true }) as FaqItem[]
   const [searchQuery, setSearchQuery] = useState('')
   const isMobile = useIsMobile()
@@ -37,8 +38,9 @@ function HelpPage() {
   )
 
   const handleContactWhatsApp = () => {
-    const url = `https://wa.me/${CS_WHATSAPP_NUMBER}?text=${encodeURIComponent(t('help.whatsappMessage'))}`
-    window.open(url, '_blank')
+    if (!supportWhatsAppUrl) return
+    const separator = supportWhatsAppUrl.includes('?') ? '&' : '?'
+    window.open(`${supportWhatsAppUrl}${separator}text=${encodeURIComponent(t('help.whatsappMessage'))}`, '_blank', 'noopener,noreferrer')
   }
 
   const handleToggleFaq = (id: string) => {
@@ -129,7 +131,8 @@ function HelpPage() {
           <button
             type="button"
             onClick={handleContactWhatsApp}
-            className="h-12 w-full rounded-xl bg-[#CDF178] font-heading text-sm font-bold text-[#404F14] transition-colors active:bg-[#9AAD3E] cursor-pointer"
+            disabled={!supportWhatsAppUrl}
+            className="h-12 w-full rounded-xl bg-[#CDF178] font-heading text-sm font-bold text-[#404F14] transition-colors active:bg-[#9AAD3E] cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
           >
             {t('help.contactButton')}
           </button>
@@ -204,7 +207,8 @@ function HelpPage() {
             <button
               type="button"
               onClick={handleContactWhatsApp}
-              className="mt-5 w-full max-w-[306px] h-10 rounded-lg bg-[#CDF178] text-sm font-heading font-bold text-[#404F14] hover:bg-[#9AAD3E] transition-colors cursor-pointer"
+              disabled={!supportWhatsAppUrl}
+              className="mt-5 w-full max-w-[306px] h-10 rounded-lg bg-[#CDF178] text-sm font-heading font-bold text-[#404F14] hover:bg-[#9AAD3E] transition-colors cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
             >
               {t('help.contactButton')}
             </button>

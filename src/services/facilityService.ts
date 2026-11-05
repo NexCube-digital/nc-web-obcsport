@@ -13,6 +13,7 @@ export interface SportsFacility {
 	resourceType: string
 	sportTypes: string[]
 	capacity: number | null
+	parallelUnits?: number
 	amenities: string[]
 	imageUrl: string | null
 	gallery: string[] | null

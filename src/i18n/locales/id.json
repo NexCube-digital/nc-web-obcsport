@@ -319,12 +319,12 @@
     "facilities": {
       "courtF1": "Lapang F1",
       "courtF2": "Lapang F2",
-      "soccerF2": "Lapang Sepakbola",
+      "soccerField": "Lapang Sepak Bola",
       "billiardsRoom": "Ruang Billiard",
       "tableTennisRoom": "Ruang Tenis Meja",
       "table": "Meja {{number}}",
       "tablesAvailable": "{{count}} meja tersedia",
-      "soccerDescription": "Sepak bola di Lapang F2"
+      "soccerDescription": "Lapangan khusus sepak bola dengan detail, jadwal, dan tarif tersendiri."
     }
   },
   "membership": {

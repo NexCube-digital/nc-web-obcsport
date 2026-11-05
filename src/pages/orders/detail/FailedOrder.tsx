@@ -4,8 +4,10 @@ import { ChevronDown, CircleX } from 'lucide-react'
 import ScrollReveal from '../../../components/animation/ScrollReveal'
 import { useIsMobile } from '../../../hooks/useIsMobile'
 import { getBookingDetails, type BookingDetails } from '../../../services/bookingService'
-import lapangF1 from '../../../assets/layanan/Lapang F1.png'
+import lapangF1 from '../../../assets/images/lapang/Lapang F1.webp'
 import { useTranslation } from 'react-i18next'
+import usePublicSiteContact from '../../../hooks/usePublicSiteContact'
+import { getWhatsAppHref } from '../../../services/siteContactService'
 
 /* -------------------------------------------------------------------------
    Tipe data
@@ -22,9 +24,6 @@ interface FailedState {
 /* -------------------------------------------------------------------------
    Data (ganti dengan data dari API / services/paymentService.js)
    ------------------------------------------------------------------------- */
-// TODO: nomor WhatsApp admin sementara hardcode, ambil dari konfigurasi
-const ADMIN_WA_URL = 'https://wa.me/6281234567890'
-
 const FONT_MONTSERRAT = "font-['Montserrat',sans-serif]"
 
 // Fallback bila halaman dibuka tanpa state (sesuai desain)
@@ -37,6 +36,8 @@ const formatRupiah = (value: number) => `Rp ${value.toLocaleString('id-ID')}`
 
 function FailedOrder() {
   const { t } = useTranslation()
+  const contact = usePublicSiteContact()
+  const adminWhatsAppUrl = getWhatsAppHref(contact.whatsapp)
   const navigate = useNavigate()
   const location = useLocation()
   const isMobile = useIsMobile()
@@ -231,14 +232,14 @@ function FailedOrder() {
           >
             {t('paymentResult.retryPayment')}
           </button>
-          <a
-            href={ADMIN_WA_URL}
+          {adminWhatsAppUrl && <a
+            href={adminWhatsAppUrl}
             target="_blank"
             rel="noreferrer"
             className="flex h-10 w-full items-center justify-center rounded-xl border border-[#404F14] bg-white font-heading text-xs font-bold text-[#404F14] transition-colors active:bg-[#F5FAF3]"
           >
             {t('paymentResult.contactAdmin')}
-          </a>
+          </a>}
         </div>
         </ScrollReveal>
         </div>
@@ -287,14 +288,14 @@ function FailedOrder() {
                 >
                   {t('paymentResult.retryPayment')}
                 </button>
-                <a
-                  href={ADMIN_WA_URL}
+                {adminWhatsAppUrl && <a
+                  href={adminWhatsAppUrl}
                   target="_blank"
                   rel="noreferrer"
                   className="flex h-10 w-[176px] shrink-0 items-center justify-center rounded-lg border border-[#404F14] bg-white px-2 font-heading text-xs font-bold text-[#404F14] transition-colors hover:bg-[#F5FAF3]"
                 >
                   {t('paymentResult.contactAdmin')}
-                </a>
+                </a>}
               </div>
             </div>
 

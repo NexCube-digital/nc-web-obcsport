@@ -319,12 +319,12 @@
     "facilities": {
       "courtF1": "Court F1",
       "courtF2": "Court F2",
-      "soccerF2": "Soccer Field F2",
+      "soccerField": "Soccer Field",
       "billiardsRoom": "Billiards Room",
       "tableTennisRoom": "Table Tennis Room",
       "table": "Table {{number}}",
       "tablesAvailable": "{{count}} tables available",
-      "soccerDescription": "Soccer at Court F2"
+      "soccerDescription": "A dedicated soccer field with its own details, schedule, and pricing."
     }
   },
   "membership": {
