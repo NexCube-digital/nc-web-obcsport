@@ -1,5 +1,5 @@
 import { Bath, Landmark, Lightbulb, ParkingCircle, Star, Utensils } from 'lucide-react'
-import lapangF1 from '../../../assets/images/lapang/Lapang F1.webp'
+import fallbackCourtImage from '../../../assets/no-image.webp'
 import { useTranslation } from 'react-i18next'
 
 interface PriceTier {
@@ -41,13 +41,14 @@ interface FacilityDetailsProps {
   isPriceLoading?: boolean
 }
 
-function FacilityDetails({ variant, facilityName = COURT_NAME, image = lapangF1, locationName = 'OBC Sport Center', priceTiers = [], isPriceLoading = false }: FacilityDetailsProps) {
+function FacilityDetails({ variant, facilityName = COURT_NAME, image = fallbackCourtImage, locationName = 'OBC Sport Center', priceTiers = [], isPriceLoading = false }: FacilityDetailsProps) {
   const { t } = useTranslation()
+  const facilityImage = image || fallbackCourtImage
   const amenityLabel = (chip: FacilityChip) => `${t(`home.amenities.${chip.labelKey}`)}${chip.id === 'toilet' ? ' T3-T5' : ''}`
   return (
     variant === 'mobile' ? (
       <div>
-        <img src={image} alt={facilityName} className="h-[clamp(245px,40svh,340px)] w-full rounded-2xl object-cover" />
+        <img src={facilityImage} alt={facilityName} onError={(event) => { event.currentTarget.src = fallbackCourtImage }} className="h-[clamp(245px,40svh,340px)] w-full rounded-2xl object-cover" />
         <h1 className="mt-5 font-heading text-2xl font-bold text-[#121212]">{facilityName}</h1>
         <p className="mt-1 text-sm text-[#6F6B6E]">{locationName} - {facilityName}</p>
 
@@ -95,7 +96,7 @@ function FacilityDetails({ variant, facilityName = COURT_NAME, image = lapangF1,
       </div>
     ) : (
       <div>
-        <img src={image} alt={facilityName} className="h-[clamp(400px,50svh,560px)] w-full rounded-xl object-cover" />
+        <img src={facilityImage} alt={facilityName} onError={(event) => { event.currentTarget.src = fallbackCourtImage }} className="h-[clamp(400px,50svh,560px)] w-full rounded-xl object-cover" />
         <h1 className="mt-6 font-heading text-3xl font-bold text-[#343133]">{facilityName}</h1>
         <div className="mt-1 flex items-center gap-2">
           <div className="flex gap-0.5" aria-hidden="true">

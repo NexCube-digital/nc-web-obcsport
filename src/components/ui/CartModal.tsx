@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { ArrowRight, CalendarClock, Plus, ShoppingCart, Trash2, X } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
+import fallbackCourtImage from '../../assets/no-image.webp'
 
 /* -------------------------------------------------------------------------
    Tipe data
@@ -11,6 +12,7 @@ export interface CartItem {
   /** Kode singkat di kotak hijau, contoh: "F1" */
   code: string
   facilityName: string
+  image?: string
   sportName: string
   /** Contoh: "08:00 - 12:00, 12 Mar 2026" */
   schedule: string
@@ -177,11 +179,16 @@ function CartModal({ isOpen, onClose, items = [], onRemove, onCheckout }: CartMo
                     className="cart-item relative overflow-hidden rounded-2xl border border-[#E5E5E5] bg-white shadow-[0_1px_2px_rgba(0,0,0,0.04)]"
                   >
                     <div className="flex gap-3 p-3.5 sm:gap-4 sm:p-4">
-                      <div
-                        className={`${FONT_MONTSERRAT} flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#404F14] text-sm font-bold text-white sm:h-14 sm:w-14`}
-                        aria-hidden="true"
-                      >
-                        {item.code}
+                      <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-xl bg-[#E8EDE3] sm:h-14 sm:w-14">
+                        <img
+                          src={item.image || fallbackCourtImage}
+                          alt=""
+                          onError={(event) => { event.currentTarget.src = fallbackCourtImage }}
+                          className="h-full w-full object-cover"
+                        />
+                        <span className={`${FONT_MONTSERRAT} absolute inset-x-0 bottom-0 bg-black/50 text-center text-[9px] font-bold text-white`}>
+                          {item.code}
+                        </span>
                       </div>
 
                       {/* min-w-0 + break-words supaya nama panjang tidak melebar keluar kartu */}

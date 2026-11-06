@@ -310,7 +310,9 @@ function PaymentPage() {
   const subtotal = pricePreview?.basePrice ?? state.total ?? DEFAULT_SUBTOTAL
 
   const hours = Math.max((state.durationMinutes ?? (hourOf(endTime) - hourOf(startTime)) * 60) / 60, 1)
-  const pricePerHour = Math.round(subtotal / hours / 1000)
+  const isSoccerBooking = state.sportType === 'sepakbola'
+  const billingBlocks = isSoccerBooking ? hours / 2 : hours
+  const displayedRate = Math.round(subtotal / billingBlocks / 1000)
   const promo = selectedChannel ? pricePreview?.discountAmount ?? 0 : 0
   const serviceFee = selectedChannel ? pricePreview?.adminFee ?? 0 : 0
   const total = selectedChannel
@@ -710,7 +712,7 @@ function PaymentPage() {
                 <dl className="mt-3 space-y-2 font-heading text-xs">
                   <div className="flex items-center justify-between gap-3">
                     <dt className="text-[#6F6B6E]">
-                      {t('payment.courtRentalRate', { rate: pricePerHour, hours })}
+                      {t(isSoccerBooking ? 'payment.courtRentalRateTwoHours' : 'payment.courtRentalRate', { rate: displayedRate, hours: isSoccerBooking ? billingBlocks : hours })}
                     </dt>
                     <dd className="text-[#343133]">{formatRupiah(subtotal)}</dd>
                   </div>

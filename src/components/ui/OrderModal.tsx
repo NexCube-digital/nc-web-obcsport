@@ -1,6 +1,7 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { X } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
+import fallbackCourtImage from '../../assets/no-image.webp'
 
 /* -------------------------------------------------------------------------
    Tipe data
@@ -230,8 +231,9 @@ function OrderModal({ facility, onClose, onOrder }: OrderModalProps): ReactNode 
         {/* ================= Gambar ================= */}
         <div className="relative h-[clamp(180px,34dvh,420px)] min-h-[96px] shrink overflow-hidden md:h-[clamp(220px,52dvh,560px)] md:min-h-[150px] [@media(min-width:768px)_and_(max-height:800px)]:h-[clamp(140px,34dvh,280px)] [@media(min-width:768px)_and_(max-height:800px)]:min-h-[120px]">
           <img
-            src={facility.image}
+            src={facility.image || fallbackCourtImage}
             alt={facility.name}
+            onError={(event) => { event.currentTarget.src = fallbackCourtImage }}
             className="absolute inset-0 h-full w-full object-cover"
           />
         </div>

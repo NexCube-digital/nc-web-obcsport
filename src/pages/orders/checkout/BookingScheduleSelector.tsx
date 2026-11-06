@@ -20,6 +20,7 @@ interface BookingScheduleSelectorProps {
   startTime: string
   endTime: string
   maxSessionHours: number
+  durationStepHours?: number
   onChangeMonth: (step: number) => void
   onSelectDate: (day: number) => void
   onToggleTime: (time: string) => void
@@ -47,6 +48,7 @@ export default function BookingScheduleSelector({
   startTime,
   endTime,
   maxSessionHours,
+  durationStepHours,
   onChangeMonth,
   onSelectDate,
   onToggleTime,
@@ -97,6 +99,7 @@ export default function BookingScheduleSelector({
         startTime={startTime}
         endTime={endTime}
         maxSessionHours={maxSessionHours}
+        durationStepHours={durationStepHours}
         onToggleTime={onToggleTime}
         onChangeDuration={onChangeDuration}
         onConfirmSchedule={onConfirmSchedule}

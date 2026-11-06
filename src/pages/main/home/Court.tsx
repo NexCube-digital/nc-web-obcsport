@@ -1,4 +1,5 @@
 import { useTranslation } from 'react-i18next'
+import fallbackCourtImage from '../../../assets/no-image.webp'
 
 export interface FacilityCard {
 	id: string
@@ -78,8 +79,9 @@ function Court({ submittedSearch, onPreviewImage, onSelectFacility, facilities =
 						<div className="aspect-video w-full shrink-0 overflow-hidden lg:aspect-auto lg:h-36">
 							{facility.image ? (
 								<img
-									src={facility.image}
+									src={facility.image || fallbackCourtImage}
 									alt=""
+									onError={(event) => { event.currentTarget.src = fallbackCourtImage }}
 									className="h-full w-full object-cover transition-transform duration-300 hover:scale-105"
 									loading="lazy"
 									decoding="async"

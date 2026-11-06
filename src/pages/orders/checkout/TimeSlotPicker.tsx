@@ -14,6 +14,7 @@ interface TimeSlotPickerProps {
   startTime: string
   endTime: string
   maxSessionHours: number
+  durationStepHours?: number
   onToggleTime: (time: string) => void
   onChangeDuration: (durationMinutes: number) => void
   onConfirmSchedule?: () => void
@@ -34,6 +35,7 @@ function TimeSlotPicker({
   startTime,
   endTime,
   maxSessionHours,
+  durationStepHours = 1,
   onToggleTime,
   onChangeDuration,
   onConfirmSchedule,
@@ -41,6 +43,7 @@ function TimeSlotPicker({
 }: TimeSlotPickerProps) {
   const { t } = useTranslation()
   const timeSlots = availableTimeSlots ?? []
+  const startTimeLabel = durationStepHours === 2 ? t('booking.chooseStartTimeTwoHour') : t('booking.chooseStartTime')
   const resolvedDurationLabel = durationLabel ?? t('booking.durationHours', { count: sessionCount })
   const availableSlotStyle = variant === 'mobile'
     ? 'border-[#E5E5E5] bg-white'
@@ -53,7 +56,7 @@ function TimeSlotPicker({
         onChange={(event) => onChangeDuration(Number(event.target.value))}
         className="h-10 rounded-md border border-[#D4D4D4] bg-white px-3 font-heading font-bold text-[#265021]"
       >
-        {Array.from({ length: maxSessionHours }, (_, index) => (index + 1) * 60).map((minutes) => (
+        {Array.from({ length: Math.floor(maxSessionHours / durationStepHours) }, (_, index) => (index + 1) * durationStepHours * 60).map((minutes) => (
           <option key={minutes} value={minutes}>
             {minutes / 60} {t('booking.hourOption')}
           </option>
@@ -73,7 +76,7 @@ function TimeSlotPicker({
     return (
       <>
         <h3 className="mt-8 font-heading text-xs font-bold text-[#121212] md:text-sm">
-          {t('booking.chooseStartTime')}
+          {startTimeLabel}
         </h3>
         {durationControl}
         {isLoading ? (
@@ -138,7 +141,7 @@ function TimeSlotPicker({
 
   return (
     <section className="mt-3 w-full min-w-0 rounded-2xl border border-[#D4D4D4] bg-white p-4 md:p-5">
-      <h3 className="font-heading text-base font-bold text-[#343133] md:text-lg">{t('booking.chooseStartTime')}</h3>
+      <h3 className="font-heading text-base font-bold text-[#343133] md:text-lg">{startTimeLabel}</h3>
       {durationControl}
       <div className="mt-4 grid grid-cols-[repeat(auto-fill,minmax(88px,1fr))] gap-2 md:gap-2.5">
           {timeSlots.map((time) => {

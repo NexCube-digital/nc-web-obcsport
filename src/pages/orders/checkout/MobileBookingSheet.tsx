@@ -32,6 +32,7 @@ interface MobileBookingSheetProps {
   endTime: string
   totalPrice: number
   maxSessionHours: number
+  durationStepHours?: number
 }
 
 const formatRupiah = (value: number) => `Rp ${value.toLocaleString('id-ID')}`
@@ -69,6 +70,7 @@ function MobileBookingSheet({
   endTime,
   totalPrice,
   maxSessionHours,
+  durationStepHours,
 }: MobileBookingSheetProps) {
   const { t } = useTranslation()
   const barRef = useRef<HTMLDivElement>(null)
@@ -138,6 +140,7 @@ function MobileBookingSheet({
                   startTime={startTime}
                   endTime={endTime}
                   maxSessionHours={maxSessionHours}
+                  durationStepHours={durationStepHours}
                   onToggleTime={onToggleTime}
                   onChangeDuration={onChangeDuration}
                 />

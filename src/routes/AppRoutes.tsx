@@ -3,6 +3,7 @@ import { Navigate, Outlet, Route, useLocation } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 
 const LandingPage = lazy(() => import('../pages/landing/LandingPage.tsx'))
+const DetailCourt = lazy(() => import('../pages/landing/DetailCourt.tsx'))
 const Login = lazy(() => import('../pages/auth/Login'))
 const Register = lazy(() => import('../pages/auth/Register'))
 const ForgetPassword = lazy(() => import('../pages/auth/ForgetPassword'))
@@ -45,6 +46,7 @@ const AppRoutes = (
 		<Route path="/forgot-password" element={<ForgetPassword />} />
 		<Route path="/reset-password" element={<ResetPassword />} />
 		<Route path="/" element={<LandingPage />} />
+		<Route path="/lapangan/:slug" element={<DetailCourt />} />
 
 		<Route element={<RequireAuth />}>
 			{/* main page */}

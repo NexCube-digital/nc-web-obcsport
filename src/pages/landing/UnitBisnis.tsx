@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react'
-import { ArrowRight, Building2 } from 'lucide-react'
+import { ArrowRight } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { getPublicBusinessUnits } from '../../services/businessUnitPublicService'
 import { getImageUrl } from '../../utils/imageUrl'
+import fallbackCourtImage from '../../assets/no-image.webp'
 
 type Unit = {
 	id: string
@@ -29,14 +30,15 @@ function UnitCard({ unit }: UnitCardProps) {
 			<div className="pointer-events-none grid h-[78px] w-[78px] place-items-center md:h-[clamp(72px,13.5svh,108px)] md:w-[clamp(72px,13.5svh,108px)]">
 				{unit.image ? (
 					<img
-						className="block max-h-full max-w-full object-contain transition-transform duration-300 group-hover:scale-105"
 						src={unit.image}
+						className="block max-h-full max-w-full object-contain transition-transform duration-300 group-hover:scale-105"
 						alt={t('landing.businessLogoAlt', { name: unit.name })}
+						onError={(event) => { event.currentTarget.src = fallbackCourtImage }}
 						loading="lazy"
 						decoding="async"
 					/>
 				) : (
-					<Building2 size={38} aria-hidden="true" className="text-[#7B8A72]" />
+					<img src={fallbackCourtImage} alt={t('landing.businessLogoAlt', { name: unit.name })} className="block max-h-full max-w-full object-contain" />
 				)}
 			</div>
 			<div className="mt-2 w-full text-center md:mt-3 md:text-left">

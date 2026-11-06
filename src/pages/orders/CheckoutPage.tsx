@@ -15,6 +15,7 @@ import { getApiErrorMessage } from '../../services/apiService'
 import FacilityDetails from './checkout/FacilityDetails'
 import { useIsMobile } from '../../hooks/useIsMobile'
 import { useTranslation } from 'react-i18next'
+import fallbackCourtImage from '../../assets/no-image.webp'
 
 const ScheduleConflict = lazy(() => import('./checkout/ScheduleConflict'))
 const ModalCheckout = lazy(() => import('../../components/ui/ModalCheckout'))
@@ -97,12 +98,16 @@ function DetailOrder() {
   const checkoutState = (location.state as CheckoutState | null) ?? {}
   const resourceId = checkoutState.resourceId
   const sportType = checkoutState.sportType ?? 'futsal'
+  const isSoccer = sportType === 'sepakbola'
+  const durationStepHours = isSoccer ? 2 : 1
+  const maxAllowedSessionHours = isSoccer ? 6 : MAX_SESSION_HOURS
   const facility = checkoutState.facility ?? {
     ...COURT_FACILITIES[0],
     description: COURT_FACILITIES[0].description,
     badge: t('booking.available'),
     buttonLabel: t('booking.bookCourt'),
   }
+  const facilityImage = facility.image || fallbackCourtImage
 
   const [viewYear, setViewYear] = useState(() => Number(getZonedParts(new Date()).year))
   const [viewMonth, setViewMonth] = useState(() => Number(getZonedParts(new Date()).month) - 1)
@@ -112,7 +117,7 @@ function DetailOrder() {
     isMobile ? getTodayKey() : null,
   )
   const [selectedStartTime, setSelectedStartTime] = useState<string | null>(null)
-  const [selectedDurationMinutes, setSelectedDurationMinutes] = useState(60)
+  const [selectedDurationMinutes, setSelectedDurationMinutes] = useState(isSoccer ? 120 : 60)
   const [isConfirmed, setIsConfirmed] = useState(false)
   const [isCheckoutModalOpen, setIsCheckoutModalOpen] = useState(false)
   const [isCartOpen, setIsCartOpen] = useState(false)
@@ -168,7 +173,7 @@ function DetailOrder() {
         setApiPriceTiers(weekdayTiers.map((tier) => ({
           id: tier.id,
           range: `${formatTime(tier.tierStart)}-${formatTime(tier.tierEnd)}`,
-          price: `${Math.round(tier.pricePerHour / 1000)}k/jam`,
+          price: `${Math.round(tier.pricePerHour / 1000)}k/${isSoccer ? '2 jam' : 'jam'}`,
         })))
       })
       .catch((error: unknown) => {
@@ -179,7 +184,7 @@ function DetailOrder() {
       })
       .finally(() => { if (active) setIsApiPriceLoading(false) })
     return () => { active = false }
-  }, [resourceId, t])
+  }, [isSoccer, resourceId, t])
 
   useEffect(() => {
     if (!resourceId) navigate('/home', { replace: true })
@@ -249,7 +254,7 @@ function DetailOrder() {
   )
   const getMaxBookableHours = (time: string) => {
     let hours = 0
-    for (let durationHours = 1; durationHours <= MAX_SESSION_HOURS; durationHours += 1) {
+    for (let durationHours = 1; durationHours <= maxAllowedSessionHours; durationHours += 1) {
       if (!canBookWindow(timeToMinutes(time), durationHours * 60)) break
       hours = durationHours
     }
@@ -257,7 +262,7 @@ function DetailOrder() {
   }
   const maxSessionHoursForSelection = selectedStartTime
     ? Math.max(1, getMaxBookableHours(selectedStartTime))
-    : MAX_SESSION_HOURS
+    : maxAllowedSessionHours
   const isDateBooked = Boolean(
     availability &&
       (availability.isClosed ||
@@ -339,7 +344,7 @@ function DetailOrder() {
       setSelectedStartTime(null)
     } else {
       const maxHours = getMaxBookableHours(time)
-      if (maxHours === 0) return
+      if (maxHours === 0 || (isSoccer && maxHours < 2)) return
       setSelectedStartTime(time)
       setSelectedDurationMinutes((current) => Math.min(current, maxHours * 60))
     }
@@ -349,7 +354,9 @@ function DetailOrder() {
   }
 
   const handleChangeDuration = (durationMinutes: number) => {
-    if (durationMinutes < 60 || durationMinutes > maxSessionHoursForSelection * 60 || durationMinutes % 60 !== 0) return
+    const minimumDurationMinutes = isSoccer ? 120 : 60
+    const durationIncrementMinutes = isSoccer ? 120 : 60
+    if (durationMinutes < minimumDurationMinutes || durationMinutes > maxSessionHoursForSelection * 60 || durationMinutes % durationIncrementMinutes !== 0) return
     if (selectedStartTime && !canBookWindow(timeToMinutes(selectedStartTime), durationMinutes)) return
     setSelectedDurationMinutes(durationMinutes)
     setPricePreview(null)
@@ -382,7 +389,7 @@ function DetailOrder() {
     if (isPastSlot(selectedDate, selectedStartTime, new Date())) {
       return t('booking.timeInPast')
     }
-    if (durationMinutes < 60 || !canBookWindow(timeToMinutes(selectedStartTime), durationMinutes)) {
+    if (durationMinutes < (isSoccer ? 120 : 60) || durationMinutes % (isSoccer ? 120 : 60) !== 0 || !canBookWindow(timeToMinutes(selectedStartTime), durationMinutes)) {
       return t('booking.durationUnavailable')
     }
     if (isPriceLoading || !pricePreview) return t('booking.priceCalculating')
@@ -469,6 +476,7 @@ function DetailOrder() {
       id: `${facility.id}-${selectedDate}-${startTime}-${endTime}`,
       code: facility.id.split('-').at(-1)?.toUpperCase() ?? 'OBC',
       facilityName: facility.name,
+      image: facilityImage,
       sportName: facility.name,
       schedule: `${startTime} - ${endTime}, ${selectedDateLabel}`,
       price: totalPrice,
@@ -517,7 +525,7 @@ function DetailOrder() {
             <FacilityDetails
               variant="mobile"
               facilityName={facility.name}
-              image={facility.image}
+              image={facilityImage}
               locationName={facility.location?.name}
               priceTiers={apiPriceTiers}
               isPriceLoading={isApiPriceLoading}
@@ -555,6 +563,7 @@ function DetailOrder() {
               endTime={endTime}
               totalPrice={totalPrice}
               maxSessionHours={maxSessionHoursForSelection}
+              durationStepHours={durationStepHours}
             />
           </Suspense>
         </>
@@ -568,7 +577,7 @@ function DetailOrder() {
                 <FacilityDetails
                   variant="desktop"
                   facilityName={facility.name}
-                  image={facility.image}
+                  image={facilityImage}
                   locationName={facility.location?.name}
                   priceTiers={apiPriceTiers}
                   isPriceLoading={isApiPriceLoading}
@@ -605,6 +614,7 @@ function DetailOrder() {
                     startTime={startTime}
                     endTime={endTime}
                     maxSessionHours={maxSessionHoursForSelection}
+                    durationStepHours={durationStepHours}
                     onChangeMonth={handleChangeMonth}
                     onSelectDate={handleSelectDate}
                     onToggleTime={handleSelectStartTime}

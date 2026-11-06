@@ -7,6 +7,7 @@ import Hero from './Hero'
 const Footer = lazy(() => import('../../components/layout/Footer'))
 const Promo = lazy(() => import('./Promo'))
 const Highlight = lazy(() => import('./Highlight'))
+const Court = lazy(() => import('./Court'))
 const Booking = lazy(() => import('./Booking'))
 const Testimoni = lazy(() => import('./Testimoni'))
 const UnitBisnis = lazy(() => import('./UnitBisnis'))
@@ -47,6 +48,10 @@ function LandingPage() {
         >
           <Promo />
         </DeferredSection>
+
+        <DeferredSection placeholderClassName="min-h-[720px] sm:min-h-[640px]">
+			<Court />
+		</DeferredSection>
 
         <DeferredSection
           placeholderClassName="min-h-[150px] sm:min-h-[180px]"

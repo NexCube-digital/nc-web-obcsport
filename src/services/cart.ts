@@ -1,4 +1,5 @@
 import type { CartItem } from '../components/ui/CartModal'
+import fallbackCourtImage from '../assets/no-image.webp'
 import { api } from './apiService'
 import { previewBookingPrice } from './bookingService'
 
@@ -48,6 +49,7 @@ export function mapBackendCartItems(items: BackendCartItem[]): CartItem[] {
     id: item.id,
     code: item.resource?.name?.split('-').at(-1)?.toUpperCase() ?? 'OBC',
     facilityName: item.resource?.name ?? 'Fasilitas OBC Sport',
+    image: fallbackCourtImage,
     sportName: item.sportType,
     schedule: `${formatMinute(item.startMinute)} - ${formatMinute(item.endMinute)}, ${item.bookingDate}`,
     price: 0,
