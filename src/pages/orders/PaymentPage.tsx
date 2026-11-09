@@ -38,6 +38,7 @@ const PENDING_ORDER_STORAGE_KEY = 'obc-pending-payment-state'
 const PENDING_ORDER_MAX_AGE_MS = 3 * 60 * 1000
 const PAID_STATUSES = ['paid', 'settlement', 'capture', 'fully_paid', 'completed']
 const FAILED_STATUSES = ['cancelled', 'expired', 'refunded', 'deny', 'failure', 'failed', 'cancel']
+const getCurrentTimestamp = () => Date.now()
 
 function readPendingOrder(): PendingOrderModalData | null {
   try {
@@ -212,20 +213,20 @@ function PaymentPage() {
     if (!pendingOrderModal) return
 
     let active = true
+    let timeout: number | undefined
     const expiresAt = new Date(pendingOrderModal.expiresAt).getTime()
     if (!Number.isFinite(expiresAt) || expiresAt <= Date.now()) {
       sessionStorage.removeItem(PENDING_ORDER_STORAGE_KEY)
-      navigate('/home', { replace: true })
+      navigate(`/finalisasi-order?bookingId=${encodeURIComponent(pendingOrderModal.bookingId)}`, {
+        replace: true,
+        state: { bookingId: pendingOrderModal.bookingId, bookingIds: pendingOrderModal.bookingIds },
+      })
       return
     }
 
-    const timeout = window.setTimeout(() => {
-      sessionStorage.removeItem(PENDING_ORDER_STORAGE_KEY)
-      navigate('/home', { replace: true })
-    }, expiresAt - Date.now())
-
-    Promise.all((pendingOrderModal.bookingIds ?? [pendingOrderModal.bookingId]).map((id) => getBookingDetails(id)))
-      .then((details) => {
+    const checkPaymentStatus = async () => {
+      try {
+        const details = await Promise.all((pendingOrderModal.bookingIds ?? [pendingOrderModal.bookingId]).map((id) => getBookingDetails(id)))
         if (!active) return
         const allPaid = details.every((booking) => PAID_STATUSES.includes(booking.status) || PAID_STATUSES.includes(booking.payments[0]?.status ?? ''))
         if (allPaid) {
@@ -237,13 +238,20 @@ function PaymentPage() {
         if (hasFailed) {
           sessionStorage.removeItem(PENDING_ORDER_STORAGE_KEY)
           navigate(`/failed-order?bookingId=${encodeURIComponent(pendingOrderModal.bookingId)}`, { replace: true })
+          return
         }
-      })
-      .catch(() => undefined)
+      } catch {
+        // Keep checking; the verified webhook may still be updating the booking.
+      }
+
+      if (active) timeout = window.setTimeout(() => void checkPaymentStatus(), Math.min(3000, Math.max(500, expiresAt - Date.now())))
+    }
+
+    void checkPaymentStatus()
 
     return () => {
       active = false
-      window.clearTimeout(timeout)
+      if (timeout) window.clearTimeout(timeout)
     }
   }, [navigate, pendingOrderModal])
 
@@ -306,7 +314,7 @@ function PaymentPage() {
       })
 
     return () => { active = false }
-  }, [navigate, pendingBookingId, pendingBookingIds, pendingOrderModal])
+  }, [navigate, pendingBookingId, pendingBookingIds, pendingOrderModal, t])
   const subtotal = pricePreview?.basePrice ?? state.total ?? DEFAULT_SUBTOTAL
 
   const hours = Math.max((state.durationMinutes ?? (hourOf(endTime) - hourOf(startTime)) * 60) / 60, 1)
@@ -326,8 +334,8 @@ function PaymentPage() {
   )
   const mobileTotal = selectedChannel ? subtotal + serviceFee + extrasTotal : subtotal + extrasTotal
 
-  const showPendingOrderModal = (pending: Omit<PendingOrderModalData, 'date' | 'time' | 'paymentMethod' | 'bookings' | 'expiresAt'>, holdExpiresAt?: string | null) => {
-    const fallbackExpiry = Date.now() + PENDING_ORDER_MAX_AGE_MS
+  const showPendingOrderModal = (pending: Omit<PendingOrderModalData, 'date' | 'time' | 'paymentMethod' | 'bookings' | 'expiresAt'>, holdExpiresAt: string | null | undefined, now: number) => {
+    const fallbackExpiry = now + PENDING_ORDER_MAX_AGE_MS
     const holdExpiry = holdExpiresAt ? new Date(holdExpiresAt).getTime() : Number.NaN
     const modalData: PendingOrderModalData = {
       ...pending,
@@ -433,7 +441,7 @@ function PaymentPage() {
           transactionId: payment.chargeResponse.order_id ?? bookingId,
           amount: Number(payment.chargeResponse.gross_amount) || total,
           paymentInfo: parseMidtransCharge(payment.chargeResponse, selectedChannel),
-        }, booking.holdExpiresAt)
+          }, booking.holdExpiresAt, getCurrentTimestamp())
         setIsSubmitting(false)
         return
       }
@@ -458,12 +466,12 @@ function PaymentPage() {
             transactionId: bookingId,
             amount: total,
             paymentUrl: booking.payment.redirectUrl,
-          }, booking.holdExpiresAt)
+          }, booking.holdExpiresAt, getCurrentTimestamp())
           setIsSubmitting(false)
           return
         }
 
-        showPendingOrderModal({ bookingId, bookingIds, transactionId: bookingId, amount: total }, booking.holdExpiresAt)
+        showPendingOrderModal({ bookingId, bookingIds, transactionId: bookingId, amount: total }, booking.holdExpiresAt, getCurrentTimestamp())
         setIsSubmitting(false)
         return
       }

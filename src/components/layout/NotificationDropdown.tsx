@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from 'react'
 import { Bell, Loader } from 'lucide-react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useNotifications } from '../../hooks/useNotifications'
 
 function NotificationDropdown() {
   const { t, i18n } = useTranslation()
+  const navigate = useNavigate()
   const [isOpen, setIsOpen] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
   const { notifications, unreadCount, isLoading, error, markAsRead, markAllAsRead } =
@@ -30,6 +31,18 @@ function NotificationDropdown() {
       window.removeEventListener('keydown', handleKeyDown)
     }
   }, [isOpen])
+
+  const handleNotificationClick = async (notification: (typeof notifications)[number]) => {
+    if (!notification.read) await markAsRead(notification.id)
+    if (!notification.link) return
+
+    if (/^https?:\/\//i.test(notification.link)) {
+      window.open(notification.link, '_blank', 'noopener,noreferrer')
+    } else {
+      setIsOpen(false)
+      navigate(notification.link)
+    }
+  }
 
   return (
     <div ref={containerRef} className="relative">
@@ -84,7 +97,7 @@ function NotificationDropdown() {
               {notifications.map((notification) => (
                 <li
                   key={notification.id}
-                  onClick={() => !notification.read && markAsRead(notification.id)}
+                  onClick={() => void handleNotificationClick(notification)}
                   className={`border-b border-[#F0F0F0] px-4 py-3 last:border-b-0 cursor-pointer transition-colors hover:bg-[#FAFBF8] ${
                     !notification.read ? 'bg-[#F7F9F4]' : 'bg-white'
                   }`}

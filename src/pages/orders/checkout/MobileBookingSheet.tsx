@@ -21,6 +21,7 @@ interface MobileBookingSheetProps {
   selectedDateLabel: string
   bookedDates: string[]
   bookedSlotsToday: string[]
+  blockedSlotStatuses?: Record<string, string>
   availableTimeSlots?: string[]
   isAvailabilityLoading?: boolean
   selectedStartTime: string | null
@@ -59,6 +60,7 @@ function MobileBookingSheet({
   selectedDateLabel,
   bookedDates,
   bookedSlotsToday,
+  blockedSlotStatuses,
   availableTimeSlots,
   isAvailabilityLoading,
   selectedStartTime,
@@ -130,6 +132,7 @@ function MobileBookingSheet({
                   variant="mobile"
                   isDateBooked={isDateBooked}
                   bookedSlotsToday={bookedSlotsToday}
+                  blockedSlotStatuses={blockedSlotStatuses}
                   availableTimeSlots={availableTimeSlots}
                   isLoading={isAvailabilityLoading}
                   selectedStartTime={selectedStartTime}

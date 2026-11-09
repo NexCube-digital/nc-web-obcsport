@@ -40,9 +40,16 @@ export async function removeBackendCartItem(id: string) {
 
 const CART_STORAGE_KEY = 'obc_sport_cart'
 const CART_CHANGED_EVENT = 'obc-sport-cart-changed'
+const BOOKING_TIME_ZONE = '+07:00'
 
 const formatMinute = (minute: number) =>
   `${String(Math.floor(minute / 60)).padStart(2, '0')}:${String(minute % 60).padStart(2, '0')}`
+
+function hasBookingStarted(item: CartItem): boolean {
+  if (!item.bookingDate || !item.startTime) return false
+  const startsAt = Date.parse(`${item.bookingDate}T${item.startTime}:00${BOOKING_TIME_ZONE}`)
+  return Number.isFinite(startsAt) && startsAt <= Date.now()
+}
 
 export function mapBackendCartItems(items: BackendCartItem[]): CartItem[] {
   return items.map((item) => ({
@@ -103,7 +110,14 @@ export const cartService = {
   getItems(): CartItem[] {
     try {
       const data = localStorage.getItem(CART_STORAGE_KEY)
-      return data ? JSON.parse(data) : []
+      const items = data ? JSON.parse(data) as CartItem[] : []
+      if (!Array.isArray(items)) return []
+
+      const activeItems = items.filter((item) => !hasBookingStarted(item))
+      if (activeItems.length !== items.length) {
+        localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(activeItems))
+      }
+      return activeItems
     } catch {
       return []
     }

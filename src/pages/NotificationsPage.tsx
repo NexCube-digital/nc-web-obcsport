@@ -36,6 +36,17 @@ function NotificationsPage() {
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
+  const handleNotificationClick = async (notification: (typeof notifications)[number]) => {
+    if (!notification.read) await markAsRead(notification.id)
+    if (!notification.link) return
+
+    if (/^https?:\/\//i.test(notification.link)) {
+      window.open(notification.link, '_blank', 'noopener,noreferrer')
+    } else {
+      navigate(notification.link)
+    }
+  }
+
   return (
     <div className="min-h-screen bg-white">
       {isMobile && <MobileHeader variant="title" title={t('notifications.title')} />}
@@ -112,7 +123,7 @@ function NotificationsPage() {
               {notifications.map((notification) => (
                 <div
                   key={notification.id}
-                  onClick={() => !notification.read && markAsRead(notification.id)}
+                  onClick={() => void handleNotificationClick(notification)}
                   className={`cursor-pointer rounded-lg border transition-all duration-200 ${EASE} p-4 ${
                     !notification.read
                       ? 'border-[#9AAD3E] bg-[#F7F9F4] hover:shadow-sm'

@@ -14,6 +14,12 @@ interface AuthResponse {
 	customer: CustomerProfile
 }
 
+interface RegistrationResponse {
+	requiresVerification?: boolean
+	message?: string
+	customer?: Pick<CustomerProfile, 'id' | 'email' | 'name'>
+}
+
 function unwrap<T>(body: unknown): T {
 	const payload = body as { data?: T } | undefined
 	return (payload && typeof payload === 'object' && 'data' in payload && payload.data !== undefined
@@ -49,9 +55,19 @@ export async function registerCustomer(input: {
 	phone?: string
 }) {
 	const response = await api.post('/auth/customer/register', input)
-	const result = ensureAuthResponse(unwrap<AuthResponse>(response.data))
+	return unwrap<RegistrationResponse>(response.data)
+}
+
+export async function verifyCustomerEmail(token: string) {
+	const response = await api.post('/auth/customer/verify-email', { token })
+	const result = ensureAuthResponse(unwrap<AuthResponse & { message?: string }>(response.data))
 	saveSession(result.customer, toTokens(result), true)
-	return result.customer
+	return result
+}
+
+export async function resendCustomerVerification(email: string) {
+	const response = await api.post('/auth/customer/resend-verification', { email })
+	return unwrap<{ success: boolean; message: string }>(response.data)
 }
 
 export async function forgotPasswordCustomer(email: string) {

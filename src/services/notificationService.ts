@@ -25,6 +25,28 @@ export interface NotificationListResponse {
   }
 }
 
+interface BackendNotification {
+  id: string
+  customerId: string | null
+  type: string
+  title: string
+  body: string
+  isRead: boolean
+  actionUrl: string | null
+  createdAt: string
+}
+
+interface BackendNotificationListResponse {
+  items: BackendNotification[]
+  unreadCount: number
+  pagination: {
+    page: number
+    limit: number
+    total: number
+    totalPages: number
+  }
+}
+
 export interface UnreadCountResponse {
   unreadCount: number
 }
@@ -54,8 +76,27 @@ export async function getNotifications(
   const response = await api.get('/customer/notifications', {
     params: { page, limit },
   })
-  // Backend wraps in { success: true, data: {...} }
-  return response.data?.data || response.data
+  const payload = (response.data?.data || response.data) as BackendNotificationListResponse
+
+  return {
+    data: (payload.items || []).map((item) => ({
+      id: item.id,
+      customerId: item.customerId || '',
+      type: item.type,
+      title: item.title,
+      message: item.body,
+      read: item.isRead,
+      link: item.actionUrl || undefined,
+      createdAt: item.createdAt,
+      updatedAt: item.createdAt,
+    })),
+    pagination: {
+      page: payload.pagination?.page ?? page,
+      limit: payload.pagination?.limit ?? limit,
+      total: payload.pagination?.total ?? 0,
+      pages: payload.pagination?.totalPages ?? 0,
+    },
+  }
 }
 
 /**

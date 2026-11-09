@@ -362,7 +362,7 @@ function Navbar({
                         aria-hidden="true"
                         className={`shrink-0 transition-transform duration-200 ${EASE} group-hover:scale-110 motion-reduce:transition-none`}
                       />
-                      {label}
+                      {t(label)}
                     </Link>
                   ))}
                 </div>

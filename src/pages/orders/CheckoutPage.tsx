@@ -252,6 +252,11 @@ function DetailOrder() {
   const bookedSlotsToday = availableTimeSlots.filter(
     (time) => !canBookWindow(timeToMinutes(time), 60),
   )
+  const blockedSlotStatuses = Object.fromEntries(
+    (availability?.slots ?? [])
+      .filter((slot) => slot.startMinute % 60 === 0 && !slot.available)
+      .map((slot) => [slot.startTime, slot.status]),
+  )
   const getMaxBookableHours = (time: string) => {
     let hours = 0
     for (let durationHours = 1; durationHours <= maxAllowedSessionHours; durationHours += 1) {
@@ -552,6 +557,7 @@ function DetailOrder() {
               selectedDateLabel={selectedDateLabel}
               bookedDates={BOOKED_DATES}
               bookedSlotsToday={bookedSlotsToday}
+              blockedSlotStatuses={blockedSlotStatuses}
               availableTimeSlots={availableTimeSlots}
               isAvailabilityLoading={isAvailabilityLoading}
               selectedStartTime={selectedStartTime}
@@ -604,6 +610,7 @@ function DetailOrder() {
                     changeDateText={t('booking.changeDate')}
                     bookedDates={BOOKED_DATES}
                     bookedSlotsToday={bookedSlotsToday}
+                    blockedSlotStatuses={blockedSlotStatuses}
                     availableTimeSlots={availableTimeSlots}
                     isLoading={isAvailabilityLoading}
                     isDateBooked={isDateBooked}

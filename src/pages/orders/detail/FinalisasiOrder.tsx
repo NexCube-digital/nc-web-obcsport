@@ -35,8 +35,11 @@ function FinalisasiOrder() {
 
   useEffect(() => {
     let active = true
+    let timeout: number | undefined
 
     const loadStatus = async () => {
+      let shouldPoll = false
+      let nextPollMs = 4000
       try {
         if (membershipId) {
           const detail = await getMembershipDetail(membershipId)
@@ -71,17 +74,23 @@ function FinalisasiOrder() {
         }
         const details = await Promise.all(bookingIds.map((id) => getBookingDetails(id))) as BookingDetails[]
         if (!active) return
+        const failed = details.find((item) =>
+          FAILED_STATUSES.includes(item.status) || FAILED_STATUSES.includes(item.payments[0]?.status ?? ''),
+        )
+        if (failed) {
+          navigate(`/failed-order?bookingId=${encodeURIComponent(bookingId)}`, { replace: true, state: { bookingId, bookingIds } })
+          return
+        }
         const unpaid = details.find((item) => !PAID_STATUSES.includes(item.status) && !PAID_STATUSES.includes(item.payments[0]?.status ?? '') && !['cancelled', 'expired', 'refunded'].includes(item.status))
         if (!unpaid) {
           navigate(`/success-order?bookingId=${encodeURIComponent(bookingId)}${bookingIds.length > 1 ? `&bookingIds=${encodeURIComponent(bookingIds.join(','))}` : ''}`, { replace: true, state: { bookingId, bookingIds } })
           return
         }
         const payment = unpaid.payments[0]
-        if (FAILED_STATUSES.includes(unpaid.status) || FAILED_STATUSES.includes(payment?.status ?? '')) {
-          navigate(`/failed-order?bookingId=${encodeURIComponent(bookingId)}`, { replace: true, state: { bookingId } })
-          return
-        }
-        setDirectInfo(parsePersistedDirectPayment(payment?.paymentDetails))
+        const info = parsePersistedDirectPayment(payment?.paymentDetails)
+        const expiryTime = unpaid.lockedUntil ?? payment?.expiredAt ?? info?.expiryTime
+        setDirectInfo(info ? { ...info, expiryTime } : null)
+        setErrorMessage(info ? '' : t('payment.instructionsMissing'))
         setTotal(payment?.amount ?? unpaid.pricing.totalPrice)
         setBookings(details.map((item) => ({
           id: item.id,
@@ -90,13 +99,28 @@ function FinalisasiOrder() {
           startTime: item.startTime,
           endTime: item.endTime,
         })))
+        if (expiryTime) {
+          const millisecondsUntilExpiry = Date.parse(expiryTime) - Date.now()
+          if (Number.isFinite(millisecondsUntilExpiry)) {
+            nextPollMs = Math.max(250, Math.min(nextPollMs, millisecondsUntilExpiry))
+          }
+        }
+        shouldPoll = true
       } catch (error) {
-        if (active) setErrorMessage(getApiErrorMessage(error, t('paymentStatus.loadingPayment')))
+        if (active) {
+          setErrorMessage(getApiErrorMessage(error, t('paymentStatus.loadingPayment')))
+          shouldPoll = true
+        }
+      } finally {
+        if (active && shouldPoll) timeout = window.setTimeout(() => void loadStatus(), nextPollMs)
       }
     }
 
     void loadStatus()
-    return () => { active = false }
+    return () => {
+      active = false
+      if (timeout) window.clearTimeout(timeout)
+    }
   }, [bookingId, bookingIdsKey, membershipId, navigate, t])
 
   const formatRupiah = (value: number) => `Rp ${value.toLocaleString('id-ID')}`

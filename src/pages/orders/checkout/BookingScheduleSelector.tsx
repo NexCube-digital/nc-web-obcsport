@@ -10,6 +10,7 @@ interface BookingScheduleSelectorProps {
   changeDateText: string
   bookedDates: string[]
   bookedSlotsToday: string[]
+  blockedSlotStatuses?: Record<string, string>
   availableTimeSlots: string[]
   isLoading: boolean
   isDateBooked: boolean
@@ -38,6 +39,7 @@ export default function BookingScheduleSelector({
   changeDateText,
   bookedDates,
   bookedSlotsToday,
+  blockedSlotStatuses,
   availableTimeSlots,
   isLoading,
   isDateBooked,
@@ -89,6 +91,7 @@ export default function BookingScheduleSelector({
         variant="desktop"
         isDateBooked={isDateBooked}
         bookedSlotsToday={bookedSlotsToday}
+        blockedSlotStatuses={blockedSlotStatuses}
         availableTimeSlots={availableTimeSlots}
         isLoading={isLoading}
         selectedStartTime={selectedStartTime}

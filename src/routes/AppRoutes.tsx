@@ -6,6 +6,7 @@ const LandingPage = lazy(() => import('../pages/landing/LandingPage.tsx'))
 const DetailCourt = lazy(() => import('../pages/landing/DetailCourt.tsx'))
 const Login = lazy(() => import('../pages/auth/Login'))
 const Register = lazy(() => import('../pages/auth/Register'))
+const VerifyEmail = lazy(() => import('../pages/auth/VerifyEmail'))
 const ForgetPassword = lazy(() => import('../pages/auth/ForgetPassword'))
 const ResetPassword = lazy(() => import('../pages/auth/ResetPassword'))
 const CheckoutPage = lazy(() => import('../pages/orders/CheckoutPage'))
@@ -42,6 +43,7 @@ function RequireAuth() {
 const AppRoutes = (
 	<>
 		<Route path="/register" element={<Register />} />
+		<Route path="/verify-email" element={<VerifyEmail />} />
 		<Route path="/login" element={<Login />} />
 		<Route path="/forgot-password" element={<ForgetPassword />} />
 		<Route path="/reset-password" element={<ResetPassword />} />

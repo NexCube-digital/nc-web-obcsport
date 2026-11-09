@@ -39,8 +39,8 @@ function useCountdown(expiryTime?: string) {
 
   useEffect(() => {
     if (!expiryTime) return
-    // Midtrans mengirim waktu WIB tanpa zona: "2026-10-19 18:33:00"
-    const target = new Date(expiryTime.replace(' ', 'T') + '+07:00').getTime()
+    const hasTimezone = /(?:Z|[+-]\d{2}:\d{2})$/i.test(expiryTime)
+    const target = Date.parse(hasTimezone ? expiryTime : `${expiryTime.replace(' ', 'T')}+07:00`)
     const tick = () => setRemaining(Math.max(target - Date.now(), 0))
     tick()
     const timer = window.setInterval(tick, 1000)
@@ -88,6 +88,17 @@ function CopyRow({ label, value }: { label: string; value: string }) {
 function PaymentInstructionCard({ info, totalLabel, bookings = [], onCheckStatus }: PaymentInstructionCardProps) {
   const { t } = useTranslation()
   const countdown = useCountdown(info.expiryTime)
+  const paymentSteps = info.qrUrl
+    ? t('payment.instructions.payQr')
+    : info.vaNumber
+      ? t('payment.instructions.payVirtualAccount', { bank: info.bankName ?? '' })
+      : info.billKey
+        ? t('payment.instructions.payBillKey')
+        : info.paymentCode
+          ? t('payment.instructions.payAtStore', { store: info.storeName ?? CHANNEL_LABEL[info.channel] })
+          : info.deeplinkUrl
+            ? t('payment.instructions.payWithApp', { name: CHANNEL_LABEL[info.channel] })
+            : t('payment.instructions.payGeneric')
 
   return (
     <section className="rounded-2xl border border-[#D4D4D4] bg-white p-5">
@@ -96,6 +107,9 @@ function PaymentInstructionCard({ info, totalLabel, bookings = [], onCheckStatus
       </h1>
       <p className="mt-0.5 font-heading text-xs text-[#6F6B6E]">
         {CHANNEL_LABEL[info.channel]}
+      </p>
+      <p className="mt-3 rounded-lg border border-[#E5E5E5] bg-[#FDFCF7] px-3 py-2 font-heading text-xs leading-5 text-[#343133]">
+        {paymentSteps}
       </p>
       {bookings.length > 0 && (
         <section className="mt-3 rounded-lg border border-[#D4D4D4] bg-white">

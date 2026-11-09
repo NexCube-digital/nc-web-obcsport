@@ -65,6 +65,30 @@ export interface FacilityAvailability {
 	counts: { total: number; available: number; booked: number; locked: number }
 }
 
+export interface AvailabilitySummaryResource {
+	id: string
+	name: string
+	slug: string
+	status: 'available' | 'partial' | 'full' | 'closed'
+	available: boolean
+	availableCount: number
+	totalCount: number
+}
+
+export interface AvailabilitySummary {
+	date: string
+	hasFullDayAvailabilityIssue: boolean
+	messages: string[]
+	resources: AvailabilitySummaryResource[]
+}
+
+export async function getAvailabilitySummary(date?: string, tenant = 'obc-sport') {
+	const response = await api.get<ApiSuccess<AvailabilitySummary>>('/sports/availability/summary', {
+		params: { ...(date ? { date } : {}), tenant },
+	})
+	return response.data.data
+}
+
 export async function getSportsFacilities(tenant = 'obc-sport') {
 	const response = await api.get<ApiSuccess<SportsFacility[]>>('/sports/resources', {
 		params: { tenant },

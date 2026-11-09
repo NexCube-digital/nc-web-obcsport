@@ -146,14 +146,14 @@ function Register() {
 
     setIsSubmitting(true)
     try {
-      await registerCustomer({
+      const result = await registerCustomer({
         name: fullName.trim(),
         email: email.trim(),
         password,
         ...(includePhone && phone.trim() ? { phone: phone.trim() } : {}),
       })
-      toast.success(t('register.success'))
-      navigate('/home', { replace: true })
+      toast.success(result.message || t('register.success'))
+      navigate(`/verify-email?email=${encodeURIComponent(email.trim())}`, { replace: true })
     } catch (error) {
       toast.error(getApiErrorMessage(error, t('register.failed')))
     } finally {

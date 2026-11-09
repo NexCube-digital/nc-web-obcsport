@@ -87,9 +87,22 @@ export function useNotifications(initialPage: number = 1, initialLimit: number =
 
   // Load initial data
   useEffect(() => {
-    loadNotifications(initialPage, initialLimit)
-    refreshUnreadCount()
-  }, [])
+    void loadNotifications(initialPage, initialLimit)
+    void refreshUnreadCount()
+
+    const refreshOnFocus = () => {
+      void refreshUnreadCount()
+    }
+    const intervalId = window.setInterval(() => {
+      void refreshUnreadCount()
+    }, 30_000)
+
+    window.addEventListener('focus', refreshOnFocus)
+    return () => {
+      window.clearInterval(intervalId)
+      window.removeEventListener('focus', refreshOnFocus)
+    }
+  }, [initialLimit, initialPage, loadNotifications, refreshUnreadCount])
 
   return {
     notifications,
