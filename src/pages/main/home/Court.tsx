@@ -93,7 +93,6 @@ function Court({ submittedSearch, onPreviewImage, onSelectFacility, facilities =
 							)}
 						</div>
 						<div className="pointer-events-none relative flex flex-1 flex-col px-2.5 pt-2.5 pb-2.5 min-[360px]:px-3 min-[360px]:pt-3 min-[360px]:pb-3 sm:pb-4">
-							{/* Mobile: nama di atas, badge di bawahnya (selalu rapi). >= sm: sebaris */}
 							<div className="flex flex-col items-start gap-1.5 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-x-2 sm:gap-y-1">
 								<h3 className="min-w-0 break-words text-[13px] font-semibold leading-tight text-[#121212] font-heading min-[360px]:text-sm">
 									{facility.name}

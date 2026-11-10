@@ -9,18 +9,13 @@ import { useIsMobile } from '../../hooks/useIsMobile'
 import usePublicSiteContact from '../../hooks/usePublicSiteContact'
 import { getWhatsAppHref } from '../../services/siteContactService'
 
-/* -------------------------------------------------------------------------
-   Tipe data
-   ------------------------------------------------------------------------- */
+/* Tipe data */
 interface FaqItem {
   id: string
   question: string
   answer: string
 }
 
-/* -------------------------------------------------------------------------
-   Data (ganti dengan data dari API / services/faqService.js)
-   ------------------------------------------------------------------------- */
 function HelpPage() {
   const { t, i18n } = useTranslation()
   const contact = usePublicSiteContact()
@@ -29,7 +24,6 @@ function HelpPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const isMobile = useIsMobile()
 
-  // State khusus mobile: FAQ yang sedang terbuka (awal: item pertama, sesuai desain)
   const [openFaqId, setOpenFaqId] = useState<string | null>(() => faqItems[0]?.id ?? null)
 
   const normalizedSearch = searchQuery.toLocaleLowerCase(i18n.resolvedLanguage?.startsWith('en') ? 'en-US' : 'id-ID')
@@ -56,10 +50,6 @@ function HelpPage() {
         <MobileHeader variant="title" title={t('help.title')} />
       )}
 
-      {/* ===================================================================
-          TAMPILAN MOBILE (< md)
-          Warna & font mengikuti versi PC
-          =================================================================== */}
       {isMobile && <div className="px-4 pt-5 pb-44">
         <p className="mt-2 font-heading text-xs text-[#6F6B6E]">
           {t('help.description')}
@@ -124,9 +114,6 @@ function HelpPage() {
         </div>
         </DeferredSection>
 
-        {/* Tombol WhatsApp (fixed, di atas bottom nav)
-            Catatan: bottom-[68px] disesuaikan dengan tinggi bottom nav di Navbar.
-            Jika tinggi bottom nav berubah, sesuaikan angka ini. */}
         <div className="fixed inset-x-0 bottom-[calc(68px+env(safe-area-inset-bottom))] z-30 border-t border-[#D4D4D4] bg-white px-4 py-3">
           <button
             type="button"
@@ -139,24 +126,18 @@ function HelpPage() {
         </div>
       </div>}
 
-      {/* ===================================================================
-          TAMPILAN DESKTOP (>= md): tampilan asli
-          =================================================================== */}
-      {/* Lebar konten 1068px sesuai desain */}
       {!isMobile && <main className="max-w-[1116px] mx-auto px-6 pt-5 pb-16">
         <span className="inline-block rounded-full bg-[#E8EDE3] px-3 py-2 text-xs font-heading font-bold text-[#404F14] tracking-wide">
           {t('help.eyebrow')}
         </span>
 
-        {/* Lebar dibatasi supaya judul pecah jadi 2 baris seperti desain */}
         <h1 className="mt-4 max-w-[440px] font-heading font-bold text-4xl leading-tight text-[#343133]">
           {t('help.heroTitle')}
         </h1>
 
-        {/* Kolom kiri 540px, kolom kanan fleksibel (480px), jarak 48px */}
         <DeferredSection placeholderClassName="mt-6 min-h-[540px] lg:min-h-[420px]">
         <div className="mt-6 grid lg:grid-cols-[540px_1fr] gap-12 items-start">
-          {/* ================= Kolom kiri: pencarian & FAQ ================= */}
+          {/* Kolom kiri: pencarian & FAQ */}
           <div>
             <input
               type="text"
@@ -187,7 +168,7 @@ function HelpPage() {
             </div>
           </div>
 
-          {/* ================= Kolom kanan: hubungi customer service ================= */}
+          {/* Kolom kanan: hubungi customer service */}
           <div className="lg:mt-4 rounded-2xl border border-[#D4D4D4] bg-white p-8 shadow-[0_4px_16px_rgba(0,0,0,0.08)]">
             <h2 className="font-heading font-bold text-lg text-[#343133]">
               {t('help.customerServiceTitle')}
@@ -203,7 +184,6 @@ function HelpPage() {
               </span>
             </div>
 
-            {/* Tombol tidak selebar kartu, mengikuti desain (306px) */}
             <button
               type="button"
               onClick={handleContactWhatsApp}

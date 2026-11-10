@@ -9,9 +9,7 @@ import { useTranslation } from 'react-i18next'
 import usePublicSiteContact from '../../../hooks/usePublicSiteContact'
 import { getWhatsAppHref } from '../../../services/siteContactService'
 
-/* -------------------------------------------------------------------------
-   Tipe data
-   ------------------------------------------------------------------------- */
+/* Tipe data   */
 interface FailedState {
   bookingId?: string
   bookingIds?: string[]
@@ -21,9 +19,6 @@ interface FailedState {
   total?: number
 }
 
-/* -------------------------------------------------------------------------
-   Data (ganti dengan data dari API / services/paymentService.js)
-   ------------------------------------------------------------------------- */
 const FONT_MONTSERRAT = "font-['Montserrat',sans-serif]"
 
 // Fallback bila halaman dibuka tanpa state (sesuai desain)
@@ -110,10 +105,6 @@ function FailedOrder() {
 
   return (
     <>
-      {/* ===================================================================
-          TAMPILAN MOBILE (< md): layout mengikuti desain mobile,
-          isi & teks mengikuti versi PC.
-          =================================================================== */}
       {isMobile && (
         <div
           className="fixed inset-x-0 bottom-0 top-0 flex min-h-0 flex-col overflow-hidden bg-white font-body text-[#343133]"
@@ -245,15 +236,11 @@ function FailedOrder() {
         </div>
       )}
 
-        {/* ===================================================================
-          TAMPILAN DESKTOP (>= md): tampilan asli
-          =================================================================== */}
-
       {!isMobile && <div className="min-h-screen flex flex-col bg-white font-body text-[#343133]">
         <main className="mx-auto flex w-full max-w-[1068px] flex-1 items-center px-6 py-12">
           <ScrollReveal className="w-full">
           <div className="grid w-full items-center gap-12 lg:grid-cols-[1fr_480px]">
-            {/* ================= Kiri: penjelasan ================= */}
+            {/* Kiri: penjelasan */}
             <div>
               <span className="inline-block rounded-full bg-[#FDE8E8] px-3 py-2 font-heading text-[11px] font-bold leading-none text-[#E02424]">
                 {t('paymentResult.failedStatus', { status: statusLabel.toUpperCase() })}
@@ -299,7 +286,7 @@ function FailedOrder() {
               </div>
             </div>
 
-            {/* ================= Kanan: info pesanan gagal ================= */}
+            {/* Kanan: info pesanan gagal */}
             <section className="rounded-2xl border border-[#D4D4D4] bg-white p-8 shadow-[0_4px_16px_rgba(0,0,0,0.08)]">
               <h2 className={`${FONT_MONTSERRAT} text-xl font-semibold leading-7 text-[#343133]`}>
                 {t('paymentResult.failedOrderInfo')}

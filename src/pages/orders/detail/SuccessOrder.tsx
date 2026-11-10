@@ -2,16 +2,14 @@ import { lazy, Suspense, useEffect, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { ChevronDown, CircleCheck } from 'lucide-react'
 import ScrollReveal from '../../../components/animation/ScrollReveal'
-import lapangF1 from '../../assets/layanan/Lapang F1.png'
+import lapangF1 from '../../../assets/images/lapang/Lapang F1.webp'
 import { useIsMobile } from '../../../hooks/useIsMobile'
 import { getBookingDetails, type BookingDetails } from '../../../services/bookingService'
 import { useTranslation } from 'react-i18next'
 
 const TestimonialModal = lazy(() => import('../../../components/ui/TestimonialModal'))
 
-/* -------------------------------------------------------------------------
-   Tipe data
-   ------------------------------------------------------------------------- */
+/*  Tipe data */
 interface SuccessState {
   bookingId?: string
   bookingIds?: string[]
@@ -28,12 +26,8 @@ interface SuccessState {
   bookingCode?: string
 }
 
-/* -------------------------------------------------------------------------
-   Data (ganti dengan data dari API / services/paymentService.js)
-   ------------------------------------------------------------------------- */
 const FONT_MONTSERRAT = "font-['Montserrat',sans-serif]"
 
-// Fallback bila halaman dibuka tanpa state (sesuai desain)
 const DEFAULTS = {
   transactionNumber: 'TX-88201992',
   paidAt: '12 Mar 2026, 08:32 WIB',
@@ -143,17 +137,12 @@ function SuccesOrder() {
   }
 
   const handleDownloadTicket = () => {
-    // TODO: unduh e-ticket PDF dari API (services/ticketService.js)
   }
 
   if (!booking) return <div role="status" className="px-4 py-8 text-center text-sm text-[#6B6B6B]">{t('paymentResult.loading')}</div>
 
   return (
     <>
-      {/* ===================================================================
-          TAMPILAN MOBILE (< md): layout mengikuti desain mobile,
-          isi & teks mengikuti versi PC.
-          =================================================================== */}
       {isMobile && (
         <div
           className="fixed inset-x-0 bottom-0 top-0 flex min-h-0 flex-col overflow-hidden bg-white font-body text-[#343133]"
@@ -319,16 +308,12 @@ function SuccesOrder() {
         </div>
       )}
 
-        {/* ===================================================================
-          TAMPILAN DESKTOP (>= md): tampilan asli
-          =================================================================== */}
-
       {!isMobile && (
         <div className="min-h-screen flex flex-col bg-white font-body text-[#343133]">
         <main className="mx-auto flex w-full max-w-[1068px] flex-1 items-center px-6 py-12">
           <ScrollReveal className="w-full">
           <div className="grid w-full items-center gap-12 lg:grid-cols-[1fr_480px]">
-            {/* ================= Kiri: konfirmasi ================= */}
+            {/* Kiri: konfirmasi */}
             <div>
               <span className="inline-block rounded-full bg-[#E6F0E0] px-3 py-2 font-heading text-[11px] font-bold leading-none text-[#265021]">
                 {t('paymentResult.approved')}
@@ -395,7 +380,7 @@ function SuccesOrder() {
               </div>
             </div>
 
-            {/* ================= Kanan: rincian pembayaran ================= */}
+            {/* Kanan: rincian pembayaran */}
             <section className="rounded-2xl border border-[#D4D4D4] bg-white p-8 shadow-[0_4px_16px_rgba(0,0,0,0.08)]">
               <h2 className={`${FONT_MONTSERRAT} text-xl font-semibold leading-7 text-[#343133]`}>
                 {t('paymentResult.paymentDetails')}

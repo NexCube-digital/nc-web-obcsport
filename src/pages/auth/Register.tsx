@@ -21,7 +21,6 @@ function GoogleIcon() {
   )
 }
 
-/* Ikon mata (toggle kata sandi) - versi mobile */
 function EyeIcon({ visible }: { visible: boolean }) {
   return (
     <svg
@@ -206,7 +205,6 @@ function Register() {
 
   return (
     <>
-      {/* ===================== MOBILE (< md) ===================== */}
       {isMobile && (
         <ScrollReveal className="min-h-screen">
           <div className="flex min-h-screen flex-col justify-center bg-[#FDFCF7] px-6 py-8 font-heading text-[#343133]">
@@ -365,7 +363,6 @@ function Register() {
         </ScrollReveal>
       )}
 
-      {/* ===================== DESKTOP / TABLET (>= md) ===================== */}
       {!isMobile && (
         <div className="flex h-[100dvh] flex-col overflow-hidden bg-white font-body text-[#343133]">
           <main className="min-h-0 flex-1">
@@ -391,7 +388,6 @@ function Register() {
                 </div>
               </ScrollReveal>
 
-              {/* Kolom Kanan: Kartu Form */}
               <ScrollReveal delay={120}>
                 <div className="mx-auto w-full max-w-[520px] rounded-2xl border border-[#D4D4D4] bg-white p-6 shadow-[0_4px_20px_rgba(0,0,0,0.08)]">
                   <div className="flex items-center justify-between gap-3">

@@ -7,20 +7,14 @@ import whatsappIcon from '../../assets/icon/whatsapp2.svg'
 import usePublicSiteContact from '../../hooks/usePublicSiteContact'
 import { getWhatsAppHref } from '../../services/siteContactService'
 
-/* -------------------------------------------------------------------------
-   Tipe data
-   ------------------------------------------------------------------------- */
+/* Tipe data */
 interface ReservationStep {
   id: number
   title: string
   description: string
-  maxWidth: string // lebar teks deskripsi per langkah, mengikuti pemisahan baris di desain
+  maxWidth: string
 }
 
-/* -------------------------------------------------------------------------
-   Data (ganti dengan data dari API / services/eventService.js jika perlu)
-   ------------------------------------------------------------------------- */
-// Font heading di desain terlihat seperti Montserrat, pastikan sudah di-load
 const FONT_MONTSERRAT = "font-['Montserrat',sans-serif]"
 
 function OrderPage() {
@@ -38,9 +32,8 @@ function OrderPage() {
     <div className="min-h-screen bg-white font-body text-[#343133]">
       <NavbarDashboard />
 
-      {/* Lebar konten 1200px sesuai desain */}
       <main className="max-w-[1248px] mx-auto px-6 pt-6 pb-16">
-        {/* ================= Judul halaman ================= */}
+        {/* Judul halaman */}
         <ScrollReveal>
           <h1 className={`${FONT_MONTSERRAT} font-bold text-2xl leading-8 text-[#343133]`}>
             {t('event.title')}
@@ -50,10 +43,9 @@ function OrderPage() {
           </p>
         </ScrollReveal>
 
-        {/* Kiri fleksibel (740px), kanan 420px, jarak 40px */}
         <DeferredSection placeholderClassName="mt-6 min-h-[560px] md:min-h-[720px] lg:min-h-[500px]">
         <div className="mt-6 grid lg:grid-cols-[1fr_420px] gap-10">
-          {/* ================= Ketentuan & alur reservasi ================= */}
+          {/* Ketentuan & alur reservasi */}
           <section className="rounded-2xl border border-[#D4D4D4] bg-white p-6">
             <h2 className={`${FONT_MONTSERRAT} font-semibold text-lg leading-7 text-[#343133]`}>
               {t('event.reservationTitle')}
@@ -88,7 +80,7 @@ function OrderPage() {
             </div>
           </section>
 
-          {/* ================= Kontak admin event ================= */}
+          {/* Kontak admin event */}
           <section className="rounded-2xl border border-[#D4D4D4] bg-white p-6 flex flex-col">
             <h2 className={`${FONT_MONTSERRAT} font-semibold text-lg leading-7 text-[#343133]`}>
               {t('event.contactTitle')}

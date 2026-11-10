@@ -20,13 +20,11 @@ import { getImageUrl } from '../../utils/imageUrl'
 
 const PhotoCropModal = lazy(() => import('./Photocropmodal'))
 
-/* -------------------------------------------------------------------------
-   Tipe data
-   ------------------------------------------------------------------------- */
+/*  Tipe data */
 interface HelpLink {
   id: string
   label: string
-  href?: string // rute internal
+  href?: string 
 }
 
 const HELP_LINKS: HelpLink[] = [
@@ -35,11 +33,10 @@ const HELP_LINKS: HelpLink[] = [
   { id: 'admin', label: 'account.helpContact' },
 ]
 
-const MAX_PHOTO_SIZE = 2 * 1024 * 1024 // 2MB
+const MAX_PHOTO_SIZE = 1 * 1024 * 1024 // 1MB
 const ALLOWED_PHOTO_TYPES = ['image/jpeg', 'image/png', 'image/gif']
 const MIN_PASSWORD_LENGTH = 12
 
-// Kelas bersama supaya semua kolom form seragam
 const LABEL_CLASS = 'block text-sm font-heading font-medium text-[#121212] mb-2'
 const INPUT_CLASS =
   'w-full h-[39px] rounded-lg border border-[#E5E5E5] bg-white px-4 text-sm text-[#121212] placeholder:text-[#9CA3AF] focus:outline-none focus:border-[#404F14]'
@@ -206,16 +203,15 @@ function SettingsPage() {
     <div className="min-h-screen bg-white font-body text-[#343133]">
       <NavbarDashboard userName={fullName || t('common.myAccount')} profileImage={photoPreview || undefined} />
 
-      {/* Lebar konten 1200px sesuai desain */}
       <main className="max-w-[1248px] mx-auto px-6 pt-8 pb-16">
-        {/* ================= Judul halaman ================= */}
+        {/* Judul halaman */}
         <h1 className="font-heading font-bold text-3xl text-[#121212]">{t('account.settingsTitle')}</h1>
         <p className="mt-1 text-sm text-[#6F6B6E]">
           {t('account.settingsDescription')}
         </p>
 
         <div className="mt-6 space-y-6">
-          {/* ================= Informasi profil & foto ================= */}
+          {/* Informasi profil & foto */}
           <section className={`${CARD_CLASS} pb-12`}>
             <h2 className={CARD_TITLE_CLASS}>{t('account.profileInfo')}</h2>
 
@@ -314,7 +310,7 @@ function SettingsPage() {
             </div>
           </section>
 
-          {/* ================= Keamanan sandi ================= */}
+          {/* Keamanan sandi */}
           <DeferredSection placeholderClassName="min-h-[270px]">
           <section className={CARD_CLASS}>
             <h2 className={CARD_TITLE_CLASS}>{t('account.passwordSecurity')}</h2>
@@ -408,7 +404,7 @@ function SettingsPage() {
           </section>
           </DeferredSection>
 
-          {/* ================= Pusat bantuan & dukungan ================= */}
+          {/* Pusat bantuan & dukungan */}
           <DeferredSection placeholderClassName="min-h-[180px]">
           <section className={`${CARD_CLASS} pb-3`}>
             <h2 className={CARD_TITLE_CLASS}>{t('account.helpCenter')}</h2>
@@ -435,7 +431,6 @@ function SettingsPage() {
 
       <DeferredFooter />
 
-      {/* Modal atur ukuran & posisi foto, muncul setelah user memilih file */}
       {cropSource && (
         <Suspense fallback={null}>
           <PhotoCropModal

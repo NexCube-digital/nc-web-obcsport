@@ -8,7 +8,6 @@ import DeferredFooter from '../../components/layout/DeferredFooter'
 import { sportApi } from '../../services/api'
 import { useAuth } from '../../hooks/useAuth'
 
-// Kelas bersama supaya semua kolom form seragam
 const LABEL_CLASS = 'block text-sm font-heading font-medium text-[#121212] mb-2'
 const INPUT_CLASS =
   'w-full h-[39px] rounded-lg border border-[#E5E5E5] bg-white px-4 text-sm text-[#121212] placeholder:text-[#9CA3AF] focus:outline-none focus:border-[#404F14]'
@@ -86,7 +85,6 @@ function ProfilePage() {
     <div className="flex min-h-screen flex-col bg-[#FDFCF8] font-body text-[#343133]">
       <NavbarDashboard userName={fullName || t('common.myAccount')} />
 
-      {/* Lebar konten 1200px sesuai desain */}
       <main className="mx-auto w-full max-w-[1248px] flex-1 px-6 pt-8 pb-16">
         <h1 className="font-heading text-3xl font-bold text-[#121212]">{t('account.profileTitle')}</h1>
         <p className="mt-1 text-sm text-[#6F6B6E]">
@@ -94,7 +92,7 @@ function ProfilePage() {
         </p>
 
         <div className="mt-6 space-y-6">
-          {/* ================= Informasi Profil ================= */}
+          {/* Informasi Profil */}
           <section className={`${CARD_CLASS} pb-8`}>
             <h2 className={CARD_TITLE_CLASS}>{t('account.profileInfoTitle')}</h2>
 
@@ -172,7 +170,7 @@ function ProfilePage() {
             </div>
           </section>
 
-          {/* ================= Email ================= */}
+          {/* Email */}
           <DeferredSection startAfterScroll placeholderClassName="min-h-[100px]">
           <section className={`${CARD_CLASS} pb-6`}>
             <h2 className={CARD_TITLE_CLASS}>{t('account.email')}</h2>

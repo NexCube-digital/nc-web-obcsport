@@ -25,7 +25,11 @@ function Information() {
 		}
 	}, [])
 
-	const hasIssue = Boolean(summary?.hasFullDayAvailabilityIssue && summary.messages.length > 0)
+	const fullResourceNames = summary?.resources.filter((resource) => resource.status === 'full').map((resource) => resource.name) ?? []
+	const messages = fullResourceNames.length > 0
+		? fullResourceNames.map((name) => `${name} penuh digunakan hari ini.`)
+		: summary?.messages ?? []
+	const hasIssue = messages.length > 0
 	return (
 		<section className="mt-4 rounded-2xl border border-[#D4D4D4] bg-white p-4 shadow-[0_4px_16px_rgba(0,0,0,0.08)] sm:mt-6 sm:rounded-3xl sm:p-6">
 			<h2
@@ -55,7 +59,7 @@ function Information() {
 					<path d="M12 16h.01" />
 				</svg>
 				<span className="min-w-0 break-words text-xs font-medium leading-snug text-[#C00000] font-heading sm:text-[13px]">
-					{summary?.messages.join(' ')}
+					{messages.join(' ')}
 				</span>
 			</div>}
 		</section>

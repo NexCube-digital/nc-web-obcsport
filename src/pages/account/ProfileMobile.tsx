@@ -46,7 +46,7 @@ function ProfileMobile() {
 
 			<main className="mx-auto w-full max-w-md px-4 pt-5 sm:max-w-xl sm:px-6 sm:pt-8 md:max-w-5xl md:px-8 md:py-12">
 				<div className="md:grid md:grid-cols-[minmax(300px,380px)_1fr] md:items-start md:gap-10 lg:gap-14">
-					{/* ================= Kartu profil ================= */}
+					{/* Kartu profil */}
 					<section className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-[#004000] to-[#404F14] px-5 py-6 text-white shadow-[0_8px_24px_rgba(0,64,0,0.18)] sm:px-7 sm:py-8 md:sticky md:top-8 md:flex md:flex-col md:items-center md:px-8 md:py-12 md:text-center">
 						<span
 							aria-hidden="true"
@@ -70,7 +70,7 @@ function ProfileMobile() {
 						</div>
 					</section>
 
-					{/* ================= Menu ================= */}
+					{/* Menu */}
 					<nav aria-label={t('profileMobile.navigation')} className="mt-5 md:mt-0">
 						<ul className="space-y-3 md:space-y-4">
 							{PROFILE_LINKS.map(({ labelKey, descriptionKey, href, icon: Icon }) => (

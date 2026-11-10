@@ -104,7 +104,8 @@ function BookingCalendar({
             let style = 'text-[#121212]'
             if (isBooked) style = 'bg-[#FDE8E8] text-[#E02424] font-bold'
             if (isPast) style = 'text-[#C4C4C4] cursor-not-allowed'
-            if (isSelected && !isPast) style = 'bg-[#265021] text-white font-bold'
+            if (isSelected && !isPast && !isBooked) style = 'bg-[#265021] text-white font-bold'
+            if (isSelected && !isPast && isBooked) style = 'bg-[#FDE8E8] text-[#E02424] font-bold ring-2 ring-[#9CA3AF]'
 
             return (
               <button

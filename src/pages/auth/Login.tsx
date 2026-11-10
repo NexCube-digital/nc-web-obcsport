@@ -166,7 +166,6 @@ function LoginPage() {
 
   return (
     <>
-      {/* ===================== MOBILE (< md) — satu layar, tanpa scroll ===================== */}
       {isMobile && (
       <ScrollReveal className="h-[100dvh]">
       <div className="relative flex h-full flex-col justify-center overflow-hidden bg-[#FDFCF7] px-6 py-[clamp(8px,2.5vh,40px)] font-heading text-[#343133]">
@@ -287,13 +286,10 @@ function LoginPage() {
       </ScrollReveal>
       )}
 
-      {/*  DESKTOP / TABLET (>= md) — satu layar, TANPA scroll  */}
       {!isMobile && (
       <div className="flex h-[100dvh] flex-col overflow-hidden bg-white font-body text-[#343133]">
         <main className="min-h-0 flex-1">
-          {/* Tablet: kolom flex setinggi main. Desktop (lg): grid 2 kolom */}
           <section className="mx-auto flex h-full w-full max-w-[1400px] flex-col gap-[clamp(12px,2.2vh,32px)] px-8 pb-[clamp(12px,2.5vh,32px)] pt-[clamp(4px,1vh,16px)] md:px-12 lg:grid lg:grid-cols-[1fr_clamp(460px,34vw,560px)] lg:items-center lg:gap-[clamp(40px,6vw,96px)] lg:px-8 lg:py-[clamp(8px,2vh,32px)]">
-            {/* Kolom kiri */}
             <ScrollReveal delay={0} className="flex min-h-0 flex-1 flex-col lg:block lg:flex-none">
             <div className="mx-auto flex min-h-0 w-full max-w-[560px] flex-1 flex-col text-center lg:mx-0 lg:block lg:max-w-none lg:flex-none lg:text-left">
               <h1 className="shrink-0 font-heading text-[clamp(24px,3.6vh,48px)] font-bold leading-tight text-[#343133] lg:text-[clamp(28px,4.8vh,48px)]">
@@ -303,8 +299,6 @@ function LoginPage() {
                 {t('auth.desktopDescription')}
               </p>
 
-              {/* Tablet: ilustrasi mengisi sisa tinggi (flex-1), disembunyikan jika layar pendek.
-                  Desktop: tinggi tetap berbasis vh */}
               <div className="relative mt-[clamp(12px,2.4vh,32px)] min-h-0 flex-1 overflow-hidden rounded-2xl bg-[#A9AD86] max-lg:max-h-[42vh] max-lg:[@media(max-height:820px)]:hidden lg:h-[clamp(140px,36vh,400px)] lg:flex-none">
                 <img
                   src={loginIllustration}
@@ -315,7 +309,6 @@ function LoginPage() {
             </div>
             </ScrollReveal>
 
-            {/* Kolom kanan: kartu form */}
             <ScrollReveal className="w-full shrink-0" delay={140}>
             <div className="mx-auto w-full max-w-[560px] rounded-2xl border border-[#D4D4D4] bg-white p-[clamp(16px,3.2vh,40px)] shadow-[0_4px_20px_rgba(0,0,0,0.08)] lg:mx-0 lg:max-w-none lg:p-[clamp(16px,3.6vh,40px)]">
               <div className="flex items-center justify-between gap-3">

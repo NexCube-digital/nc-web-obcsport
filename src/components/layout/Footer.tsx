@@ -30,6 +30,7 @@ const UNIT_LINKS = [
 const CONTACT = {
 	email: 'obc.managementbdg@gmail.com',
 	whatsapp: 'https://wa.me/6288860709000',
+	whatsappPic: '',
 	instagram: 'https://instagram.com/obcgroup.bdg',
 	tiktok: 'https://www.tiktok.com/@obcgroup.bdg',
 	address: 'Jl. Rancabentang, No.12, Ciumbuleuit, Kec. Cidadap, Kota Bandung, Jawa Barat 40142',

@@ -20,10 +20,8 @@ const PREVIEW_SIZES = [56, 36, 24] // ukuran pratinjau avatar (px)
 function calcViewSize(): number {
   const isDesktop = window.innerWidth >= DESKTOP_BREAKPOINT
   if (isDesktop) {
-    // Dua kolom: hanya dibatasi tinggi layar (header + jarak ≈ 150px)
     return Math.round(Math.max(220, Math.min(320, window.innerHeight - 150)))
   }
-  // Satu kolom: dibatasi lebar dan tinggi layar (header, slider, pratinjau, tombol ≈ 320px)
   const byWidth = window.innerWidth - 56
   const byHeight = window.innerHeight - 320
   return Math.round(Math.max(160, Math.min(300, byWidth, byHeight)))
@@ -125,7 +123,7 @@ function PhotoCropModal({ file, onCancel, onApply }: PhotoCropModalProps) {
     setOffsetRatio({ x: 0, y: 0 })
   }
 
-  /* ---------- Geser gambar dengan drag / sentuh ---------- */
+  /* Geser gambar dengan drag / sentuh */
   const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
     e.currentTarget.setPointerCapture(e.pointerId)
     dragRef.current = { startX: e.clientX, startY: e.clientY, originX: offset.x, originY: offset.y }
@@ -162,7 +160,7 @@ function PhotoCropModal({ file, onCancel, onApply }: PhotoCropModalProps) {
     saveOffset(offset.x + move[0], offset.y + move[1])
   }
 
-  /* ---------- Terapkan: potong gambar sesuai area yang dipilih ---------- */
+  /* Terapkan: potong gambar sesuai area yang dipilih */
   const handleApply = () => {
     const img = imgRef.current
     if (!img || !natural.w) return
@@ -205,14 +203,12 @@ function PhotoCropModal({ file, onCancel, onApply }: PhotoCropModalProps) {
       aria-labelledby="crop-title"
       onMouseDown={(e) => e.target === e.currentTarget && onCancel()}
     >
-      {/* Mobile: bottom sheet menempel di bawah. Desktop: modal lebar di tengah. Tanpa scroll. */}
       <div className="w-full max-h-[100dvh] overflow-hidden rounded-t-2xl bg-white pb-[env(safe-area-inset-bottom)] shadow-2xl md:max-w-[760px] md:rounded-2xl md:pb-0">
-        {/* Garis pegangan (hanya mobile) */}
         <div className="flex justify-center pt-2 md:hidden" aria-hidden="true">
           <span className="h-1 w-10 rounded-full bg-[#E5E5E5]" />
         </div>
 
-        {/* ================= Header ================= */}
+        {/* Header */}
         <div className="flex items-center gap-3 px-5 pt-3 md:px-6 md:pt-6">
           <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#EEF8F0] text-[#004000]">
             <Crop size={20} />
@@ -235,9 +231,7 @@ function PhotoCropModal({ file, onCancel, onApply }: PhotoCropModalProps) {
           </button>
         </div>
 
-        {/* ================= Isi: mobile satu kolom, desktop dua kolom ================= */}
         <div className="md:mt-4 md:flex md:gap-6 md:px-6 md:pb-6">
-          {/* ---------- Kiri: area pengaturan ---------- */}
           <div className="mt-3 px-5 md:mt-0 md:shrink-0 md:px-0">
             <div
               tabIndex={0}
@@ -290,7 +284,6 @@ function PhotoCropModal({ file, onCancel, onApply }: PhotoCropModalProps) {
                 <div className="absolute inset-x-0 top-2/3 h-px bg-white/40" />
               </div>
 
-              {/* Petunjuk singkat */}
               <span
                 className={`pointer-events-none absolute bottom-1.5 left-1/2 inline-flex -translate-x-1/2 items-center gap-1.5 whitespace-nowrap rounded-full bg-black/60 px-3 py-1 text-[11px] font-medium text-white backdrop-blur transition-opacity duration-200 ${
                   isDragging ? 'opacity-0' : 'opacity-100'
@@ -302,10 +295,8 @@ function PhotoCropModal({ file, onCancel, onApply }: PhotoCropModalProps) {
             </div>
           </div>
 
-          {/* ---------- Kanan: perbesaran, pratinjau, tombol ---------- */}
           <div className="md:flex md:min-w-0 md:flex-1 md:flex-col md:justify-between">
             <div>
-              {/* Perbesaran */}
               <div className="mt-3 px-5 md:mt-0 md:px-0">
                 <div className="hidden items-center justify-between md:flex">
                   <label htmlFor="zoom" className="text-sm font-heading font-medium text-[#121212]">
@@ -349,7 +340,6 @@ function PhotoCropModal({ file, onCancel, onApply }: PhotoCropModalProps) {
                   >
                     <ZoomIn size={18} />
                   </button>
-                  {/* Persen perbesaran (mobile saja, desktop sudah ada di atas slider) */}
                   <span className="w-12 shrink-0 rounded-md bg-[#F3F4F6] py-0.5 text-center text-xs font-heading font-semibold text-[#404F14] md:hidden">
                     {Math.round(zoom * 100)}%
                   </span>

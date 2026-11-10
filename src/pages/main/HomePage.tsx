@@ -20,9 +20,7 @@ const Information = lazy(() => import('./home/Information'))
 const Event = lazy(() => import('./home/Event'))
 const OrderModal = lazy(() => import('../../components/ui/OrderModal'))
 
-/* -------------------------------------------------------------------------
-   Tipe data
-   ------------------------------------------------------------------------- */
+/* Tipe data  */
 const AMENITY_ICONS: Record<string, 'toilet' | 'led' | 'foodcourt' | 'mushola' | 'parkir'> = {
   toilet: 'toilet',
   led: 'led',
@@ -122,7 +120,6 @@ function HomePage() {
     <div className="flex min-h-screen flex-col overflow-x-clip bg-white font-body text-[#343133]">
       <NavbarDashboard userName={userName} />
 
-      {/* Lebar konten 1200px sesuai desain; padding mengecil di layar kecil */}
       <main className="mx-auto w-full max-w-[1248px] flex-1 px-3 pt-4 pb-10 min-[360px]:px-4 sm:px-6 sm:pt-6 sm:pb-16">
         <ScrollReveal>
           <Hero
@@ -157,7 +154,7 @@ function HomePage() {
 
       <DeferredFooter />
 
-      {/* ================= Modal pemesanan ================= */}
+      {/* Modal pemesanan */}
       {modalFacility && (
         <Suspense fallback={null}>
           <OrderModal

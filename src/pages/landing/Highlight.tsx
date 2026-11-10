@@ -1,13 +1,6 @@
 import { Trophy, Users, Zap } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 
-interface HighlightItem {
-	id: string
-	icon: React.ReactNode
-	title: string
-	description: string
-}
-
 function Highlight() {
 	const { t } = useTranslation()
 	const highlights = t('landing.highlights', { returnObjects: true }) as Array<{ title: string; description: string }>

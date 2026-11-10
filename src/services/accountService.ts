@@ -3,6 +3,7 @@ import { api } from './apiService'
 import { saveUser } from '../utils/auth'
 
 export interface CustomerProfileData {
+	id?: string
 	name?: string
 	username?: string | null
 	bio?: string | null

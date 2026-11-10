@@ -3,8 +3,8 @@ import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { ArrowLeft, CircleCheck } from 'lucide-react'
 import { toast } from 'sonner'
-import loginIllustration from '../../assets/figma/login.jpg'
-import logo from '../../assets/logo/unit bisnis/LOGO OBC SPORT CENTER.png'
+import loginIllustration from '../../assets/images/login.webp'
+import logo from '../../assets/logo/unit bisnis/sport.webp'
 import { forgotPasswordCustomer } from '../../services/authService'
 
 function ForgetPassword() {

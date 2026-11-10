@@ -30,11 +30,9 @@ function Promo() {
 	useEffect(() => {
 		if (!previewImage) return
 
-		// Simpan elemen yang sedang fokus (thumbnail) agar bisa dikembalikan saat modal ditutup
 		const previouslyFocused = document.activeElement as HTMLElement | null
 		const previousOverflow = document.body.style.overflow
 
-		// Kunci scroll halaman & pindahkan fokus ke modal
 		document.body.style.overflow = 'hidden'
 		closeButtonRef.current?.focus()
 
@@ -44,7 +42,6 @@ function Promo() {
 				return
 			}
 
-			// Focus trap: Tab hanya berputar di dalam modal
 			if (event.key === 'Tab' && dialogRef.current) {
 				const focusable = dialogRef.current.querySelectorAll<HTMLElement>(
 					'button, [href], [tabindex]:not([tabindex="-1"])',
@@ -119,7 +116,6 @@ function Promo() {
 				))}
 			</div>
 
-			{/* Portal ke body agar z-index benar-benar paling depan (tidak terjebak stacking context section) */}
 			{previewImage &&
 				createPortal(
 					<div
@@ -130,7 +126,6 @@ function Promo() {
 						onClick={handleBackdropClick}
 						className="fixed inset-0 z-[9999] bg-black/90"
 					>
-						{/* Tombol kontrol */}
 						<div className="absolute right-4 top-4 z-10 flex gap-2">
 							<button
 								type="button"
@@ -151,7 +146,6 @@ function Promo() {
 							</button>
 						</div>
 
-						{/* Area scroll (aktif saat gambar di-zoom) */}
 						<div className="h-full w-full overflow-auto overscroll-contain" onClick={handleBackdropClick}>
 							<div
 								className="flex min-h-full w-max min-w-full items-center justify-center p-4 pt-20"

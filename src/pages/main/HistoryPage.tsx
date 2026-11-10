@@ -11,9 +11,7 @@ import { getBookings, type BookingSummary } from '../../services/bookingService'
 import { getApiErrorMessage } from '../../services/apiService'
 import { getMyMemberships, type MyMembership } from '../../services/membershipService'
 
-/* -------------------------------------------------------------------------
-   Tipe data
-   ------------------------------------------------------------------------- */
+/* Tipe data */
 type TransactionStatus = 'success' | 'failed' | 'pending'
 type FilterType = 'all' | 'success' | 'pending' | 'failed'
 const PAGE_SIZE = 10
@@ -54,10 +52,6 @@ interface Facility {
   price: number
 }
 
-/* -------------------------------------------------------------------------
-   Data (ganti dengan data dari API / services/historyService.js)
-   Untuk melihat empty state, kosongkan TRANSACTIONS & MOBILE_TRANSACTIONS ([]).
-   ------------------------------------------------------------------------- */
 // Filter tampilan desktop
 const FILTERS: FilterOption[] = [
   { id: 'all', label: 'history.filters.all' },
@@ -75,7 +69,6 @@ const MOBILE_FILTERS: FilterOption[] = [
 ]
 
 // Daftar lapangan di panel "Pesan Lapangan Sekarang" (empty state desktop)
-// TODO: ganti dengan data dari API / services/facilityService.js
 const FACILITIES: Facility[] = [
   { id: 'futsal-premium', nameKey: 'history.facilities.futsal', price: 125000 },
   { id: 'badminton-vip', nameKey: 'history.facilities.badminton', price: 80000 },
@@ -305,13 +298,7 @@ function HistoryPage() {
   }
 
   return (
-    /*
-      Layout flex-kolom setinggi layar:
-      - <main> memakai flex-1 sehingga mengisi sisa ruang
-      - footer otomatis menempel di dasar halaman walau konten sedikit
-    */
     <div className="flex min-h-screen flex-col bg-white font-body text-[#343133]">
-      {/* Navbar desktop (di mobile diganti header + bottom nav) */}
       <div className="hidden shrink-0 md:block">
         <NavbarDashboard />
       </div>
@@ -321,15 +308,11 @@ function HistoryPage() {
       </div>
 
       {isLoading && <p role="status" className="mx-auto mt-6 text-sm text-[#6F6B6E]">{t('history.loading')}</p>}
-      {/* ============================================================
-          DESKTOP: kondisi kosong (belum ada transaksi sama sekali)
-          ============================================================ */}
       {hasNoTransactions && (
         <main className="hidden flex-1 items-center bg-[#FFFEF7] md:flex">
           <div className="mx-auto grid w-full max-w-[1100px] grid-cols-1 items-center gap-10 px-6 py-12 lg:grid-cols-2 lg:gap-16 lg:py-16">
             {/* ---- Kolom kiri: ilustrasi + teks ---- */}
             <div className="mx-auto w-full max-w-[520px] lg:mx-0">
-              {/* TODO: ganti dengan ilustrasi asli, sementara pakai placeholder logo + angka */}
               <div className="flex h-[220px] w-full max-w-[380px] flex-col items-center justify-center rounded-3xl bg-[#F1F4EA] lg:h-[260px]">
                 <div className="flex h-[70px] w-[70px] items-center justify-center rounded-full border-2 border-[#004000]">
                   <div className="flex h-[38px] w-[38px] translate-x-[4px] translate-y-[5px] items-center justify-center rounded-full bg-[#004000] font-heading text-base font-bold text-white">
@@ -393,15 +376,12 @@ function HistoryPage() {
         </main>
       )}
 
-      {/* ============================================================
-          Konten utama: mobile + desktop (saat ada data)
-          ============================================================ */}
       <main
         className={`mx-auto min-h-0 w-full max-w-[1248px] flex-1 px-5 pt-1 pb-32 md:px-6 md:pt-8 md:pb-8 ${
           hasNoTransactions ? 'md:hidden' : 'md:flex md:flex-col'
         }`}
       >
-        {/* ================= Judul & filter (mobile) ================= */}
+        {/* Judul & filter (mobile) */}
         <div className="md:hidden">
           <p className="text-sm text-[#6F6B6E]">{t('history.mobileDescription')}</p>
           <label className="mt-3 flex h-10 items-center gap-2 rounded-lg border border-[#D4D4D4] bg-white px-3 focus-within:border-[#404F14]">
@@ -446,7 +426,7 @@ function HistoryPage() {
           </div>
         </div>
 
-        {/* ================= Judul & filter (desktop) ================= */}
+        {/* Judul & filter (desktop) */}
         <div className="hidden gap-4 md:flex md:flex-col lg:flex-row lg:items-start lg:justify-between">
           <div>
             <h1 className="font-heading text-2xl font-bold text-[#343133] lg:text-3xl">
@@ -501,7 +481,7 @@ function HistoryPage() {
           </div>
         </div>
 
-        {/* ================= Kartu transaksi (mobile) ================= */}
+        {/* Kartu transaksi (mobile) */}
         <div className="md:hidden">
           <DeferredSection placeholderClassName="mt-4 min-h-[420px]">
           {filteredMobile.length > 0 ? (
@@ -568,7 +548,6 @@ function HistoryPage() {
                   ? t('history.noMobileTransactionsDescription')
                   : t('history.noFilterResults')}
               </p>
-              {/* TODO: sesuaikan href dengan halaman pencarian lapangan */}
               {hasNoMobileTransactions && (
                 <a
                   href="/"
@@ -582,7 +561,7 @@ function HistoryPage() {
           </DeferredSection>
         </div>
 
-        {/* ================= Tabel transaksi (desktop) ================= */}
+        {/* Tabel transaksi (desktop) */}
         <DeferredSection placeholderClassName="hidden min-h-[320px] md:block">
         <section className="mt-6 hidden min-h-0 overflow-auto rounded-2xl border border-[#D4D4D4] bg-white px-4 pb-6 md:block lg:px-6">
           <table className="w-full min-w-[820px] border-separate border-spacing-0 text-left">

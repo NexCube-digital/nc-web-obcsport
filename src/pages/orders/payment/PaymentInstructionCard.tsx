@@ -24,6 +24,7 @@ const CHANNEL_LABEL: Record<DirectPaymentInfo['channel'], string> = {
   qris: 'QRIS',
   gopay: 'GoPay',
   shopeepay: 'ShopeePay',
+  credit_card: 'Kartu kredit',
   bca_va: 'BCA Virtual Account',
   bni_va: 'BNI Virtual Account',
   bri_va: 'BRI Virtual Account',

@@ -7,6 +7,7 @@ interface CustomerProfile extends AuthUser {
 }
 
 interface AuthResponse {
+	message?: string
 	accessToken: string
 	refreshToken: string
 	expiresIn: number

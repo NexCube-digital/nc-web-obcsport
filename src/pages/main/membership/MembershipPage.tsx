@@ -19,9 +19,7 @@ const SPORT_LABELS: Record<string, string> = {
   billiard: 'Billiard',
 }
 
-/* -------------------------------------------------------------------------
-   Section showcase membership (menggantikan foto hero)
-   ------------------------------------------------------------------------- */
+/* Section showcase membership (menggantikan foto hero) */
 function MembershipShowcase() {
   const { t } = useTranslation()
   return (
@@ -29,7 +27,6 @@ function MembershipShowcase() {
       id="membership"
       className="relative overflow-hidden rounded-2xl border border-[#E2DFD2] bg-white py-10 shadow-[0_4px_16px_rgba(52,49,51,0.06)]"
     >
-      {/* tekstur lapangan samar */}
       <img
         className="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-[0.12] mix-blend-multiply"
         src={member}
@@ -45,7 +42,6 @@ function MembershipShowcase() {
       />
 
       <div className="relative mx-auto grid w-[calc(100%-40px)] max-w-[520px] grid-cols-1 items-center gap-8 md:w-[calc(100%-32px)] md:max-w-[1246px] md:grid-cols-2 md:gap-x-8 md:gap-y-6 md:px-6 xl:grid-cols-[1fr_auto_1fr] xl:gap-8">
-        {/* Kolom kiri: headline & benefit */}
         <div className="flex min-w-0 flex-col items-start text-left">
           <span className="mb-1.5 block font-['Montserrat'] text-[12px] font-bold uppercase tracking-[1px] text-[#222222] md:text-[14px] md:font-medium xl:text-[15px]">
             {t('membership.showcase.badge')}
@@ -153,9 +149,6 @@ function MembershipShowcase() {
   )
 }
 
-/* -------------------------------------------------------------------------
-   Halaman
-   ------------------------------------------------------------------------- */
 function MembershipOptions() {
   const navigate = useNavigate()
   const { t, i18n } = useTranslation()
@@ -228,7 +221,7 @@ function MembershipOptions() {
             </p>
           </a>
 
-          {/* ================= Konten: Sports Membership ================= */}
+          {/* Konten: Sports Membership */}
           <section
             id="membership-details"
             className="w-full scroll-mt-20 md:rounded-2xl md:border md:border-[#E5E5E5] md:bg-white md:p-6 md:shadow-[0_2px_10px_rgba(0,0,0,0.06)]"

@@ -8,19 +8,13 @@ import { getApiErrorMessage } from '../../../services/apiService'
 import { getMembershipDetail } from '../../../services/membershipService'
 import { useTranslation } from 'react-i18next'
 
-/* -------------------------------------------------------------------------
-   Tipe data
-   ------------------------------------------------------------------------- */
-// Data yang dikirim dari PaymentPage lewat navigate('/pembayaran/qris', { state })
+/* Tipe data  */
 interface InformationState {
   bookingId?: string
   membershipId?: string
   bookingIds?: string[]
 }
 
-/* -------------------------------------------------------------------------
-   Data (ganti dengan data dari API / services/paymentService.js)
-   ------------------------------------------------------------------------- */
 const FONT_MONTSERRAT = "font-['Montserrat',sans-serif]"
 
 const formatRupiah = (value: number) => `Rp ${value.toLocaleString('id-ID')}`
@@ -351,9 +345,6 @@ function InformationOrder() {
 
   return (
     <>
-      {/* ===================================================================
-          TAMPILAN MOBILE (< md): tanpa navbar & footer, sesuai desain
-          =================================================================== */}
       {isMobile && <div className="fixed inset-x-0 bottom-0 top-0 flex min-h-0 flex-col overflow-hidden bg-white font-body text-[#343133]">
         {/* Banner batas waktu */}
         <div
@@ -446,9 +437,6 @@ function InformationOrder() {
         </div>
       </div>}
 
-      {/* ===================================================================
-          TAMPILAN DESKTOP (>= md): tampilan asli
-          =================================================================== */}
       {!isMobile && <div className="min-h-screen flex flex-col bg-white font-body text-[#343133]">
         <main className="mx-auto w-full max-w-[1248px] flex-1 px-6 pb-16 pt-6">
           <ScrollReveal className="w-full">
@@ -469,7 +457,6 @@ function InformationOrder() {
             </span>
           </div>
 
-          {/* Kartu pembayaran: lebar 800px sesuai desain */}
           <section className="mx-auto mt-6 flex w-full max-w-[800px] flex-col gap-6 rounded-2xl border border-[#D4D4D4] bg-white p-8 sm:flex-row sm:items-start">
             {/* Kiri: status Midtrans */}
             <div className="flex shrink-0 flex-col items-center sm:w-[180px]">

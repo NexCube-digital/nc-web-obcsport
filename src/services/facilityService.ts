@@ -65,6 +65,21 @@ export interface FacilityAvailability {
 	counts: { total: number; available: number; booked: number; locked: number }
 }
 
+export interface FacilityCalendarDate {
+	date: string
+	status: 'available' | 'partial' | 'full' | 'closed' | 'maintenance'
+	availableCount: number
+	totalCount: number
+	hasBookings: boolean
+}
+
+export interface FacilityCalendar {
+	resourceId: string
+	from: string
+	to: string
+	dates: FacilityCalendarDate[]
+}
+
 export interface AvailabilitySummaryResource {
 	id: string
 	name: string
@@ -104,6 +119,13 @@ export async function getFacilityAvailability(
 ) {
 	const response = await api.get<ApiSuccess<FacilityAvailability>>('/sports/availability', {
 		params: { resourceId, date, ...(sportType ? { sportType } : {}) },
+	})
+	return response.data.data
+}
+
+export async function getFacilityCalendar(resourceId: string, from: string, to: string) {
+	const response = await api.get<ApiSuccess<FacilityCalendar>>('/sports/availability/calendar', {
+		params: { resourceId, from, to },
 	})
 	return response.data.data
 }

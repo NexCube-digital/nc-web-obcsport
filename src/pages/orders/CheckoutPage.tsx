@@ -8,7 +8,7 @@ import DeferredSection from '../../components/layout/DeferredSection'
 import type { CartItem } from '../../components/ui/CartModal'
 import { COURT_FACILITIES } from '../../data/facilitiesData'
 import type { FacilityCard } from '../main/home/Court'
-import { getFacilityAvailability, getFacilityPriceTiers, type FacilityAvailability, type FacilityPriceTier } from '../../services/facilityService'
+import { getFacilityAvailability, getFacilityCalendar, getFacilityPriceTiers, type FacilityAvailability, type FacilityPriceTier } from '../../services/facilityService'
 import { previewBookingPrice, type BookingPrice } from '../../services/bookingService'
 import { addBackendCartItem, cartService, getBackendCart, removeBackendCartItem } from '../../services/cart'
 import { getApiErrorMessage } from '../../services/apiService'
@@ -31,8 +31,6 @@ const MobileBookingSheet = lazy(() => import('./checkout/MobileBookingSheet'))
    Data (ganti dengan data dari API / services/bookingService.js)
    ------------------------------------------------------------------------- */
 const MAX_SESSION_HOURS = 5
-
-const BOOKED_DATES: string[] = []
 
 /* -------------------------------------------------------------------------
    Fungsi bantu
@@ -124,6 +122,7 @@ function DetailOrder() {
   const [cartItems, setCartItems] = useState<CartItem[]>(() => cartService.getItems())
   const [conflictMessage, setConflictMessage] = useState<string | null>(null)
   const [availability, setAvailability] = useState<FacilityAvailability | null>(null)
+  const [bookedDates, setBookedDates] = useState<string[]>([])
   const [isAvailabilityLoading, setIsAvailabilityLoading] = useState(true)
   const [pricePreview, setPricePreview] = useState<BookingPrice | null>(null)
   const [isPriceLoading, setIsPriceLoading] = useState(false)
@@ -202,6 +201,30 @@ function DetailOrder() {
 
     return () => { active = false }
   }, [resourceId, selectedDate, sportType, t])
+
+  useEffect(() => {
+    if (!resourceId) return
+
+    let active = true
+    const loadCalendar = () => {
+      const from = toDateKey(viewYear, viewMonth, 1)
+      const to = toDateKey(viewYear, viewMonth, new Date(viewYear, viewMonth + 1, 0).getDate())
+      getFacilityCalendar(resourceId, from, to)
+		.then((calendar) => {
+			if (active) setBookedDates(calendar.dates.filter((day) => day.status === 'full').map((day) => day.date))
+		})
+		.catch(() => {
+			if (active) setBookedDates([])
+		})
+    }
+
+    loadCalendar()
+    const timer = window.setInterval(loadCalendar, 35_000)
+    return () => {
+      active = false
+      window.clearInterval(timer)
+    }
+  }, [resourceId, viewMonth, viewYear])
 
   // State khusus mobile: bottom sheet pilih tanggal & jam
   const [isSheetOpen, setIsSheetOpen] = useState(false)
@@ -522,7 +545,6 @@ function DetailOrder() {
           <MobileHeader
             variant="title"
             title={t('booking.checkout')}
-            showCart
             showShare
             showBottomNav={false}
           />
@@ -555,7 +577,7 @@ function DetailOrder() {
               viewMonth={viewMonth}
               selectedDate={selectedDate}
               selectedDateLabel={selectedDateLabel}
-              bookedDates={BOOKED_DATES}
+              bookedDates={bookedDates}
               bookedSlotsToday={bookedSlotsToday}
               blockedSlotStatuses={blockedSlotStatuses}
               availableTimeSlots={availableTimeSlots}
@@ -608,7 +630,7 @@ function DetailOrder() {
                     selectedDateLabel={selectedDateLabel}
                     selectedDateText={t('booking.selectedDate')}
                     changeDateText={t('booking.changeDate')}
-                    bookedDates={BOOKED_DATES}
+                    bookedDates={bookedDates}
                     bookedSlotsToday={bookedSlotsToday}
                     blockedSlotStatuses={blockedSlotStatuses}
                     availableTimeSlots={availableTimeSlots}
