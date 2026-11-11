@@ -1,6 +1,12 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import { CheckCircle2, LoaderCircle, Mail, RefreshCw } from "lucide-react";
+import {
+  CheckCircle2,
+  LoaderCircle,
+  LockKeyhole,
+  Mail,
+  RefreshCw,
+} from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import logo from "../../assets/logo/unit bisnis/sport.webp";
@@ -15,7 +21,7 @@ function VerifyEmail() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const token = searchParams.get("token");
-  const [email, setEmail] = useState(searchParams.get("email") || "");
+  const email = searchParams.get("email") || "";
   const [status, setStatus] = useState<"loading" | "success" | "error">(
     token ? "loading" : "error",
   );
@@ -95,14 +101,24 @@ function VerifyEmail() {
             >
               {t("verifyEmail.email")}
             </label>
-            <input
-              id="verification-email"
-              type="email"
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
-              placeholder="nama@email.com"
-              className="w-full rounded-lg border border-[#D4D4D4] bg-[#FDFCF7] px-3 py-3 text-sm focus:border-[#404F14] focus:outline-none"
-            />
+            <div className="relative">
+              <input
+                id="verification-email"
+                type="email"
+                value={email}
+                readOnly
+                placeholder="nama@email.com"
+                className="w-full cursor-default rounded-lg border border-[#D4D4D4] bg-[#F4F4EF] px-3 py-3 pr-10 text-sm text-[#6F6B6E] focus:outline-none"
+              />
+              <LockKeyhole
+                aria-hidden="true"
+                size={16}
+                className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[#6F6B6E]"
+              />
+            </div>
+            <p className="mt-2 flex items-center gap-1.5 text-xs text-[#6F6B6E]">
+              {t("verifyEmail.emailReadOnly")}
+            </p>
             <button
               type="button"
               onClick={handleResend}

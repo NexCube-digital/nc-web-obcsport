@@ -50,6 +50,9 @@ function Hero() {
 					key={activeSlide}
 					src={HERO_IMAGES[activeSlide]}
 					alt={t('landing.heroAlt')}
+					loading={activeSlide === 0 ? 'eager' : 'lazy'}
+					fetchPriority={activeSlide === 0 ? 'high' : 'auto'}
+					decoding="async"
 					className="hero-anim absolute inset-0 h-full w-full object-cover"
 					style={{ animation: 'hero-fade 0.7s ease-in-out' }}
 				/>
@@ -123,6 +126,9 @@ function Hero() {
 							key={activeSlide}
 							src={HERO_IMAGES[activeSlide]}
 							alt={t('landing.heroAlt')}
+							loading={activeSlide === 0 ? 'eager' : 'lazy'}
+							fetchPriority={activeSlide === 0 ? 'high' : 'auto'}
+							decoding="async"
 							className="hero-anim h-full w-full object-cover"
 							style={{ animation: 'hero-fade 0.7s ease-in-out' }}
 						/>

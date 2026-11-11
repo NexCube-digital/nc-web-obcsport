@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
@@ -6,24 +7,44 @@ import { toast } from 'sonner'
 import TestimonialModal from '../../components/ui/TestimonialModal'
 import reviewIcon from '../../assets/icon/image.png'
 import { useAuth } from '../../hooks/useAuth'
-import { getSportsFacilities, type SportsFacility } from '../../services/facilityService'
+import { getSportsFacilities } from '../../services/facilityService'
 import { getPublishedTestimonials, type PublicTestimonial } from '../../services/testimonialService'
+import { queryKeys } from '../../utils/queryKeys'
 
 
 interface FeaturedReview extends PublicTestimonial {
 	facilityName: string
 }
 
+function mapFeaturedReviews(reviews: PublicTestimonial[]): FeaturedReview[] {
+	return reviews
+		.map((review) => ({ ...review, facilityName: review.company ?? 'OBC Sport Center' }))
+		.sort((left, right) =>
+			right.rating - left.rating || new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime())
+		.slice(0, 12)
+}
+
 function Testimoni() {
 	const { t, i18n } = useTranslation()
 	const navigate = useNavigate()
 	const { isLoggedIn } = useAuth()
-	const [facilities, setFacilities] = useState<SportsFacility[]>([])
-	const [reviews, setReviews] = useState<FeaturedReview[]>([])
 	const [activeTesti, setActiveTesti] = useState(0)
-	const [isLoadingReviews, setIsLoadingReviews] = useState(true)
-	const [hasLoadError, setHasLoadError] = useState(false)
 	const [isTestimonialOpen, setIsTestimonialOpen] = useState(false)
+	const queryClient = useQueryClient()
+	const { data: facilities = [] } = useQuery({
+		queryKey: queryKeys.sportsFacilities(),
+		queryFn: () => getSportsFacilities(),
+		staleTime: 5 * 60_000,
+	})
+	const reviewsQuery = useQuery({
+		queryKey: queryKeys.publicTestimonials,
+		queryFn: getPublishedTestimonials,
+		select: mapFeaturedReviews,
+		staleTime: 5 * 60_000,
+	})
+	const reviews = reviewsQuery.data ?? []
+	const isLoadingReviews = reviewsQuery.isPending
+	const hasLoadError = reviewsQuery.isError
 	const testimonial = reviews[activeTesti]
 	const dateLabel = new Intl.DateTimeFormat(i18n.resolvedLanguage?.startsWith('en') ? 'en-US' : 'id-ID', {
 		day: 'numeric',
@@ -41,28 +62,6 @@ function Testimoni() {
 		}
 		setIsTestimonialOpen(true)
 	}
-
-	useEffect(() => {
-		let active = true
-		Promise.allSettled([getSportsFacilities(), getPublishedTestimonials()]).then(([facilitiesResult, reviewsResult]) => {
-			if (!active) return
-			if (facilitiesResult.status === 'fulfilled') setFacilities(facilitiesResult.value)
-			if (reviewsResult.status === 'rejected') {
-				setHasLoadError(true)
-				setIsLoadingReviews(false)
-				return
-			}
-
-			const featuredReviews: FeaturedReview[] = reviewsResult.value
-				.map((review) => ({ ...review, facilityName: review.company ?? 'OBC Sport Center' }))
-			featuredReviews.sort((left, right) =>
-				right.rating - left.rating || new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime())
-			setReviews(featuredReviews.slice(0, 12))
-			setActiveTesti(0)
-			setIsLoadingReviews(false)
-		})
-		return () => { active = false }
-	}, [])
 
 	return (
 		<section className="mx-auto flex w-full max-w-[1248px] flex-col items-center px-4 py-8 sm:px-6 sm:py-12 md:py-8 lg:py-10">
@@ -158,6 +157,7 @@ function Testimoni() {
 						facilityName={testimonial?.facilityName ?? facilities[0]?.name ?? 'OBC Sport Center'}
 						dateLabel={dateLabel}
 						resourceId={testimonial?.resourceId ?? facilities[0]?.id ?? ''}
+						onSubmit={() => { void queryClient.invalidateQueries({ queryKey: queryKeys.publicTestimonials }) }}
 					/>,
 					document.body,
 				)}

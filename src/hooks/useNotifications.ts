@@ -1,4 +1,5 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useState } from 'react'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   getNotifications,
   getUnreadCount,
@@ -7,6 +8,9 @@ import {
   type Notification,
   type NotificationListResponse,
 } from '../services/notificationService'
+import { getNotificationErrorMessage } from '../services/notificationService'
+import { queryKeys } from '../utils/queryKeys'
+import { useAuth } from './useAuth'
 
 interface UseNotificationsReturn {
   notifications: Notification[]
@@ -26,90 +30,90 @@ interface UseNotificationsReturn {
 }
 
 export function useNotifications(initialPage: number = 1, initialLimit: number = 10): UseNotificationsReturn {
-  const [notifications, setNotifications] = useState<Notification[]>([])
-  const [unreadCount, setUnreadCount] = useState(0)
-  const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [pagination, setPagination] = useState({
-    page: initialPage,
-    limit: initialLimit,
-    total: 0,
-    pages: 0,
+  const queryClient = useQueryClient()
+  const { user } = useAuth()
+  const customerKey = user?.id ?? user?.email ?? 'anonymous'
+  const [page, setPage] = useState(initialPage)
+  const [limit, setLimit] = useState(initialLimit)
+  const listQuery = useQuery({
+    queryKey: queryKeys.notifications.list(customerKey, page, limit),
+    queryFn: () => getNotifications(page, limit),
+    staleTime: 15_000,
+  })
+  const unreadQuery = useQuery({
+    queryKey: queryKeys.notifications.unreadCount(customerKey),
+    queryFn: getUnreadCount,
+    staleTime: 15_000,
+    refetchInterval: 30_000,
+    refetchOnWindowFocus: true,
   })
 
-  const loadNotifications = useCallback(async (page: number, limit: number) => {
-    setIsLoading(true)
-    setError(null)
-    try {
-      const result: NotificationListResponse = await getNotifications(page, limit)
-      console.log('Notifications result:', result)
-      setNotifications(result.data || [])
-      setPagination(result.pagination || { page, limit, total: 0, pages: 0 })
-    } catch (err) {
-      const errorMsg = err instanceof Error ? err.message : 'Gagal memuat notifikasi'
-      console.error('Error loading notifications:', err)
-      setError(errorMsg)
-    } finally {
-      setIsLoading(false)
-    }
-  }, [])
-
-  const refreshUnreadCount = useCallback(async () => {
-    try {
-      const count = await getUnreadCount()
-      setUnreadCount(count)
-    } catch (err) {
-      console.error('Gagal memuat unread count:', err)
-    }
-  }, [])
-
-  const markAsRead = useCallback(async (id: string) => {
-    try {
-      await markNotificationAsRead(id)
-      setNotifications((prev) =>
-        prev.map((n) => (n.id === id ? { ...n, read: true } : n)),
+  const markAsReadMutation = useMutation({
+    mutationFn: markNotificationAsRead,
+    onSuccess: (_result, id) => {
+      let wasUnread = false
+      queryClient.setQueriesData<NotificationListResponse>(
+        { queryKey: queryKeys.notifications.listPrefix(customerKey) },
+        (current) => {
+          if (!current) return current
+          if (current.data.some((notification) => notification.id === id && !notification.read)) {
+            wasUnread = true
+          }
+          return {
+            ...current,
+            data: current.data.map((notification) =>
+              notification.id === id ? { ...notification, read: true } : notification,
+            ),
+          }
+        },
       )
-      setUnreadCount((prev) => Math.max(0, prev - 1))
-    } catch (err) {
-      console.error('Gagal menandai notifikasi sebagai dibaca:', err)
-    }
-  }, [])
+      if (wasUnread) {
+        queryClient.setQueryData<number>(queryKeys.notifications.unreadCount(customerKey), (count = 0) => Math.max(0, count - 1))
+      }
+      void queryClient.invalidateQueries({ queryKey: queryKeys.notifications.unreadCount(customerKey) })
+    },
+  })
+  const markAllAsReadMutation = useMutation({
+    mutationFn: markAllNotificationsAsRead,
+    onSuccess: () => {
+      queryClient.setQueriesData<NotificationListResponse>(
+        { queryKey: queryKeys.notifications.listPrefix(customerKey) },
+        (current) => current
+          ? { ...current, data: current.data.map((notification) => ({ ...notification, read: true })) }
+          : current,
+      )
+      queryClient.setQueryData(queryKeys.notifications.unreadCount(customerKey), 0)
+    },
+  })
 
-  const markAllAsRead = useCallback(async () => {
+  const loadNotifications = async (nextPage: number, nextLimit: number) => {
+    setPage(nextPage)
+    setLimit(nextLimit)
+  }
+  const refreshUnreadCount = async () => {
+    await queryClient.invalidateQueries({ queryKey: queryKeys.notifications.unreadCount(customerKey) })
+  }
+  const markAsRead = async (id: string) => {
     try {
-      await markAllNotificationsAsRead()
-      setNotifications((prev) => prev.map((n) => ({ ...n, read: true })))
-      setUnreadCount(0)
-    } catch (err) {
-      console.error('Gagal menandai semua notifikasi sebagai dibaca:', err)
+      await markAsReadMutation.mutateAsync(id)
+    } catch (error) {
+      console.error('Gagal menandai notifikasi sebagai dibaca:', error)
     }
-  }, [])
-
-  // Load initial data
-  useEffect(() => {
-    void loadNotifications(initialPage, initialLimit)
-    void refreshUnreadCount()
-
-    const refreshOnFocus = () => {
-      void refreshUnreadCount()
+  }
+  const markAllAsRead = async () => {
+    try {
+      await markAllAsReadMutation.mutateAsync()
+    } catch (error) {
+      console.error('Gagal menandai semua notifikasi sebagai dibaca:', error)
     }
-    const intervalId = window.setInterval(() => {
-      void refreshUnreadCount()
-    }, 30_000)
-
-    window.addEventListener('focus', refreshOnFocus)
-    return () => {
-      window.clearInterval(intervalId)
-      window.removeEventListener('focus', refreshOnFocus)
-    }
-  }, [initialLimit, initialPage, loadNotifications, refreshUnreadCount])
+  }
 
   return {
-    notifications,
-    unreadCount,
-    isLoading,
-    error,
-    pagination,
+    notifications: listQuery.data?.data ?? [],
+    unreadCount: unreadQuery.data ?? 0,
+    isLoading: listQuery.isFetching,
+    error: listQuery.error ? getNotificationErrorMessage(listQuery.error) : null,
+    pagination: listQuery.data?.pagination ?? { page, limit, total: 0, pages: 0 },
     loadNotifications,
     refreshUnreadCount,
     markAsRead,

@@ -530,6 +530,7 @@
     "failed": "Tautan aktivasi tidak valid atau telah kedaluwarsa.",
     "description": "Buka tautan aktivasi yang dikirim ke email Anda. Jika belum menerima email, kirim ulang tautannya.",
     "email": "Alamat Email",
+    "emailReadOnly": "Email ini tidak dapat diubah.",
     "emailRequired": "Masukkan alamat email Anda.",
     "resend": "Kirim Ulang Tautan Aktivasi",
     "resending": "Mengirim...",

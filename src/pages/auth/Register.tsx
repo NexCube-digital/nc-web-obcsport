@@ -3,11 +3,12 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { CircleCheck, Eye, EyeOff, House, X } from 'lucide-react'
 import { toast } from 'sonner'
-import logo from '../../assets/logo/unit bisnis/sport.webp'
 import { useIsMobile } from '../../hooks/useIsMobile'
 import ScrollReveal from '../../components/animation/ScrollReveal'
 import { getApiErrorMessage } from '../../services/apiService'
 import { registerCustomer, loginGoogleCustomer } from '../../services/authService'
+import { loadGoogleIdentity } from '../../utils/googleIdentity'
+import RegisterMobileView from './RegisterMobileView'
 
 /* Ikon Google */
 function GoogleIcon() {
@@ -21,46 +22,10 @@ function GoogleIcon() {
   )
 }
 
-function EyeIcon({ visible }: { visible: boolean }) {
-  return (
-    <svg
-      width="22"
-      height="22"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      {visible ? (
-        <>
-          <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z" />
-          <circle cx="12" cy="12" r="3" />
-        </>
-      ) : (
-        <>
-          <path d="M9.9 4.24A9.1 9.1 0 0 1 12 4c6.5 0 10 8 10 8a17.5 17.5 0 0 1-2.16 3.19" />
-          <path d="M6.61 6.61A17.1 17.1 0 0 0 2 12s3.5 8 10 8a9.7 9.7 0 0 0 5.39-1.61" />
-          <path d="M14.12 14.12a3 3 0 1 1-4.24-4.24" />
-          <path d="m2 2 20 20" />
-        </>
-      )}
-    </svg>
-  )
-}
-
 /* Desktop: padding input fluid mengikuti tinggi layar */
 const INPUT_CLASS =
   'w-full rounded-lg border border-[#D4D4D4] bg-[#FDFCF7] px-3 py-[clamp(6px,1.1vh,10px)] text-sm placeholder:text-[#343133] focus:outline-none focus:border-[#404F14]'
 const LABEL_CLASS = 'mb-[clamp(2px,0.4vh,4px)] block text-xs font-heading font-bold text-[#343133]'
-
-/* Mobile: tinggi input fluid (36px - 48px) */
-const M_INPUT_CLASS =
-  'h-[clamp(36px,6vh,48px)] w-full rounded-xl border border-[#D4D4D4] bg-[#FDFCF7] px-4 font-body text-sm text-[#343133] placeholder:text-[#343133] focus:outline-none focus:border-[#404F14]'
-const M_LABEL_CLASS =
-  'mb-[clamp(2px,0.6vh,6px)] block text-xs font-heading font-bold text-[#343133]'
 
 function Register() {
   const { t } = useTranslation()
@@ -95,6 +60,11 @@ function Register() {
       window.removeEventListener('keydown', handleKeyDown)
     }
   }, [isPolicyModalOpen])
+
+  useEffect(() => {
+    if (!import.meta.env.VITE_GOOGLE_CLIENT_ID) return
+    void loadGoogleIdentity().catch(() => undefined)
+  }, [])
 
   const openPolicyModal = () => {
     setHasReadPolicy(false)
@@ -168,36 +138,44 @@ function Register() {
   void submitRegistration(e, false, true)
   }
 
-  const handleGoogleLogin = () => {
+  const handleGoogleLogin = async () => {
   if (!policyAccepted) {
     openPolicyModal()
     return
   }
 
-    if (typeof window !== 'undefined' && (window as any).google?.accounts?.id) {
-      const google = (window as any).google
-      const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || ''
-      if (!clientId) {
-        toast.info(t('auth.googleClientMissing'))
-        return
-      }
+    const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || ''
+    if (!clientId) {
+      toast.info(t('auth.googleClientMissing'))
+      return
+    }
 
-      google.accounts.id.initialize({
+    try {
+      await loadGoogleIdentity()
+    } catch {
+      toast.info(t('auth.googleLoading'))
+      return
+    }
+
+    const googleIdentity = window.google?.accounts?.id
+    if (googleIdentity) {
+
+      googleIdentity.initialize({
         client_id: clientId,
-        callback: async (response: any) => {
+        callback: async (response) => {
           setIsSubmitting(true)
           try {
             await loginGoogleCustomer(response.credential)
             toast.success(t('register.googleSuccess'))
             navigate('/home', { replace: true })
-          } catch (err: any) {
-            toast.error(getApiErrorMessage(err, t('register.googleFailed')))
+          } catch (error: unknown) {
+            toast.error(getApiErrorMessage(error, t('register.googleFailed')))
           } finally {
             setIsSubmitting(false)
           }
         },
       })
-      google.accounts.id.prompt()
+      googleIdentity.prompt()
     } else {
       toast.info(t('auth.googleLoading'))
     }
@@ -206,161 +184,25 @@ function Register() {
   return (
     <>
       {isMobile && (
-        <ScrollReveal className="min-h-screen">
-          <div className="flex min-h-screen flex-col justify-center bg-[#FDFCF7] px-6 py-8 font-heading text-[#343133]">
-            <div className="mt-4 flex items-center justify-center gap-3">
-              <img
-                src={logo}
-                alt="OBC Sport Center"
-                className="h-[clamp(44px,8vh,64px)] w-[clamp(44px,8vh,64px)] rounded-full object-contain"
-              />
-              <span className="flex flex-col font-['Montserrat',sans-serif] text-xl font-extrabold italic leading-tight text-[#121212]">
-                <span className="uppercase">OBC SPORT</span>
-                <span>Center</span>
-              </span>
-            </div>
-
-            <h1 className="mt-6 text-center text-2xl font-bold text-[#404F14]">
-              {t('register.title')}
-            </h1>
-            <p className="mt-1 text-center font-body text-xs text-[#6F6B6E]">
-              {t('register.description')}
-            </p>
-
-            <form onSubmit={handleSubmitMobile} className="mt-6 space-y-3">
-              <Link to="/" aria-label={t('common.home')} className="-mt-4 ml-auto flex w-fit items-center gap-1.5 rounded-lg px-2 py-1.5 text-sm font-semibold text-[#404F14] transition-colors hover:bg-[#E8EDE3]">
-                <House size={17} aria-hidden="true" />
-                {t('common.home')}
-              </Link>
-              <div>
-                <label htmlFor="m-name" className={M_LABEL_CLASS}>
-                  {t('register.fullName')}
-                </label>
-                <input
-                  id="m-name"
-                  type="text"
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
-                  placeholder={t('register.fullNamePlaceholder')}
-                  disabled={isSubmitting}
-                  className={M_INPUT_CLASS}
-                />
-              </div>
-
-              <div>
-                <label htmlFor="m-email" className={M_LABEL_CLASS}>
-                  {t('register.email')}
-                </label>
-                <input
-                  id="m-email"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="nama@email.com"
-                  disabled={isSubmitting}
-                  className={M_INPUT_CLASS}
-                />
-              </div>
-
-              <div>
-                <label htmlFor="m-password" className={M_LABEL_CLASS}>
-                  {t('register.password')}
-                </label>
-                <div className="relative">
-                  <input
-                    id="m-password"
-                    type={showPassword ? 'text' : 'password'}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder={t('register.passwordPlaceholder')}
-                    disabled={isSubmitting}
-                    className={`${M_INPUT_CLASS} pr-12`}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword((prev) => !prev)}
-                    aria-label={showPassword ? t('auth.hidePassword') : t('auth.showPassword')}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 text-[#404F14] cursor-pointer"
-                  >
-                    <EyeIcon visible={showPassword} />
-                  </button>
-                </div>
-              </div>
-
-              <div>
-                <label htmlFor="m-confirm-password" className={M_LABEL_CLASS}>
-                  {t('register.confirmPassword')}
-                </label>
-                <div className="relative">
-                  <input
-                    id="m-confirm-password"
-                    type={showConfirmPassword ? 'text' : 'password'}
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    placeholder={t('register.confirmPasswordPlaceholder')}
-                    disabled={isSubmitting}
-                    className={`${M_INPUT_CLASS} pr-12`}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowConfirmPassword((prev) => !prev)}
-                    aria-label={showConfirmPassword ? t('auth.hidePassword') : t('auth.showPassword')}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 text-[#404F14] cursor-pointer"
-                  >
-                    <EyeIcon visible={showConfirmPassword} />
-                  </button>
-                </div>
-              </div>
-
-              <div className="pt-1">
-                <label htmlFor="m-agreed" className="flex items-start gap-2 text-xs leading-5 text-[#343133]">
-                  <input
-                    id="m-agreed"
-                    type="checkbox"
-                    checked={agreed}
-                    onChange={(event) => handleAgreementChange(event.target.checked)}
-                    disabled={isSubmitting}
-                    className="mt-1 h-4 w-4 shrink-0 accent-[#404F14]"
-                  />
-                  <span>{t('register.acceptPolicies')}</span>
-                </label>
-              </div>
-
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className="mt-1 h-[clamp(36px,6vh,48px)] w-full rounded-xl bg-[#CDF178] text-sm font-heading font-bold text-[#404F14] hover:bg-[#9AAD3E] active:bg-[#9AAD3E] transition-colors cursor-pointer disabled:opacity-50"
-              >
-                {isSubmitting ? t('register.processing') : t('register.submit')}
-              </button>
-            </form>
-
-            <div className="mt-[clamp(6px,1.4vh,14px)] flex items-center gap-3">
-              <span className="h-px flex-1 bg-[#D4D4D4]" />
-              <span className="font-body text-xs text-[#343133]">{t('register.or')}</span>
-              <span className="h-px flex-1 bg-[#D4D4D4]" />
-            </div>
-
-            <button
-              type="button"
-              onClick={handleGoogleLogin}
-              className="mt-3 flex h-[clamp(36px,6vh,48px)] w-full items-center justify-center gap-2 rounded-xl border border-[#D4D4D4] bg-white text-sm font-bold text-[#121212] active:bg-[#FDFCF7] transition-colors cursor-pointer"
-            >
-              <GoogleIcon />
-              {t('register.registerGoogle')}
-            </button>
-
-            <p className="mt-4 text-center font-body text-sm text-[#343133]">
-              {t('register.alreadyHaveAccount')}{' '}
-              <Link
-                to="/login"
-                className="font-heading font-bold text-[#404F14] underline underline-offset-2"
-              >
-                {t('register.signIn')}
-              </Link>
-            </p>
-          </div>
-        </ScrollReveal>
+        <RegisterMobileView
+          fullName={fullName}
+          email={email}
+          password={password}
+          confirmPassword={confirmPassword}
+          showPassword={showPassword}
+          showConfirmPassword={showConfirmPassword}
+          agreed={agreed}
+          isSubmitting={isSubmitting}
+          onFullNameChange={setFullName}
+          onEmailChange={setEmail}
+          onPasswordChange={setPassword}
+          onConfirmPasswordChange={setConfirmPassword}
+          onTogglePassword={() => setShowPassword((previous) => !previous)}
+          onToggleConfirmPassword={() => setShowConfirmPassword((previous) => !previous)}
+          onAgreementChange={handleAgreementChange}
+          onSubmit={handleSubmitMobile}
+          onGoogleLogin={handleGoogleLogin}
+        />
       )}
 
       {!isMobile && (

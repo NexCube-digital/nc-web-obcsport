@@ -530,6 +530,7 @@
     "failed": "The activation link is invalid or has expired.",
     "description": "Open the activation link sent to your email. If you have not received it, request a new link.",
     "email": "Email Address",
+    "emailReadOnly": "This email address cannot be changed.",
     "emailRequired": "Enter your email address.",
     "resend": "Resend Activation Link",
     "resending": "Sending...",

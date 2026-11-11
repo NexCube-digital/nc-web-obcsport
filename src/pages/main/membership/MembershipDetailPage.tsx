@@ -1,13 +1,16 @@
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { CalendarDays, CreditCard, Layers3 } from 'lucide-react'
 import { useNavigate, useParams } from 'react-router-dom'
 import NavbarDashboard from '../../../components/layout/Navbar'
 import MobileHeader from '../../../components/layout/MobileHeader'
 import DeferredFooter from '../../../components/layout/DeferredFooter'
 import { getApiErrorMessage } from '../../../services/apiService'
-import { getMembershipDetail, type MembershipDetail } from '../../../services/membershipService'
+import { getMembershipDetail } from '../../../services/membershipService'
 import { parsePersistedDirectPayment } from '../../../services/paymentService'
 import { useIsMobile } from '../../../hooks/useIsMobile'
+import { useAuth } from '../../../hooks/useAuth'
+import { queryKeys } from '../../../utils/queryKeys'
 import { toast } from 'sonner'
 import { useTranslation } from 'react-i18next'
 
@@ -25,24 +28,23 @@ export default function MembershipDetailPage() {
   const { membershipId = '' } = useParams()
   const navigate = useNavigate()
   const isMobile = useIsMobile()
-  const [membership, setMembership] = useState<MembershipDetail | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
-  const [errorMessage, setErrorMessage] = useState('')
+  const { user, isLoggedIn } = useAuth()
+  const customerKey = user?.id ?? user?.email ?? 'anonymous'
+  const membershipQuery = useQuery({
+    queryKey: queryKeys.membershipDetail(customerKey, membershipId),
+    queryFn: () => getMembershipDetail(membershipId),
+    enabled: Boolean(membershipId && isLoggedIn),
+    staleTime: 15_000,
+  })
+  const membership = membershipQuery.data ?? null
+  const isLoading = membershipQuery.isPending
+  const errorMessage = !membership && membershipQuery.error
+    ? getApiErrorMessage(membershipQuery.error, t('membershipDetail.loadError'))
+    : ''
 
   useEffect(() => {
-    if (!membershipId) return
-    let active = true
-    getMembershipDetail(membershipId)
-      .then((detail) => { if (active) setMembership(detail) })
-      .catch((error: unknown) => {
-        if (!active) return
-        const message = getApiErrorMessage(error, t('membershipDetail.loadError'))
-        setErrorMessage(message)
-        toast.error(message)
-      })
-      .finally(() => { if (active) setIsLoading(false) })
-    return () => { active = false }
-  }, [membershipId, t])
+    if (errorMessage) toast.error(errorMessage)
+  }, [errorMessage])
 
   const statusLabel = (status: string) => t(`membershipDetail.statuses.${status}`, { defaultValue: status })
 

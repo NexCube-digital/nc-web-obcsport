@@ -2,15 +2,15 @@ import { lazy } from 'react'
 import { Navigate, Outlet, Route, useLocation } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 
-const LandingPage = lazy(() => import('../pages/landing/LandingPage.tsx'))
+const LandingPage = lazy(() => import('../pages/LandingPage.tsx'))
 const DetailCourt = lazy(() => import('../pages/landing/DetailCourt.tsx'))
 const Login = lazy(() => import('../pages/auth/Login'))
 const Register = lazy(() => import('../pages/auth/Register'))
 const VerifyEmail = lazy(() => import('../pages/auth/VerifyEmail'))
 const ForgetPassword = lazy(() => import('../pages/auth/ForgetPassword'))
 const ResetPassword = lazy(() => import('../pages/auth/ResetPassword'))
-const CheckoutPage = lazy(() => import('../pages/orders/CheckoutPage'))
-const PaymentPage = lazy(() => import('../pages/orders/PaymentPage'))
+const CheckoutPage = lazy(() => import('../pages/orders/CheckoutManagement.tsx'))
+const PaymentPage = lazy(() => import('../pages/orders/PaymentManagement.tsx'))
 const CreditCardPaymentPage = lazy(() => import('../pages/orders/detail/CreditCardPaymentPage.tsx'))
 const SettingPage = lazy(() => import('../pages/account/SettingPage'))
 const ProfileMobile = lazy(() => import('../pages/account/ProfileMobile'))

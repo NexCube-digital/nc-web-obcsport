@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { CalendarDays } from 'lucide-react'
@@ -7,8 +8,9 @@ import BookingScheduleSelector from '../../orders/checkout/BookingScheduleSelect
 import lapangF1 from '../../../assets/images/lapang/Lapang F1.webp'
 import NavbarDashboard from '../../../components/layout/Navbar'
 import DeferredFooter from '../../../components/layout/DeferredFooter'
-import { getFacilityAvailability, getSportsFacilities, type SportsFacility } from '../../../services/facilityService'
+import { getFacilityAvailability, getSportsFacilities, type FacilityAvailability, type SportsFacility } from '../../../services/facilityService'
 import type { MembershipPackage, MembershipSchedule } from '../../../services/membershipService'
+import { queryKeys } from '../../../utils/queryKeys'
 
 interface SessionMembershipProps {
   selectedPackage: MembershipPackage
@@ -33,13 +35,37 @@ export function SessionMembership({ selectedPackage, schedules, facilities, onUp
   const [viewYear, setViewYear] = useState(today.getFullYear())
   const [viewMonth, setViewMonth] = useState(today.getMonth())
   const [selectedDate, setSelectedDate] = useState(schedules[0]?.bookingDate || '')
-  const [availableSlots, setAvailableSlots] = useState<string[]>([])
-  const [bookedSlots, setBookedSlots] = useState<string[]>([])
-  const [isLoading, setIsLoading] = useState(Boolean(schedules[0]?.resourceId && schedules[0]?.bookingDate))
 
   const schedule = schedules[activeSession]
   const selectedFacility = facilities.find((facility) => facility.id === schedule?.resourceId) ?? null
   const facilityImage = selectedFacility?.imageUrl ?? lapangF1
+  const sportType = schedule?.sportType ?? selectedPackage.sportType
+  const availabilityQuery = useQuery({
+    queryKey: queryKeys.facilityAvailability(schedule?.resourceId ?? '', selectedDate, sportType),
+    queryFn: () => getFacilityAvailability(schedule!.resourceId, selectedDate, sportType),
+    enabled: Boolean(schedule?.resourceId && selectedDate),
+    staleTime: 10_000,
+    select: (availability: FacilityAvailability) => {
+      const hourlyStarts = availability.slots.filter((slot) => slot.startMinute % 60 === 0)
+      const intervalMinutes = availability.slots[0]
+        ? availability.slots[0].endMinute - availability.slots[0].startMinute
+        : 15
+      const availableSlots = hourlyStarts.filter((startSlot) => {
+        const endMinute = startSlot.startMinute + 60
+        const coveredSlots = availability.slots.filter(
+          (slot) => slot.startMinute >= startSlot.startMinute && slot.endMinute <= endMinute,
+        )
+        return coveredSlots.length === 60 / intervalMinutes && coveredSlots.every((slot) => slot.available)
+      }).map((slot) => slot.startTime)
+      return {
+        availableSlots,
+        bookedSlots: hourlyStarts.filter((slot) => !availableSlots.includes(slot.startTime)).map((slot) => slot.startTime),
+      }
+    },
+  })
+  const availableSlots = availabilityQuery.data?.availableSlots ?? []
+  const bookedSlots = availabilityQuery.data?.bookedSlots ?? []
+  const isLoading = Boolean(schedule?.resourceId && selectedDate) && availabilityQuery.isFetching
 
   const selectedSessionLabel = useMemo(() => {
     const bookingDate = schedule?.bookingDate
@@ -49,47 +75,11 @@ export function SessionMembership({ selectedPackage, schedules, facilities, onUp
   }, [locale, schedule?.bookingDate])
 
   const selectSession = (index: number) => {
-    setIsLoading(Boolean(schedules[index]?.resourceId && schedules[index]?.bookingDate))
     setActiveSession(index)
     setSelectedDate(schedules[index]?.bookingDate ?? '')
   }
 
-  useEffect(() => {
-    if (!schedule?.resourceId || !selectedDate) return
-
-    let active = true
-    getFacilityAvailability(schedule.resourceId, selectedDate, schedule.sportType ?? selectedPackage.sportType)
-      .then((availability) => {
-        if (!active) return
-        const hourlyStarts = availability.slots.filter((slot) => slot.startMinute % 60 === 0)
-        const intervalMinutes = availability.slots[0]
-          ? availability.slots[0].endMinute - availability.slots[0].startMinute
-          : 15
-        const available = hourlyStarts.filter((startSlot) => {
-          const endMinute = startSlot.startMinute + 60
-          const coveredSlots = availability.slots.filter(
-            (slot) => slot.startMinute >= startSlot.startMinute && slot.endMinute <= endMinute,
-          )
-          return coveredSlots.length === 60 / intervalMinutes && coveredSlots.every((slot) => slot.available)
-        })
-        const availableTimes = available.map((slot) => slot.startTime)
-        setAvailableSlots(availableTimes)
-        setBookedSlots(hourlyStarts.filter((slot) => !availableTimes.includes(slot.startTime)).map((slot) => slot.startTime))
-      })
-      .catch(() => {
-        if (!active) return
-        setAvailableSlots([])
-        setBookedSlots([])
-      })
-      .finally(() => { if (active) setIsLoading(false) })
-
-    return () => { active = false }
-  }, [activeSession, schedule?.resourceId, schedule?.sportType, selectedDate, selectedPackage.sportType])
-
   const chooseFacility = (facilityId: string) => {
-    setIsLoading(false)
-    setAvailableSlots([])
-    setBookedSlots([])
     setSelectedDate('')
     onUpdateSchedule(activeSession, { resourceId: facilityId, bookingDate: '', startTime: '08:00', endTime: '09:00' })
   }
@@ -102,7 +92,6 @@ export function SessionMembership({ selectedPackage, schedules, facilities, onUp
     const date = toDateKey(viewYear, viewMonth, day)
     const todayKey = toDateKey(today.getFullYear(), today.getMonth(), today.getDate())
     if (date < todayKey) return
-    setIsLoading(true)
     setSelectedDate(date)
     onUpdateSchedule(activeSession, { bookingDate: date })
   }

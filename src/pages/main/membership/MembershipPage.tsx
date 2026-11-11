@@ -1,5 +1,6 @@
 // pages/MembershipPage.tsx
 import { useEffect, useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { ArrowRight, ArrowUpRight, Check } from 'lucide-react'
@@ -11,12 +12,29 @@ import ScrollReveal from '../../../components/animation/ScrollReveal'
 import member from '../../../assets/images/member.webp'
 import { getApiErrorMessage } from '../../../services/apiService'
 import { getMembershipPackages, type MembershipPackage, type MembershipSchedule } from '../../../services/membershipService'
+import { queryKeys } from '../../../utils/queryKeys'
 
 const SPORT_LABELS: Record<string, string> = {
   futsal: 'Futsal',
   badminton: 'Badminton',
   pickleball: 'Pickleball',
   billiard: 'Billiard',
+}
+
+const EMPTY_MEMBERSHIP_PACKAGES: MembershipPackage[] = []
+
+function createMembershipSchedules(
+  membershipPackage: MembershipPackage | null,
+  previous: MembershipSchedule[] = [],
+): MembershipSchedule[] {
+  if (!membershipPackage) return []
+  return Array.from({ length: membershipPackage.totalSessions }, (_, index) => ({
+    resourceId: membershipPackage.resource?.id ?? previous[index]?.resourceId ?? '',
+    bookingDate: previous[index]?.bookingDate ?? '',
+    startTime: previous[index]?.startTime ?? '08:00',
+    endTime: previous[index]?.endTime ?? '09:00',
+    sportType: membershipPackage.sportType,
+  }))
 }
 
 /* Section showcase membership (menggantikan foto hero) */
@@ -152,34 +170,25 @@ function MembershipShowcase() {
 function MembershipOptions() {
   const navigate = useNavigate()
   const { t, i18n } = useTranslation()
-  const [packages, setPackages] = useState<MembershipPackage[]>([])
   const [selectedPackageId, setSelectedPackageId] = useState<string | null>(null)
-  const [schedules, setSchedules] = useState<MembershipSchedule[]>([])
-  const [isLoading, setIsLoading] = useState(true)
+  const [scheduleOverrides, setScheduleOverrides] = useState<MembershipSchedule[] | null>(null)
+  const packageQuery = useQuery({
+    queryKey: queryKeys.membershipPackages(),
+    queryFn: () => getMembershipPackages(),
+    staleTime: 5 * 60_000,
+  })
+  const packages = packageQuery.data ?? EMPTY_MEMBERSHIP_PACKAGES
+  const isLoading = packageQuery.isPending
 
   useEffect(() => {
-    let active = true
-    getMembershipPackages()
-      .then((items) => {
-        if (!active) return
-        setPackages(items)
-        setSelectedPackageId(items[0]?.id ?? null)
-        setSchedules(items[0] ? Array.from({ length: items[0].totalSessions }, () => ({
-          resourceId: items[0].resource?.id ?? '',
-          bookingDate: '',
-          startTime: '08:00',
-          endTime: '09:00',
-          sportType: items[0].sportType,
-        })) : [])
-      })
-      .catch((error: unknown) => {
-        if (active) toast.error(getApiErrorMessage(error, t('membership.loadError')))
-      })
-      .finally(() => { if (active) setIsLoading(false) })
-    return () => { active = false }
-  }, [t])
+    if (packageQuery.isError) {
+      toast.error(getApiErrorMessage(packageQuery.error, t('membership.loadError')))
+    }
+  }, [packageQuery.error, packageQuery.isError, t])
 
-  const selectedPackage = packages.find((item) => item.id === selectedPackageId) ?? null
+  const selectedPackage = packages.find((item) => item.id === selectedPackageId) ?? packages[0] ?? null
+  const activePackageId = selectedPackage?.id ?? null
+  const schedules = scheduleOverrides ?? createMembershipSchedules(selectedPackage)
   const getPackageName = (membershipPackage: MembershipPackage) =>
     i18n.resolvedLanguage?.startsWith('en')
       ? membershipPackage.nameEn || membershipPackage.name
@@ -187,13 +196,7 @@ function MembershipOptions() {
 
   const selectPackage = (membershipPackage: MembershipPackage) => {
     setSelectedPackageId(membershipPackage.id)
-    setSchedules(Array.from({ length: membershipPackage.totalSessions }, (_, index) => ({
-      resourceId: membershipPackage.resource?.id ?? schedules[index]?.resourceId ?? '',
-      bookingDate: schedules[index]?.bookingDate ?? '',
-      startTime: schedules[index]?.startTime ?? '08:00',
-      endTime: schedules[index]?.endTime ?? '09:00',
-      sportType: membershipPackage.sportType,
-    })))
+    setScheduleOverrides(createMembershipSchedules(membershipPackage, schedules))
   }
 
   const handleSubmitMembership = () => {
@@ -248,7 +251,7 @@ function MembershipOptions() {
             ) : (
               <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3">
                 {packages.map((membershipPackage) => {
-                  const isSelected = selectedPackageId === membershipPackage.id
+                  const isSelected = activePackageId === membershipPackage.id
                   return (
                     <button
                       key={membershipPackage.id}
@@ -291,7 +294,7 @@ function MembershipOptions() {
             <button
               type="button"
               onClick={handleSubmitMembership}
-              disabled={isLoading || !selectedPackageId}
+              disabled={isLoading || !selectedPackage}
               className="mt-5 h-12 w-full cursor-pointer rounded-xl bg-[#CDF178] font-heading text-base font-bold text-[#404F14] transition-colors hover:bg-[#9AAD3E] disabled:cursor-not-allowed disabled:opacity-50 md:h-[42px] md:rounded-lg md:text-sm"
             >
               <span>{t('membership.selectSchedule', { count: selectedPackage?.totalSessions ?? 0 })}</span>

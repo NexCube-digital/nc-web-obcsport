@@ -1,16 +1,16 @@
 import { lazy, useEffect, useState } from 'react'
-import Navbar from '../../components/layout/LandingNavbar'
-import BtnStart from '../../components/ui/BtnStart'
-import DeferredSection from '../../components/layout/DeferredSection'
-import Hero from './Hero'
+import Navbar from '../components/layout/LandingNavbar'
+import BtnStart from '../components/ui/BtnStart'
+import DeferredSection from '../components/layout/DeferredSection'
+import Hero from './landing/Hero'
 
-const Footer = lazy(() => import('../../components/layout/Footer'))
-const Promo = lazy(() => import('./Promo'))
-const Highlight = lazy(() => import('./Highlight'))
-const Court = lazy(() => import('./Court'))
-const Booking = lazy(() => import('./Booking'))
-const Testimoni = lazy(() => import('./Testimoni'))
-const UnitBisnis = lazy(() => import('./UnitBisnis'))
+const Footer = lazy(() => import('../components/layout/Footer'))
+const Promo = lazy(() => import('./landing/Promo'))
+const Highlight = lazy(() => import('./landing/Highlight'))
+const Court = lazy(() => import('./landing/Court'))
+const Booking = lazy(() => import('./landing/Booking'))
+const Testimoni = lazy(() => import('./landing/Testimoni'))
+const UnitBisnis = lazy(() => import('./landing/UnitBisnis'))
 
 function LandingPage() {
   const [hasScrolled, setHasScrolled] = useState(false)

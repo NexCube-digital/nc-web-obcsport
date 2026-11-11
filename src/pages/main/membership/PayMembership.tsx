@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import { CalendarDays, CreditCard } from 'lucide-react'
 import { Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
@@ -12,6 +13,7 @@ import PendingOrderModal from '../../../components/ui/PendingOrderModal'
 import { isDirectChannel, parseMidtransCharge, type DirectChannel, type DirectPaymentInfo } from '../../../services/paymentService'
 import { purchaseMembership, type MembershipPaymentChannel, type MembershipPackage, type MembershipSchedule, type PurchasedMembership } from '../../../services/membershipService'
 import { getApiErrorMessage } from '../../../services/apiService'
+import { queryKeys } from '../../../utils/queryKeys'
 
 interface MembershipPaymentState {
   membership?: PurchasedMembership
@@ -27,6 +29,7 @@ const formatScheduleDate = (date: string, locale: string) => {
 
 export default function PayMembership() {
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
   const location = useLocation()
   const isMobile = useIsMobile()
   const { t, i18n } = useTranslation()
@@ -68,6 +71,8 @@ export default function PayMembership() {
     try {
       const result = await purchaseMembership(membershipPackage.id, schedules, selectedChannel)
       setMembershipResult(result)
+      void queryClient.invalidateQueries({ queryKey: queryKeys.customerHistoryPrefix })
+      void queryClient.invalidateQueries({ queryKey: queryKeys.myMembershipsPrefix })
 
       if (result.payment && 'chargeResponse' in result.payment) {
         const charge = result.payment.chargeResponse as Parameters<typeof parseMidtransCharge>[0]

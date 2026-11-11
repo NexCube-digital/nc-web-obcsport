@@ -1,236 +1,81 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { ChevronLeft, ChevronRight, Search, X, Zap } from 'lucide-react'
+import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { toast } from 'sonner'
 import NavbarDashboard from '../../components/layout/Navbar'
 import MobileHeader from '../../components/layout/MobileHeader'
 import DeferredFooter from '../../components/layout/DeferredFooter'
-import DeferredSection from '../../components/layout/DeferredSection'
-import { getBookings, type BookingSummary } from '../../services/bookingService'
+import { getBookings } from '../../services/bookingService'
 import { getApiErrorMessage } from '../../services/apiService'
-import { getMyMemberships, type MyMembership } from '../../services/membershipService'
-
-/* Tipe data */
-type TransactionStatus = 'success' | 'failed' | 'pending'
-type FilterType = 'all' | 'success' | 'pending' | 'failed'
-const PAGE_SIZE = 10
-
-interface Transaction {
-  id: string
-  kind: 'booking' | 'membership'
-  code: string
-  paymentMethod: string | null
-  date: string
-  facility: string
-  total: string
-  status: TransactionStatus
-}
-
-interface MobileTransaction {
-  id: string
-  kind: 'booking' | 'membership'
-  paymentMethod: string | null
-  date: string
-  title: string
-  time: string
-  durationHours?: number
-  remainingSessions?: number
-  totalSessions?: number
-  total: string
-  status: TransactionStatus
-}
-
-interface FilterOption {
-  id: FilterType
-  label: string
-}
-
-interface Facility {
-  id: string
-  nameKey: string
-  price: number
-}
-
-// Filter tampilan desktop
-const FILTERS: FilterOption[] = [
-  { id: 'all', label: 'history.filters.all' },
-  { id: 'success', label: 'history.filters.success' },
-  { id: 'pending', label: 'history.filters.pending' },
-  { id: 'failed', label: 'history.filters.failed' },
-]
-
-// Filter tampilan mobile (sesuai desain mobile)
-const MOBILE_FILTERS: FilterOption[] = [
-  { id: 'all', label: 'history.filters.all' },
-  { id: 'pending', label: 'history.filters.active' },
-  { id: 'success', label: 'history.filters.completed' },
-  { id: 'failed', label: 'history.filters.failed' },
-]
-
-// Daftar lapangan di panel "Pesan Lapangan Sekarang" (empty state desktop)
-const FACILITIES: Facility[] = [
-  { id: 'futsal-premium', nameKey: 'history.facilities.futsal', price: 125000 },
-  { id: 'badminton-vip', nameKey: 'history.facilities.badminton', price: 80000 },
-  { id: 'billiard-premium', nameKey: 'history.facilities.billiard', price: 60000 },
-]
-
-// Label dan warna badge per status (tabel desktop)
-const STATUS_BADGE: Record<TransactionStatus, { label: string; className: string }> = {
-  success: { label: 'success', className: 'bg-[#10B95B] text-white' },
-  failed: { label: 'failed', className: 'bg-[#E53E3E] text-white' },
-  pending: { label: 'pending', className: 'bg-[#FFA31A] text-white' },
-}
-
-// Badge outline untuk kartu mobile
-const MOBILE_STATUS_BADGE: Record<TransactionStatus, { label: string; className: string }> = {
-  success: { label: 'success', className: 'border-[#10B95B] text-[#10B95B]' },
-  pending: { label: 'pending', className: 'border-[#E53E3E] text-[#E53E3E]' },
-  failed: { label: 'failed', className: 'border-[#6F6B6E] text-[#6F6B6E]' },
-}
-
-function toTransactionStatus(status: string): TransactionStatus {
-  if (status === 'fully_paid' || status === 'completed') return 'success'
-  if (status === 'cancelled' || status === 'expired' || status === 'refunded') return 'failed'
-  return 'pending'
-}
-
-function minutesToTime(minutes: number) {
-  return `${String(Math.floor(minutes / 60)).padStart(2, '0')}:${String(minutes % 60).padStart(2, '0')}`
-}
-
-function mapBooking(booking: BookingSummary, locale: string): { desktop: Transaction; mobile: MobileTransaction } {
-  const status = toTransactionStatus(booking.status)
-  const date = new Date(`${booking.bookingDate}T00:00:00`).toLocaleDateString(locale, {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-  })
-  const startTime = minutesToTime(booking.startMinute)
-  const endTime = minutesToTime(booking.endMinute)
-  const durationHours = (booking.endMinute - booking.startMinute) / 60
-  const code = `BOOK-${booking.id.slice(-8).toUpperCase()}`
-
-  return {
-    desktop: {
-      id: booking.id,
-      kind: 'booking',
-      code,
-      paymentMethod: booking.latestPayment?.method ?? null,
-      date,
-      facility: booking.resource.name,
-      total: booking.totalPriceFormatted,
-      status,
-    },
-    mobile: {
-      id: booking.id,
-      kind: 'booking',
-      paymentMethod: booking.latestPayment?.method ?? null,
-      date,
-      title: `${booking.resource.name} - ${booking.sportType}`,
-      time: `${startTime} - ${endTime}`,
-      durationHours,
-      total: booking.totalPriceFormatted,
-      status,
-    },
-  }
-}
-
-function membershipStatus(status: MyMembership['status']): TransactionStatus {
-  if (status === 'active') return 'pending'
-  if (status === 'depleted' || status === 'expired') return 'success'
-  return 'failed'
-}
-
-function mapMembership(membership: MyMembership, locale: string): { desktop: Transaction; mobile: MobileTransaction } {
-  const date = new Date(`${membership.purchaseDate}T00:00:00`).toLocaleDateString(locale, {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-  })
-  const status = membershipStatus(membership.status)
-  const code = `MEM-${membership.id.slice(-8).toUpperCase()}`
-
-  return {
-    desktop: {
-      id: membership.id,
-      kind: 'membership',
-      code,
-      paymentMethod: 'Midtrans',
-      date,
-      facility: membership.package.name,
-      total: `Rp ${membership.package.memberPrice.toLocaleString(locale)}`,
-      status,
-    },
-    mobile: {
-      id: membership.id,
-      kind: 'membership',
-      paymentMethod: 'Midtrans',
-      date,
-      title: membership.package.name,
-      time: '',
-      remainingSessions: membership.remainingSessions,
-      totalSessions: membership.totalSessions,
-      total: `Rp ${membership.package.memberPrice.toLocaleString(locale)}`,
-      status,
-    },
-  }
-}
+import { getMyMemberships } from '../../services/membershipService'
+import { useAuth } from '../../hooks/useAuth'
+import { queryKeys } from '../../utils/queryKeys'
+import HistoryFilters from './history/HistoryFilters'
+import MobileTransactionList from './history/MobileTransactionList'
+import DesktopTransactionTable from './history/DesktopTransactionTable'
+import EmptyHistoryState from './history/EmptyHistoryState'
+import {
+  PAGE_SIZE,
+  mapBooking,
+  mapMembership,
+  type FilterType,
+  type Transaction,
+  type TransactionStatus,
+  type MobileTransaction,
+} from '../../utils/historyData'
 
 function HistoryPage() {
   const { t, i18n } = useTranslation()
   const navigate = useNavigate()
+  const { user, isLoggedIn } = useAuth()
+  const customerKey = user?.id ?? user?.email ?? 'anonymous'
   const locale = i18n.resolvedLanguage?.startsWith('en') ? 'en-US' : 'id-ID'
   const [activeFilter, setActiveFilter] = useState<FilterType>('all')
   const [searchQuery, setSearchQuery] = useState('')
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
-  const [transactions, setTransactions] = useState<Transaction[]>([])
-  const [mobileTransactions, setMobileTransactions] = useState<MobileTransaction[]>([])
-  const [isLoading, setIsLoading] = useState(true)
+  const historyQuery = useQuery({
+    queryKey: queryKeys.customerHistory(customerKey),
+    queryFn: () => Promise.allSettled([
+      getBookings({ page: 1, limit: 100 }),
+      getMyMemberships(),
+    ]),
+    enabled: isLoggedIn,
+    staleTime: 15_000,
+    refetchInterval: 30_000,
+    refetchOnWindowFocus: true,
+  })
+  const [bookingResult, membershipResult] = historyQuery.data ?? []
+  const bookingTransactions = bookingResult?.status === 'fulfilled'
+    ? bookingResult.value.bookings.map((booking) => mapBooking(booking, locale))
+    : []
+  const membershipTransactions = membershipResult?.status === 'fulfilled'
+    ? membershipResult.value.map((membership) => mapMembership(membership, locale))
+    : []
+  const transactions: Transaction[] = [
+    ...bookingTransactions.map((item) => item.desktop),
+    ...membershipTransactions.map((item) => item.desktop),
+  ]
+  const mobileTransactions: MobileTransaction[] = [
+    ...bookingTransactions.map((item) => item.mobile),
+    ...membershipTransactions.map((item) => item.mobile),
+  ]
+  const isLoading = historyQuery.isPending
+  const errorNotified = useRef(false)
 
   useEffect(() => {
-    let active = true
-    const loadHistory = async (showError: boolean) => {
-      const [bookingResult, membershipResult] = await Promise.allSettled([
-        getBookings({ page: 1, limit: 100 }),
-        getMyMemberships(),
-      ])
-      if (!active) return
-
-      const bookingTransactions = bookingResult.status === 'fulfilled'
-        ? bookingResult.value.bookings.map((booking) => mapBooking(booking, locale))
-        : []
-      const membershipTransactions = membershipResult.status === 'fulfilled'
-        ? membershipResult.value.map((membership) => mapMembership(membership, locale))
-        : []
-
-      setTransactions([
-        ...bookingTransactions.map((item) => item.desktop),
-        ...membershipTransactions.map((item) => item.desktop),
-      ])
-      setMobileTransactions([
-        ...bookingTransactions.map((item) => item.mobile),
-        ...membershipTransactions.map((item) => item.mobile),
-      ])
-
-      if (showError) {
-        const failedResult = bookingResult.status === 'rejected' ? bookingResult : membershipResult.status === 'rejected' ? membershipResult : null
-        if (failedResult && failedResult.status === 'rejected') {
-          toast.error(getApiErrorMessage(failedResult.reason, t('history.loadPartialError')))
-        }
-      }
-      setIsLoading(false)
-    }
-
-    loadHistory(true)
-    const refreshTimer = window.setInterval(() => loadHistory(false), 30_000)
-
-    return () => {
-      active = false
-      window.clearInterval(refreshTimer)
-    }
-  }, [locale, t])
+    if (!historyQuery.data || errorNotified.current) return
+    const failedResult = bookingResult?.status === 'rejected'
+      ? bookingResult
+      : membershipResult?.status === 'rejected'
+        ? membershipResult
+        : null
+    if (!failedResult || failedResult.status !== 'rejected') return
+    errorNotified.current = true
+    toast.error(getApiErrorMessage(failedResult.reason, t('history.loadPartialError')))
+  }, [bookingResult, historyQuery.data, membershipResult, t])
 
   useEffect(() => {
     const debounceTimer = window.setTimeout(() => {
@@ -270,10 +115,13 @@ function HistoryPage() {
     return matchesStatus && matchesSearch
   })
   const totalPages = Math.max(1, Math.ceil(filteredTransactions.length / PAGE_SIZE))
+  const mobileTotalPages = Math.max(1, Math.ceil(filteredMobile.length / PAGE_SIZE))
   const displayedPage = Math.min(currentPage, totalPages)
+  const displayedMobilePage = Math.min(currentPage, mobileTotalPages)
   const pageStart = (displayedPage - 1) * PAGE_SIZE
+  const mobilePageStart = (displayedMobilePage - 1) * PAGE_SIZE
   const currentTransactions = filteredTransactions.slice(pageStart, pageStart + PAGE_SIZE)
-  const currentMobileTransactions = filteredMobile.slice(pageStart, pageStart + PAGE_SIZE)
+  const currentMobileTransactions = filteredMobile.slice(mobilePageStart, mobilePageStart + PAGE_SIZE)
 
   const handleFilterChange = (filter: FilterType) => {
     setActiveFilter(filter)
@@ -308,335 +156,64 @@ function HistoryPage() {
       </div>
 
       {isLoading && <p role="status" className="mx-auto mt-6 text-sm text-[#6F6B6E]">{t('history.loading')}</p>}
-      {hasNoTransactions && (
-        <main className="hidden flex-1 items-center bg-[#FFFEF7] md:flex">
-          <div className="mx-auto grid w-full max-w-[1100px] grid-cols-1 items-center gap-10 px-6 py-12 lg:grid-cols-2 lg:gap-16 lg:py-16">
-            {/* ---- Kolom kiri: ilustrasi + teks ---- */}
-            <div className="mx-auto w-full max-w-[520px] lg:mx-0">
-              <div className="flex h-[220px] w-full max-w-[380px] flex-col items-center justify-center rounded-3xl bg-[#F1F4EA] lg:h-[260px]">
-                <div className="flex h-[70px] w-[70px] items-center justify-center rounded-full border-2 border-[#004000]">
-                  <div className="flex h-[38px] w-[38px] translate-x-[4px] translate-y-[5px] items-center justify-center rounded-full bg-[#004000] font-heading text-base font-bold text-white">
-                    8
-                  </div>
-                </div>
-                <p className="mt-4 font-heading text-lg font-bold text-[#004000]">
-                  OBC Sport Center
-                </p>
-              </div>
-
-              <h1 className="mt-8 font-heading text-3xl font-bold leading-tight text-[#343133] lg:text-[40px] lg:leading-[1.15]">
-                {t('history.noDesktopTransactionsTitle')}
-              </h1>
-              <p className="mt-3 max-w-[500px] text-base leading-relaxed text-[#4B484A]">
-                {t('history.noDesktopTransactionsDescription')}
-              </p>
-            </div>
-
-            {/* ---- Kolom kanan: pesan lapangan cepat ---- */}
-            <section className="mx-auto w-full max-w-[480px] rounded-3xl border border-[#D9D9D9] bg-white p-8 shadow-[0_2px_12px_rgba(0,0,0,0.06)] lg:mx-0 lg:ml-auto">
-              <h2 className="font-heading text-xl font-bold text-[#343133]">
-                {t('history.bookCourtTitle')}
-              </h2>
-
-              <div className="mt-6 space-y-3.5">
-                {FACILITIES.map((item) => (
-                  <div
-                    key={item.id}
-                    className="flex items-center justify-between gap-3 rounded-xl border border-[#D9D9D9] bg-white px-4 py-3.5"
-                  >
-                    <div className="min-w-0">
-                      <h3 className="truncate font-heading text-sm font-bold text-[#343133]">
-                        {t(item.nameKey)}
-                      </h3>
-                      <p className="mt-0.5 text-xs text-[#6F6B6E]">
-                        {t('history.startingPrice', { price: item.price.toLocaleString(locale) })}
-                      </p>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => navigate(`/booking/${item.id}`)} // TODO: sesuaikan ke route booking sebenarnya
-                      className="flex shrink-0 cursor-pointer items-center gap-1 font-heading text-xs font-bold text-[#004000] hover:opacity-80"
-                    >
-                      {t('history.book')}
-                      <Zap size={12} strokeWidth={1.5} className="fill-[#FFE680] text-[#F5C518]" />
-                    </button>
-                  </div>
-                ))}
-              </div>
-
-              <button
-                type="button"
-                onClick={() => navigate('/fasilitas')} // TODO: sesuaikan ke route daftar fasilitas
-                className="mt-6 inline-flex h-10 w-full cursor-pointer items-center justify-center rounded-md bg-[#CDF074] px-6 text-[13px] font-normal text-[#343133] transition-colors hover:bg-[#BFE45F] sm:w-[306px]"
-              >
-                {t('history.browseOtherCourts')}
-              </button>
-            </section>
-          </div>
-        </main>
-      )}
+      {hasNoTransactions && <EmptyHistoryState locale={locale} onNavigate={navigate} />}
 
       <main
         className={`mx-auto min-h-0 w-full max-w-[1248px] flex-1 px-5 pt-1 pb-32 md:px-6 md:pt-8 md:pb-8 ${
           hasNoTransactions ? 'md:hidden' : 'md:flex md:flex-col'
         }`}
       >
-        {/* Judul & filter (mobile) */}
-        <div className="md:hidden">
-          <p className="text-sm text-[#6F6B6E]">{t('history.mobileDescription')}</p>
-          <label className="mt-3 flex h-10 items-center gap-2 rounded-lg border border-[#D4D4D4] bg-white px-3 focus-within:border-[#404F14]">
-            <Search size={16} className="shrink-0 text-[#6F6B6E]" aria-hidden="true" />
-            <input
-              type="search"
-              value={searchQuery}
-              onChange={(event) => setSearchQuery(event.target.value)}
-              placeholder={t('history.searchMobile')}
-              aria-label={t('history.searchLabel')}
-              className="min-w-0 flex-1 bg-transparent text-sm text-[#343133] outline-none placeholder:text-[#9A9698]"
-            />
-            {searchQuery && (
-              <button
-                type="button"
-                onClick={() => setSearchQuery('')}
-                aria-label={t('history.clearSearch')}
-                className="grid h-7 w-7 shrink-0 place-items-center rounded-md text-[#6F6B6E] hover:bg-[#F1F2EE]"
-              >
-                <X size={15} aria-hidden="true" />
-              </button>
-            )}
-          </label>
-          <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
-            {MOBILE_FILTERS.map((filter) => {
-              const isActive = activeFilter === filter.id
-              return (
-                <button
-                  key={filter.id}
-                  type="button"
-                  onClick={() => handleFilterChange(filter.id)}
-                  className={`shrink-0 rounded-full border px-5 py-2 text-xs font-heading font-bold transition-colors cursor-pointer ${
-                    isActive
-                      ? 'bg-[#404F14] border-[#404F14] text-white'
-                      : 'bg-white border-[#D4D4D4] text-[#6F6B6E]'
-                  }`}
-                >
-                  {t(filter.label)}
-                </button>
-              )
-            })}
-          </div>
-        </div>
+        <HistoryFilters
+          activeFilter={activeFilter}
+          searchQuery={searchQuery}
+          onFilterChange={handleFilterChange}
+          onSearchChange={setSearchQuery}
+        />
 
-        {/* Judul & filter (desktop) */}
-        <div className="hidden gap-4 md:flex md:flex-col lg:flex-row lg:items-start lg:justify-between">
-          <div>
-            <h1 className="font-heading text-2xl font-bold text-[#343133] lg:text-3xl">
-              {t('history.title')}
-            </h1>
-            <p className="mt-1 text-sm text-[#343133]">
-              {t('history.description')}
-            </p>
-          </div>
+        <MobileTransactionList
+          transactions={currentMobileTransactions}
+          hasNoTransactions={hasNoMobileTransactions}
+          onDetail={handleDetail}
+        />
+        <DesktopTransactionTable
+          transactions={currentTransactions}
+          hasFilteredTransactions={filteredTransactions.length > 0}
+          onDetail={handleDetail}
+        />
 
-          <div className="flex shrink-0 flex-col items-stretch gap-3 lg:items-end">
-            <label className="flex h-10 min-w-[280px] items-center gap-2 rounded-lg border border-[#D4D4D4] bg-white px-3 focus-within:border-[#404F14]">
-              <Search size={16} className="shrink-0 text-[#6F6B6E]" aria-hidden="true" />
-              <input
-                type="search"
-                value={searchQuery}
-                onChange={(event) => setSearchQuery(event.target.value)}
-                placeholder={t('history.searchDesktop')}
-                aria-label={t('history.searchLabel')}
-                className="min-w-0 flex-1 bg-transparent text-sm text-[#343133] outline-none placeholder:text-[#9A9698]"
-              />
-              {searchQuery && (
-                <button
-                  type="button"
-                  onClick={() => setSearchQuery('')}
-                  aria-label={t('history.clearSearch')}
-                  className="grid h-7 w-7 shrink-0 place-items-center rounded-md text-[#6F6B6E] hover:bg-[#F1F2EE]"
-                >
-                  <X size={15} aria-hidden="true" />
-                </button>
-              )}
-            </label>
-            <div className="flex flex-wrap items-center gap-2">
-              {FILTERS.map((filter) => {
-                const isActive = activeFilter === filter.id
-                return (
-                  <button
-                    key={filter.id}
-                    type="button"
-                    onClick={() => handleFilterChange(filter.id)}
-                    className={`rounded-full border px-4 py-1.5 text-xs font-heading font-bold transition-colors cursor-pointer ${
-                      isActive
-                        ? 'bg-[#404F14] border-[#404F14] text-white'
-                        : 'bg-white border-[#404F14] text-[#404F14] hover:bg-[#F5FAF3]'
-                    }`}
-                  >
-                    {t(filter.label)}
-                  </button>
-                )
-              })}
-            </div>
-          </div>
-        </div>
-
-        {/* Kartu transaksi (mobile) */}
-        <div className="md:hidden">
-          <DeferredSection placeholderClassName="mt-4 min-h-[420px]">
-          {filteredMobile.length > 0 ? (
-            <ul className="mt-4 space-y-4">
-              {currentMobileTransactions.map((trx) => {
-                const badge = MOBILE_STATUS_BADGE[trx.status]
-                return (
-                  <li
-                    key={trx.id}
-                    className="rounded-xl border border-[#E5E5E5] bg-white px-3.5 py-3 shadow-[0_1px_4px_rgba(0,0,0,0.05)]"
-                  >
-                    <div className="flex items-center justify-between">
-                      <span
-                        className={`rounded border px-2 py-0.5 text-[10px] font-heading font-bold ${badge.className}`}
-                      >
-                        {t(`history.status.${badge.label}`)}
-                      </span>
-                      <span className="text-xs text-[#6F6B6E]">{trx.date}</span>
-                    </div>
-
-                    <h2 className="mt-3 font-heading text-base font-bold text-[#121212]">
-                      {trx.title}
-                    </h2>
-                    <p className="mt-1 text-sm text-[#6F6B6E]">
-                      {trx.kind === 'membership'
-                        ? t('history.remainingSessions', {
-                            remaining: trx.remainingSessions,
-                            total: trx.totalSessions,
-                          })
-                        : t('history.time', {
-                            time: t('history.bookingSchedule', {
-                              start: trx.time.split(' - ')[0],
-                              end: trx.time.split(' - ')[1],
-                              hours: trx.durationHours,
-                            }),
-                          })}
-                    </p>
-
-                    <div className="mt-4 flex items-center justify-between">
-                      <span className="text-sm text-[#6F6B6E]">{t('history.totalPayment')}</span>
-                      <span className="font-heading text-base font-bold text-[#404F14]">
-                        {trx.total}
-                      </span>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => handleDetail(trx)}
-                      className="mt-3 w-full rounded-lg border border-[#404F14] py-2 font-heading text-xs font-bold text-[#404F14]"
-                    >
-                      {t('history.detail')}
-                    </button>
-                  </li>
-                )
-              })}
-            </ul>
-          ) : (
-            /* Kondisi kosong mobile */
-            <div className="flex min-h-[60vh] flex-col items-center justify-center text-center">
-              <h2 className="font-heading text-xl font-bold text-[#404F14]">
-                {hasNoMobileTransactions ? t('history.noMobileTransactions') : t('history.noSearchResults')}
-              </h2>
-              <p className="mt-3 max-w-[300px] text-sm leading-relaxed text-[#6F6B6E]">
-                {hasNoMobileTransactions
-                  ? t('history.noMobileTransactionsDescription')
-                  : t('history.noFilterResults')}
-              </p>
-              {hasNoMobileTransactions && (
-                <a
-                  href="/"
-                  className="mt-5 inline-flex h-12 items-center justify-center rounded-xl bg-[#404F14] px-8 text-sm font-heading font-bold text-white"
-                >
-                  {t('history.browseCourts')}
-                </a>
-              )}
-            </div>
-          )}
-          </DeferredSection>
-        </div>
-
-        {/* Tabel transaksi (desktop) */}
-        <DeferredSection placeholderClassName="hidden min-h-[320px] md:block">
-        <section className="mt-6 hidden min-h-0 overflow-auto rounded-2xl border border-[#D4D4D4] bg-white px-4 pb-6 md:block lg:px-6">
-          <table className="w-full min-w-[820px] border-separate border-spacing-0 text-left">
-            <thead>
-              <tr>
-                <th className="w-[160px] sticky top-0 z-10 border-b border-[#D4D4D4] bg-white pt-6 pb-4 text-xs font-heading font-bold text-[#343133]">
-                  {t('history.table.bookingCode')}
-                </th>
-                <th className="w-[160px] sticky top-0 z-10 border-b border-[#D4D4D4] bg-white pt-6 pb-4 text-xs font-heading font-bold text-[#343133]">
-                  {t('history.table.date')}
-                </th>
-                <th className="sticky top-0 z-10 border-b border-[#D4D4D4] bg-white pt-6 pb-4 text-xs font-heading font-bold text-[#343133]">
-                  {t('history.table.facility')}
-                </th>
-                <th className="w-[150px] sticky top-0 z-10 border-b border-[#D4D4D4] bg-white pt-6 pb-4 text-xs font-heading font-bold text-[#343133]">
-                  {t('history.table.total')}
-                </th>
-                <th className="w-[130px] sticky top-0 z-10 border-b border-[#D4D4D4] bg-white pt-6 pb-4 text-xs font-heading font-bold text-[#343133]">
-                  {t('history.table.status')}
-                </th>
-                <th className="w-[90px] sticky top-0 z-10 border-b border-[#D4D4D4] bg-white pt-6 pb-4 text-center text-xs font-heading font-bold text-[#343133]">
-                  {t('history.table.action')}
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {currentTransactions.map((trx) => {
-                const badge = STATUS_BADGE[trx.status]
-                return (
-                  <tr key={trx.id}>
-                    <td className="pt-6 text-sm font-heading font-bold text-[#404F14]">
-                      {trx.code}
-                    </td>
-                    <td className="pt-6 text-sm text-[#6F6B6E]">{trx.date}</td>
-                    <td className="pt-6 text-sm font-heading font-bold text-[#343133]">
-                      {trx.facility}
-                    </td>
-                    <td className="pt-6 text-sm font-heading font-bold text-[#343133]">
-                      {trx.total}
-                    </td>
-                    <td className="pt-6">
-                      <span
-                        className={`inline-block rounded px-2 py-1 text-[10px] font-heading font-bold leading-none ${badge.className}`}
-                      >
-                        {t(`history.status.${badge.label}`)}
-                      </span>
-                    </td>
-                    <td className="pt-6 text-center">
-                      <button
-                        type="button"
-                        onClick={() => handleDetail(trx)}
-                        className="cursor-pointer text-xs font-heading font-bold text-[#404F14] underline underline-offset-2 hover:text-[#004000]"
-                      >
-                        {t('history.detail')}
-                      </button>
-                    </td>
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
-
-          {/* Kondisi kosong saat filter tidak menemukan data */}
-          {filteredTransactions.length === 0 && (
-            <p className="pt-6 text-sm text-[#6F6B6E]">
-              {t('history.noFilterResults')}
-            </p>
-          )}
-        </section>
-        </DeferredSection>
+        {filteredMobile.length > 0 && mobileTotalPages > 1 && (
+          <nav
+            aria-label={t('history.paginationLabel')}
+            className="mt-5 flex items-center justify-center gap-4 pb-4 md:hidden"
+          >
+            <button
+              type="button"
+              onClick={() => setCurrentPage(Math.max(1, displayedMobilePage - 1))}
+              disabled={displayedMobilePage === 1}
+              aria-label={t('history.previousPage')}
+              className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-[#D4D4D4] text-[#404F14] disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              <ChevronLeft size={18} aria-hidden="true" />
+            </button>
+            <span aria-live="polite" className="font-heading text-sm text-[#343133]">
+              {t('history.pageOf', { page: displayedMobilePage, total: mobileTotalPages })}
+            </span>
+            <button
+              type="button"
+              onClick={() => setCurrentPage(Math.min(mobileTotalPages, displayedMobilePage + 1))}
+              disabled={displayedMobilePage === mobileTotalPages}
+              aria-label={t('history.nextPage')}
+              className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-[#D4D4D4] text-[#404F14] disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              <ChevronRight size={18} aria-hidden="true" />
+            </button>
+          </nav>
+        )}
 
         {filteredTransactions.length > 0 && totalPages > 1 && (
           <nav
             aria-label={t('history.paginationLabel')}
-            className="mt-5 flex items-center justify-center gap-4 pb-4"
+            className="mt-5 hidden items-center justify-center gap-4 pb-4 md:flex"
           >
             <button
               type="button"
