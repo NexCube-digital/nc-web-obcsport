@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { lazy, Suspense, useEffect, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import { useTranslation } from 'react-i18next'
@@ -6,13 +6,18 @@ import type { CartItem } from '../../components/ui/CartModal'
 import { COURT_FACILITIES } from '../../data/facilitiesData'
 import type { FacilityCard } from '../main/home/Court'
 import { useIsMobile } from '../../hooks/useIsMobile'
-import { getApiErrorMessage } from '../../services/apiService'
 import { MAX_SESSION_HOURS, timeToMinutes } from '../../utils/orders/checkoutDateUtils'
-import CheckoutMobileView from './CheckoutMobile'
-import CheckoutDesktopView from './CheckoutDesktop'
+const CheckoutMobileView = lazy(() => import('./CheckoutMobile'))
+const CheckoutDesktopView = lazy(() => import('./CheckoutDesktop'))
 import CheckoutOverlays from './checkout/CheckoutOverlays'
 import { useBookingSchedule } from '../../utils/orders/useBookingSchedule'
 import { useCheckoutCart } from '../../utils/orders/useCheckoutCart'
+import {
+  CART_PAYMENT_STATE_STORAGE_KEY,
+  CHECKOUT_STATE_STORAGE_KEY,
+  readSessionJSON,
+  writeSessionJSON,
+} from '../../utils/orders/checkoutStorage'
 import fallbackCourtImage from '../../assets/no-image.webp'
 
 type CheckoutState = {
@@ -26,7 +31,7 @@ function DetailOrder() {
   const navigate = useNavigate()
   const location = useLocation()
   const isMobile = useIsMobile()
-  const checkoutState = (location.state as CheckoutState | null) ?? {}
+  const checkoutState = (location.state as CheckoutState | null) ?? readSessionJSON<CheckoutState>(CHECKOUT_STATE_STORAGE_KEY, {})
   const resourceId = checkoutState.resourceId
   const sportType = checkoutState.sportType ?? 'futsal'
   const isSoccer = sportType === 'sepakbola'
@@ -53,8 +58,12 @@ function DetailOrder() {
   const [isCheckoutModalOpen, setIsCheckoutModalOpen] = useState(false)
 
   useEffect(() => {
-    if (!resourceId) navigate('/home', { replace: true })
-  }, [navigate, resourceId])
+    if (!resourceId) {
+      navigate('/home', { replace: true })
+      return
+    }
+    writeSessionJSON(CHECKOUT_STATE_STORAGE_KEY, { resourceId, sportType, facility })
+  }, [facility, navigate, resourceId, sportType])
 
   const openMobileSheetForSelection = () => {
     schedule.resetSelection()
@@ -180,13 +189,14 @@ function DetailOrder() {
       cartItems: items,
     }
 
-    sessionStorage.setItem('obc-cart-payment-state', JSON.stringify(paymentState))
+    writeSessionJSON(CART_PAYMENT_STATE_STORAGE_KEY, paymentState)
     cart.setIsCartOpen(false)
     navigate('/payment', { state: paymentState })
   }
 
   return (
     <>
+      <Suspense fallback={<div aria-hidden="true" className="min-h-[100dvh] bg-white" />}>
       {isMobile ? (
         <CheckoutMobileView
           facility={facility}
@@ -211,6 +221,7 @@ function DetailOrder() {
           onConfirmSchedule={handleConfirmSchedule}
         />
       )}
+      </Suspense>
 
       <CheckoutOverlays
         isCheckoutModalOpen={isCheckoutModalOpen}

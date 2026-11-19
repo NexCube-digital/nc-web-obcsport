@@ -10,7 +10,7 @@ type PasswordSecuritySectionProps = {
   onPasswordCreated: () => void
 }
 
-const MIN_PASSWORD_LENGTH = 12
+const MIN_PASSWORD_LENGTH = 8
 
 function PasswordSecuritySection({ hasPassword, onPasswordCreated }: PasswordSecuritySectionProps) {
   const { t } = useTranslation()

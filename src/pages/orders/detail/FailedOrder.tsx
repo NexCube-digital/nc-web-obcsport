@@ -8,6 +8,7 @@ import lapangF1 from '../../../assets/images/lapang/Lapang F1.webp'
 import { useTranslation } from 'react-i18next'
 import usePublicSiteContact from '../../../hooks/usePublicSiteContact'
 import { getWhatsAppHref } from '../../../services/siteContactService'
+import { formatRupiah } from '../../../utils/formatters'
 
 /* Tipe data   */
 interface FailedState {
@@ -26,8 +27,6 @@ const DEFAULT_BOOKING_CODE = 'OBC-BAD-1120'
 const DEFAULT_FACILITY = 'Badminton VIP Court'
 const DEFAULT_SCHEDULE = 'Sabtu, 14 Mar (09:00 - 11:00)'
 const DEFAULT_TOTAL = 160000
-
-const formatRupiah = (value: number) => `Rp ${value.toLocaleString('id-ID')}`
 
 function FailedOrder() {
   const { t } = useTranslation()

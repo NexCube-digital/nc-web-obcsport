@@ -3,10 +3,11 @@ import { CheckCircle2, Clock } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import ScrollReveal from '../../../components/animation/ScrollReveal'
 import type { BookingDetails } from '../../../services/bookingService'
+import { formatRupiah } from '../../../utils/formatters'
 
 const FONT_MONTSERRAT = "font-['Montserrat',sans-serif]"
 
-export const formatRupiah = (value: number) => `Rp ${value.toLocaleString('id-ID')}`
+export { formatRupiah }
 
 export const isPaidBooking = (booking: BookingDetails | null) => {
   const bookingStatus = booking?.status.toLowerCase()

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Plus, Search } from 'lucide-react'
 import NavbarDashboard from '../../components/layout/Navbar'
@@ -6,6 +6,7 @@ import MobileHeader from '../../components/layout/MobileHeader'
 import DeferredFooter from '../../components/layout/DeferredFooter'
 import DeferredSection from '../../components/layout/DeferredSection'
 import { useIsMobile } from '../../hooks/useIsMobile'
+import { useDebouncedValue } from '../../hooks/useDebouncedValue'
 import usePublicSiteContact from '../../hooks/usePublicSiteContact'
 import { getWhatsAppHref } from '../../services/siteContactService'
 
@@ -20,15 +21,22 @@ function HelpPage() {
   const { t, i18n } = useTranslation()
   const contact = usePublicSiteContact()
   const supportWhatsAppUrl = getWhatsAppHref(contact.whatsapp)
-  const faqItems = t('help.faqs', { returnObjects: true }) as FaqItem[]
+  const faqItems = useMemo(
+    () => t('help.faqs', { returnObjects: true }) as FaqItem[],
+    [t],
+  )
   const [searchQuery, setSearchQuery] = useState('')
+  const debouncedSearchQuery = useDebouncedValue(searchQuery)
   const isMobile = useIsMobile()
 
   const [openFaqId, setOpenFaqId] = useState<string | null>(() => faqItems[0]?.id ?? null)
 
-  const normalizedSearch = searchQuery.toLocaleLowerCase(i18n.resolvedLanguage?.startsWith('en') ? 'en-US' : 'id-ID')
-  const filteredFaqs = faqItems.filter((faq) =>
-    faq.question.toLocaleLowerCase(i18n.resolvedLanguage?.startsWith('en') ? 'en-US' : 'id-ID').includes(normalizedSearch)
+  const normalizedSearch = debouncedSearchQuery.toLocaleLowerCase(i18n.resolvedLanguage?.startsWith('en') ? 'en-US' : 'id-ID')
+  const filteredFaqs = useMemo(
+    () => faqItems.filter((faq) =>
+      faq.question.toLocaleLowerCase(i18n.resolvedLanguage?.startsWith('en') ? 'en-US' : 'id-ID').includes(normalizedSearch)
+    ),
+    [faqItems, i18n.resolvedLanguage, normalizedSearch],
   )
 
   const handleContactWhatsApp = () => {

@@ -7,6 +7,8 @@ import { useAuth } from '../../hooks/useAuth'
 import { getImageUrl } from '../../utils/imageUrl'
 import { cartService, removeBackendCartItem, syncBackendCart } from '../../services/cart'
 import NotificationDropdown from './NotificationDropdown'
+import { timeToMinutes } from '../../utils/orders/checkoutDateUtils'
+import { getInitials as getUserInitials } from '../../utils/formatters'
 
 const CartModal = lazy(() => import('../ui/CartModal'))
 
@@ -44,21 +46,6 @@ const LANGUAGES: LanguageOption[] = [
   { code: 'IND', label: 'Indonesia' },
   { code: 'ENG', label: 'English' },
 ]
-
-const timeToMinutes = (time: string) => {
-  const [hours, minutes] = time.split(':').map(Number)
-  return hours * 60 + minutes
-}
-
-function getUserInitials(name: string): string {
-  return name
-    .trim()
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0].toUpperCase())
-    .join('')
-}
 
 /* Atribut dasar untuk semua ikon SVG */
 const iconProps: React.SVGProps<SVGSVGElement> = {

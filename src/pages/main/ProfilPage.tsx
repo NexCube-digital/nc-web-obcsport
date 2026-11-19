@@ -7,6 +7,7 @@ import DeferredSection from '../../components/layout/DeferredSection'
 import DeferredFooter from '../../components/layout/DeferredFooter'
 import { sportApi } from '../../services/api'
 import { useAuth } from '../../hooks/useAuth'
+import { getInitials } from '../../utils/formatters'
 
 const LABEL_CLASS = 'block text-sm font-heading font-medium text-[#121212] mb-2'
 const INPUT_CLASS =
@@ -14,15 +15,6 @@ const INPUT_CLASS =
 const CARD_CLASS = 'rounded-xl border border-[#E5E5E5] bg-white px-6 pt-6'
 const CARD_TITLE_CLASS =
   'font-heading font-semibold text-lg text-[#004000] pb-3 border-b border-[#E5E5E5]'
-
-function getInitials(name: string): string {
-  return name
-    .trim()
-    .split(/\s+/)
-    .slice(0, 2)
-    .map((word) => word.charAt(0).toUpperCase())
-    .join('')
-}
 
 function maskEmail(email: string): string {
   const [local, domain] = email.split('@')

@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom'
 import { ArrowRight, CalendarClock, Plus, ShoppingCart, Trash2, X } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import fallbackCourtImage from '../../assets/no-image.webp'
+import { formatRupiah } from '../../utils/formatters'
+import { useDismissOnEscape } from '../../hooks/useDismissOnEscape'
 
 /* -------------------------------------------------------------------------
    Tipe data
@@ -34,8 +36,6 @@ interface CartModalProps {
 
 const FONT_MONTSERRAT = "font-['Montserrat',sans-serif]"
 
-const formatRupiah = (value: number) => `Rp ${value.toLocaleString('id-ID')}`
-
 /* Animasi masuk drawer & overlay. Dimatikan otomatis jika pengguna memilih reduced motion */
 const ANIMATION_CSS = `
 @keyframes cart-slide-in { from { transform: translateX(100%); } to { transform: translateX(0); } }
@@ -51,12 +51,9 @@ const ANIMATION_CSS = `
 
 function CartModal({ isOpen, onClose, items = [], onRemove, onCheckout }: CartModalProps) {
   const { t } = useTranslation()
+  useDismissOnEscape(onClose, isOpen)
   useEffect(() => {
     if (!isOpen) return
-
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') onClose()
-    }
 
     const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth
     const previousOverflow = document.body.style.overflow
@@ -69,12 +66,10 @@ function CartModal({ isOpen, onClose, items = [], onRemove, onCheckout }: CartMo
       document.body.style.paddingRight = `${currentPaddingRight + scrollbarWidth}px`
     }
     document.body.style.overflow = 'hidden'
-    document.addEventListener('keydown', handleKeyDown)
 
     return () => {
       document.body.style.overflow = previousOverflow
       document.body.style.paddingRight = previousPaddingRight
-      document.removeEventListener('keydown', handleKeyDown)
     }
   }, [isOpen, onClose])
 

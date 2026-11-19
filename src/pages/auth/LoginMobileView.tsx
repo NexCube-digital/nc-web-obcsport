@@ -1,9 +1,20 @@
-import type { FormEventHandler } from 'react'
+import type { FormEventHandler, RefObject } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Eye, EyeOff, House } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import logo from '../../assets/logo/unit bisnis/sport.webp'
 import ScrollReveal from '../../components/animation/ScrollReveal'
+
+function GoogleIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg">
+      <path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.615z" />
+      <path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.258c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332C2.438 15.983 5.482 18 9 18z" />
+      <path fill="#FBBC05" d="M3.964 10.707A5.41 5.41 0 013.682 9c0-.593.102-1.17.282-1.707V4.961H.957A8.996 8.996 0 000 9c0 1.452.348 2.827.957 4.039l3.007-2.332z" />
+      <path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0 5.482 0 2.438 2.017.957 4.961L3.964 7.293C4.672 5.166 6.656 3.58 9 3.58z" />
+    </svg>
+  )
+}
 
 type LoginMobileViewProps = {
   email: string
@@ -16,18 +27,7 @@ type LoginMobileViewProps = {
   onTogglePassword: () => void
   onRememberMeChange: (rememberMe: boolean) => void
   onSubmit: FormEventHandler<HTMLFormElement>
-  onGoogleLogin: () => void
-}
-
-function GoogleIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg">
-      <path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.615z" />
-      <path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.258c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332C2.438 15.983 5.482 18 9 18z" />
-      <path fill="#FBBC05" d="M3.964 10.707A5.41 5.41 0 013.682 9c0-.593.102-1.17.282-1.707V4.961H.957A8.996 8.996 0 000 9c0 1.452.348 2.827.957 4.039l3.007-2.332z" />
-      <path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0 5.482 0 2.438 2.017.957 4.961L3.964 7.293C4.672 5.166 6.656 3.58 9 3.58z" />
-    </svg>
-  )
+  googleButtonRef: RefObject<HTMLDivElement | null>
 }
 
 function LoginMobileView({
@@ -41,7 +41,7 @@ function LoginMobileView({
   onTogglePassword,
   onRememberMeChange,
   onSubmit,
-  onGoogleLogin,
+  googleButtonRef,
 }: LoginMobileViewProps) {
   const { t } = useTranslation()
   const PasswordIcon = showPassword ? EyeOff : Eye
@@ -143,14 +143,17 @@ function LoginMobileView({
           <span className="h-px flex-1 bg-[#D4D4D4]" />
         </div>
 
-        <button
-          type="button"
-          onClick={onGoogleLogin}
-          className="mt-[clamp(8px,1.8vh,20px)] flex h-[clamp(40px,6.8vh,54px)] w-full items-center justify-center gap-2 rounded-xl border border-[#D4D4D4] bg-white text-sm font-bold text-[#121212] active:bg-[#FDFCF7] transition-colors cursor-pointer"
-        >
-          <GoogleIcon />
-          {t('auth.loginGoogle')}
-        </button>
+        <div className="relative mt-[clamp(8px,1.8vh,20px)] h-[clamp(40px,6.8vh,54px)] w-full">
+          <div className="pointer-events-none absolute inset-0 flex items-center justify-center gap-2 rounded-xl border border-[#D4D4D4] bg-white text-sm font-bold text-[#121212]">
+            <GoogleIcon />
+            {t('auth.loginGoogle')}
+          </div>
+          <div
+            ref={googleButtonRef}
+            className="absolute inset-0 z-10 overflow-hidden rounded-xl opacity-0 [&>div]:h-full [&>div]:w-full [&>iframe]:h-full [&>iframe]:w-full"
+            aria-label={t('auth.loginGoogle')}
+          />
+        </div>
 
         <p className="mt-[clamp(10px,2.4vh,28px)] text-center font-body text-sm text-[#343133]">
           {t('auth.noAccount')}{' '}

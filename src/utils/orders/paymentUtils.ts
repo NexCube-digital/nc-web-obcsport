@@ -1,4 +1,7 @@
 import type { PendingOrderModalData } from './paymentTypes'
+import { formatRupiah as formatRupiahShared } from '../formatters'
+
+export { formatRupiahShared as formatRupiah }
 
 export const PENDING_ORDER_STORAGE_KEY = 'obc-pending-payment-state'
 export const PENDING_ORDER_MAX_AGE_MS = 3 * 60 * 1000
@@ -13,8 +16,6 @@ export const EXTRA_ITEMS = [
   { id: 'raket', name: 'Additional racket rental', price: 20000 },
   { id: 'bola', name: 'Ball / paddle rental', price: 15000 },
 ]
-
-export const formatRupiah = (value: number) => `Rp ${value.toLocaleString('id-ID')}`
 
 export const hourOf = (time: string) => {
   const [hour, minute] = time.split(':').map(Number)

@@ -5,14 +5,13 @@ import { chargeBookingByCreditCard } from '../../../services/bookingService'
 import { getApiErrorMessage } from '../../../services/apiService'
 import { authenticateMidtransCard, tokenizeMidtransCard } from '../../../services/paymentService'
 import { useTranslation } from 'react-i18next'
+import { formatRupiah } from '../../../utils/formatters'
 
 interface CreditCardPaymentFormProps {
 	bookingId: string
 	amount: number
 	onPaymentStarted: () => void
 }
-
-const formatRupiah = (value: number) => `Rp ${value.toLocaleString('id-ID')}`
 
 function CreditCardPaymentForm({ bookingId, amount, onPaymentStarted }: CreditCardPaymentFormProps) {
 	const { t } = useTranslation()

@@ -44,7 +44,7 @@ export function useNotifications(initialPage: number = 1, initialLimit: number =
     queryKey: queryKeys.notifications.unreadCount(customerKey),
     queryFn: getUnreadCount,
     staleTime: 15_000,
-    refetchInterval: 30_000,
+    refetchInterval: () => document.visibilityState === 'visible' ? 30_000 : false,
     refetchOnWindowFocus: true,
   })
 

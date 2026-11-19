@@ -6,6 +6,7 @@ import { useIsMobile } from '../../../hooks/useIsMobile'
 import { getBookingDetails, type BookingDetails } from '../../../services/bookingService'
 import { useTranslation } from 'react-i18next'
 import SuccessMobileView from './SuccessMobileView'
+import { formatRupiah } from '../../../utils/formatters'
 
 const TestimonialModal = lazy(() => import('../../../components/ui/TestimonialModal'))
 
@@ -41,8 +42,6 @@ const DEFAULTS = {
   promo: 25000,
   bookingCode: 'OBC-FUT-9021',
 }
-
-const formatRupiah = (value: number) => `Rp ${value.toLocaleString('id-ID')}`
 
 function SuccesOrder() {
   const { t, i18n } = useTranslation()

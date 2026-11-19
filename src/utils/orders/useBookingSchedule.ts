@@ -48,7 +48,9 @@ export function useBookingSchedule({
   const [conflictMessage, setConflictMessage] = useState<string | null>(null)
 
   useEffect(() => {
-    const timer = window.setInterval(() => setCurrentTime(new Date()), 30_000)
+    const timer = window.setInterval(() => {
+      if (document.visibilityState === 'visible') setCurrentTime(new Date())
+    }, 30_000)
     return () => window.clearInterval(timer)
   }, [])
 
@@ -64,19 +66,22 @@ export function useBookingSchedule({
     queryFn: () => getFacilityPriceTiers(resourceId!),
     enabled: Boolean(resourceId),
     staleTime: 5 * 60_000,
+    gcTime: 10 * 60_000,
   })
   const availabilityQuery = useQuery({
     queryKey: queryKeys.facilityAvailability(resourceId ?? '', selectedDate ?? '', sportType),
     queryFn: () => getFacilityAvailability(resourceId!, selectedDate!, sportType),
     enabled: Boolean(resourceId && selectedDate),
     staleTime: 10_000,
+    gcTime: 5 * 60_000,
   })
   const calendarQuery = useQuery({
     queryKey: queryKeys.facilityCalendar(resourceId ?? '', calendarFrom, calendarTo),
     queryFn: () => getFacilityCalendar(resourceId!, calendarFrom, calendarTo),
     enabled: Boolean(resourceId),
     staleTime: 30_000,
-    refetchInterval: 35_000,
+    gcTime: 10 * 60_000,
+    refetchInterval: () => document.visibilityState === 'visible' ? 35_000 : false,
   })
   const pricePreviewQuery = useQuery({
     queryKey: [

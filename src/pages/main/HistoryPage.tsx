@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
@@ -44,24 +44,30 @@ function HistoryPage() {
     ]),
     enabled: isLoggedIn,
     staleTime: 15_000,
-    refetchInterval: 30_000,
+    refetchInterval: () => document.visibilityState === 'visible' ? 30_000 : false,
     refetchOnWindowFocus: true,
   })
   const [bookingResult, membershipResult] = historyQuery.data ?? []
-  const bookingTransactions = bookingResult?.status === 'fulfilled'
-    ? bookingResult.value.bookings.map((booking) => mapBooking(booking, locale))
-    : []
-  const membershipTransactions = membershipResult?.status === 'fulfilled'
-    ? membershipResult.value.map((membership) => mapMembership(membership, locale))
-    : []
-  const transactions: Transaction[] = [
+  const bookingTransactions = useMemo(
+    () => bookingResult?.status === 'fulfilled'
+      ? bookingResult.value.bookings.map((booking) => mapBooking(booking, locale))
+      : [],
+    [bookingResult, locale],
+  )
+  const membershipTransactions = useMemo(
+    () => membershipResult?.status === 'fulfilled'
+      ? membershipResult.value.map((membership) => mapMembership(membership, locale))
+      : [],
+    [membershipResult, locale],
+  )
+  const transactions: Transaction[] = useMemo(() => [
     ...bookingTransactions.map((item) => item.desktop),
     ...membershipTransactions.map((item) => item.desktop),
-  ]
-  const mobileTransactions: MobileTransaction[] = [
+  ], [bookingTransactions, membershipTransactions])
+  const mobileTransactions: MobileTransaction[] = useMemo(() => [
     ...bookingTransactions.map((item) => item.mobile),
     ...membershipTransactions.map((item) => item.mobile),
-  ]
+  ], [bookingTransactions, membershipTransactions])
   const isLoading = historyQuery.isPending
   const errorNotified = useRef(false)
 
@@ -88,7 +94,7 @@ function HistoryPage() {
 
   // Filter sesuai tombol (desktop: Semua / Berhasil / Menunggu)
   const normalizedSearch = debouncedSearchQuery.toLocaleLowerCase(locale)
-  const filteredTransactions = transactions.filter((trx) => {
+  const filteredTransactions = useMemo(() => transactions.filter((trx) => {
     const matchesStatus = activeFilter === 'all' || trx.status === activeFilter
     const matchesSearch = !normalizedSearch || [
       trx.id,
@@ -99,10 +105,10 @@ function HistoryPage() {
       trx.total,
     ].some((value) => value?.toLocaleLowerCase(locale).includes(normalizedSearch))
     return matchesStatus && matchesSearch
-  })
+  }), [activeFilter, locale, normalizedSearch, transactions])
 
   // Filter untuk kartu mobile (Semua / Aktif / Selesai / Gagal)
-  const filteredMobile = mobileTransactions.filter((trx) => {
+  const filteredMobile = useMemo(() => mobileTransactions.filter((trx) => {
     const matchesStatus = activeFilter === 'all' || trx.status === activeFilter
     const matchesSearch = !normalizedSearch || [
       trx.id,
@@ -113,7 +119,7 @@ function HistoryPage() {
       trx.total,
     ].some((value) => value?.toLocaleLowerCase(locale).includes(normalizedSearch))
     return matchesStatus && matchesSearch
-  })
+  }), [activeFilter, locale, mobileTransactions, normalizedSearch])
   const totalPages = Math.max(1, Math.ceil(filteredTransactions.length / PAGE_SIZE))
   const mobileTotalPages = Math.max(1, Math.ceil(filteredMobile.length / PAGE_SIZE))
   const displayedPage = Math.min(currentPage, totalPages)

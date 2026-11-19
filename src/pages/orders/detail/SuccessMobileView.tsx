@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next'
 import { ChevronDown, CircleCheck } from 'lucide-react'
 import ScrollReveal from '../../../components/animation/ScrollReveal'
+import { formatRupiah } from '../../../utils/formatters'
 
 type SuccessDisplayData = {
   transactionNumber: string
@@ -29,8 +30,6 @@ type SuccessMobileViewProps = {
 }
 
 const FONT_MONTSERRAT = "font-['Montserrat',sans-serif]"
-const formatRupiah = (value: number) => `Rp ${value.toLocaleString('id-ID')}`
-
 function SuccessMobileView({
   data,
   total,

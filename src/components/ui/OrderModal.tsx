@@ -1,4 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react'
+import { useDismissOnEscape } from '../../hooks/useDismissOnEscape'
 import { X } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import fallbackCourtImage from '../../assets/no-image.webp'
@@ -164,14 +165,12 @@ function OrderModal({ facility, onClose, onOrder }: OrderModalProps): ReactNode 
   const [selection, setSelection] = useState<{ facilityKey: string; optionId: string } | null>(null)
 
   // Tutup dengan Esc + kunci scroll halaman saat modal terbuka
+  useDismissOnEscape(onClose, Boolean(facility))
   useEffect(() => {
     if (!facility) return
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose()
-    document.addEventListener('keydown', onKey)
     const prevOverflow = document.body.style.overflow
     document.body.style.overflow = 'hidden'
     return () => {
-      document.removeEventListener('keydown', onKey)
       document.body.style.overflow = prevOverflow
     }
   }, [facility, onClose])

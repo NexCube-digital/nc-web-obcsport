@@ -14,11 +14,25 @@ function Hero() {
 	const { t } = useTranslation()
 
 	useEffect(() => {
-		const timeoutId = window.setTimeout(() => {
-			setActiveSlide((prev) => (prev + 1) % HERO_IMAGES.length)
-		}, 4000)
+		const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+		let timeoutId = 0
 
-		return () => window.clearTimeout(timeoutId)
+		const scheduleNextSlide = () => {
+			window.clearTimeout(timeoutId)
+			if (reduceMotion || document.visibilityState !== 'visible') return
+			timeoutId = window.setTimeout(() => {
+				setActiveSlide((prev) => (prev + 1) % HERO_IMAGES.length)
+			}, 4000)
+		}
+
+		const handleVisibilityChange = () => scheduleNextSlide()
+		scheduleNextSlide()
+		document.addEventListener('visibilitychange', handleVisibilityChange)
+
+		return () => {
+			window.clearTimeout(timeoutId)
+			document.removeEventListener('visibilitychange', handleVisibilityChange)
+		}
 	}, [activeSlide])
 
 	return (

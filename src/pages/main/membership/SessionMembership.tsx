@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
@@ -11,20 +11,13 @@ import DeferredFooter from '../../../components/layout/DeferredFooter'
 import { getFacilityAvailability, getSportsFacilities, type FacilityAvailability, type SportsFacility } from '../../../services/facilityService'
 import type { MembershipPackage, MembershipSchedule } from '../../../services/membershipService'
 import { queryKeys } from '../../../utils/queryKeys'
+import { timeToMinutes, toDateKey } from '../../../utils/orders/checkoutDateUtils'
 
 interface SessionMembershipProps {
   selectedPackage: MembershipPackage
   schedules: MembershipSchedule[]
   facilities: SportsFacility[]
   onUpdateSchedule: (index: number, patch: Partial<MembershipSchedule>) => void
-}
-
-const toDateKey = (year: number, month: number, day: number) =>
-  `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
-
-const timeToMinutes = (time: string) => {
-  const [hour, minute] = time.split(':').map(Number)
-  return hour * 60 + minute
 }
 
 export function SessionMembership({ selectedPackage, schedules, facilities, onUpdateSchedule }: SessionMembershipProps) {

@@ -9,6 +9,7 @@ import {
 } from '../../../services/accountService'
 import { getImageUrl } from '../../../utils/imageUrl'
 import { CARD_CLASS, CARD_TITLE_CLASS, INPUT_CLASS, LABEL_CLASS } from '../../../utils/settingsStyles'
+import { getInitials } from '../../../utils/formatters'
 
 const PhotoCropModal = lazy(() => import('../Photocropmodal'))
 
@@ -24,15 +25,6 @@ type ProfileSettingsSectionProps = {
 
 const MAX_PHOTO_SIZE = 1 * 1024 * 1024
 const ALLOWED_PHOTO_TYPES = ['image/jpeg', 'image/png', 'image/gif']
-
-function getInitials(name: string): string {
-  return name
-    .trim()
-    .split(/\s+/)
-    .slice(0, 2)
-    .map((word) => word.charAt(0).toUpperCase())
-    .join('')
-}
 
 function ProfileSettingsSection({
   fullName,
@@ -72,7 +64,8 @@ function ProfileSettingsSection({
     const file = new File([blob], 'avatar.jpg', { type: 'image/jpeg' })
     try {
       const response = await uploadAvatar(file)
-      onPhotoPreviewChange(response?.avatarUrl ? getImageUrl(response.avatarUrl) : URL.createObjectURL(blob))
+      const uploadedPhotoUrl = response?.avatarUrl ? getImageUrl(response.avatarUrl) : null
+      onPhotoPreviewChange(uploadedPhotoUrl ?? URL.createObjectURL(blob))
       toast.success(t('account.profilePhotoUpdated'))
     } catch (error) {
       toast.error(getAccountErrorMessage(error, t('account.uploadPhotoFailed')))

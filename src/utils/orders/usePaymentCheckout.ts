@@ -20,6 +20,7 @@ import {
 import { usePendingPayment } from './usePendingPayment'
 import { useAuth } from '../../hooks/useAuth'
 import { queryKeys } from '../queryKeys'
+import { CART_PAYMENT_STATE_STORAGE_KEY, readSessionJSON } from './checkoutStorage'
 
 export function usePaymentCheckout() {
   const { t, i18n } = useTranslation()
@@ -42,12 +43,7 @@ export function usePaymentCheckout() {
   const state = useMemo(() => {
     const routeState = location.state as CheckoutState | null
     if (routeState) return routeState
-    try {
-      const stored = sessionStorage.getItem('obc-cart-payment-state')
-      return stored ? JSON.parse(stored) as CheckoutState : {}
-    } catch {
-      return {}
-    }
+    return readSessionJSON<CheckoutState>(CART_PAYMENT_STATE_STORAGE_KEY, {})
   }, [location.state])
   const cartItems = useMemo(() =>
     state.cartItems?.filter((item) => item.resourceId && item.bookingDate && item.startTime && item.endTime && item.sportType) ?? [],

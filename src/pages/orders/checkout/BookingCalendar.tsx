@@ -1,4 +1,5 @@
 import { useTranslation } from 'react-i18next'
+import { toDateKey } from '../../../utils/orders/checkoutDateUtils'
 
 interface BookingCalendarProps {
   variant: 'desktop' | 'mobile'
@@ -9,9 +10,6 @@ interface BookingCalendarProps {
   onChangeMonth: (step: number) => void
   onSelectDate: (day: number) => void
 }
-
-const toDateKey = (year: number, month: number, day: number) =>
-  `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
 
 function BookingCalendar({
   variant,

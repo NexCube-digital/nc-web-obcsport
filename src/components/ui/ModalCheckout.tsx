@@ -1,6 +1,8 @@
 import { useEffect } from 'react'
 import { ShoppingCart, X } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
+import { formatRupiah } from '../../utils/formatters'
+import { useDismissOnEscape } from '../../hooks/useDismissOnEscape'
 
 interface ModalCheckoutProps {
 	isOpen: boolean
@@ -13,8 +15,6 @@ interface ModalCheckoutProps {
 	onAddToCart: () => void
 }
 
-const formatRupiah = (value: number) => `Rp ${value.toLocaleString('id-ID')}`
-
 function ModalCheckout({
 	isOpen,
 	facility,
@@ -26,12 +26,9 @@ function ModalCheckout({
 	onAddToCart,
 }: ModalCheckoutProps) {
 	const { t } = useTranslation()
+	useDismissOnEscape(onClose, isOpen)
 	useEffect(() => {
 		if (!isOpen) return
-
-		const handleKeyDown = (event: KeyboardEvent) => {
-			if (event.key === 'Escape') onClose()
-		}
 
 		const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth
 		const previousOverflow = document.body.style.overflow
@@ -44,12 +41,10 @@ function ModalCheckout({
 			document.body.style.paddingRight = `${currentPaddingRight + scrollbarWidth}px`
 		}
 		document.body.style.overflow = 'hidden'
-		document.addEventListener('keydown', handleKeyDown)
 
 		return () => {
 			document.body.style.overflow = previousOverflow
 			document.body.style.paddingRight = previousPaddingRight
-			document.removeEventListener('keydown', handleKeyDown)
 		}
 	}, [isOpen, onClose])
 

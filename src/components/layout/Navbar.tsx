@@ -10,6 +10,8 @@ import { logoutCustomer } from '../../services/authService'
 import { getImageUrl } from '../../utils/imageUrl'
 import { cartService, removeBackendCartItem, syncBackendCart } from '../../services/cart'
 import NotificationDropdown from './NotificationDropdown'
+import { timeToMinutes } from '../../utils/orders/checkoutDateUtils'
+import { getInitials } from '../../utils/formatters'
 
 const CartModal = lazy(() => import('../ui/CartModal'))
 const MobileHeader = lazy(() => import('./MobileHeader'))
@@ -62,20 +64,6 @@ const EASE = 'ease-[cubic-bezier(0.22,1,0.36,1)]'
 const dropdownBase = `transition-[opacity,transform,visibility] duration-200 ${EASE} motion-reduce:transition-none`
 const dropdownOpen = 'visible opacity-100 scale-100 translate-y-0'
 const dropdownClosed = 'invisible opacity-0 scale-95 -translate-y-1 pointer-events-none'
-
-const timeToMinutes = (time: string) => {
-  const [hours, minutes] = time.split(':').map(Number)
-  return hours * 60 + minutes
-}
-
-function getInitials(name: string): string {
-  return name
-    .trim()
-    .split(/\s+/)
-    .slice(0, 2)
-    .map((word) => word.charAt(0).toUpperCase())
-    .join('')
-}
 
 /* Avatar dipakai di tombol profil dan di header dropdown */
 function Avatar({

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { Eye, EyeOff, House } from 'lucide-react'
@@ -64,7 +64,6 @@ function handoffStaffSession(
   })
 }
 
-/* Ikon Google */
 function GoogleIcon() {
   return (
     <svg width="18" height="18" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg">
@@ -91,11 +90,50 @@ function LoginPage() {
   const location = useLocation()
   const navigate = useNavigate()
   const isMobile = useIsMobile()
+  const googleButtonRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    if (!import.meta.env.VITE_GOOGLE_CLIENT_ID) return
-    void loadGoogleIdentity().catch(() => undefined)
-  }, [])
+    const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || ''
+    const container = googleButtonRef.current
+    if (!clientId || !container) return
+
+    let active = true
+    void loadGoogleIdentity()
+      .then(() => {
+        if (!active) return
+        const googleIdentity = window.google?.accounts?.id
+        if (!googleIdentity) return
+
+        googleIdentity.initialize({
+          client_id: clientId,
+          callback: async (response) => {
+            setIsSubmitting(true)
+            try {
+              await loginGoogleCustomer(response.credential, rememberMe)
+              toast.success(t('auth.googleSuccess'))
+              navigateAfterLogin()
+            } catch (error: unknown) {
+              toast.error(getApiErrorMessage(error, t('auth.googleFailed')))
+            } finally {
+              setIsSubmitting(false)
+            }
+          },
+        })
+
+        container.replaceChildren()
+        googleIdentity.renderButton(container, {
+          type: 'standard',
+          theme: 'outline',
+          size: 'large',
+          text: 'signin_with',
+          shape: 'rectangular',
+          width: Math.min(Math.max(container.clientWidth || 300, 280), 400),
+        })
+      })
+      .catch(() => undefined)
+
+    return () => { active = false }
+  }, [isMobile, navigate, rememberMe, location.state, t])
 
   const navigateAfterLogin = () => {
     const from = location.state?.from
@@ -139,45 +177,6 @@ function LoginPage() {
     }
   }
 
-  const handleGoogleLogin = async () => {
-    const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || ''
-    if (!clientId) {
-      toast.info(t('auth.googleClientMissing'))
-      return
-    }
-
-    try {
-      await loadGoogleIdentity()
-    } catch {
-      toast.info(t('auth.googleLoading'))
-      return
-    }
-
-    const googleIdentity = window.google?.accounts?.id
-    if (googleIdentity) {
-
-      googleIdentity.initialize({
-        client_id: clientId,
-        callback: async (response) => {
-          setIsSubmitting(true)
-          try {
-            await loginGoogleCustomer(response.credential, rememberMe)
-            toast.success(t('auth.googleSuccess'))
-            // Navigate immediately - user should be in storage by now
-            navigateAfterLogin()
-          } catch (error: unknown) {
-            toast.error(getApiErrorMessage(error, t('auth.googleFailed')))
-          } finally {
-            setIsSubmitting(false)
-          }
-        },
-      })
-      googleIdentity.prompt()
-    } else {
-      toast.info(t('auth.googleLoading'))
-    }
-  }
-
   return (
     <>
       {isMobile && (
@@ -192,7 +191,7 @@ function LoginPage() {
           onTogglePassword={() => setShowPassword((previous) => !previous)}
           onRememberMeChange={setRememberMe}
           onSubmit={handleSubmit}
-          onGoogleLogin={handleGoogleLogin}
+          googleButtonRef={googleButtonRef}
         />
       )}
 
@@ -319,14 +318,17 @@ function LoginPage() {
                 {t('auth.or')}
               </p>
 
-              <button
-                type="button"
-                onClick={handleGoogleLogin}
-                className="mx-auto mt-[clamp(6px,1.1vh,12px)] flex w-full max-w-[300px] items-center justify-center gap-2 rounded-md border border-[#D4D4D4] bg-white py-[clamp(7px,1.3vh,12px)] font-heading text-[clamp(13px,1.8vh,16px)] font-bold text-[#121212] hover:bg-[#FDFCF7] transition-colors cursor-pointer"
-              >
-                <GoogleIcon />
-                {t('auth.loginGoogle')}
-              </button>
+              <div className="relative mx-auto mt-[clamp(6px,1.1vh,12px)] h-[clamp(36px,5vh,48px)] w-full max-w-[300px]">
+                <div className="pointer-events-none absolute inset-0 flex items-center justify-center gap-2 rounded-md border border-[#D4D4D4] bg-white font-heading text-[clamp(13px,1.8vh,16px)] font-bold text-[#121212]">
+                  <GoogleIcon />
+                  {t('auth.loginGoogle')}
+                </div>
+                <div
+                  ref={googleButtonRef}
+                  className="absolute inset-0 z-10 overflow-hidden rounded-md opacity-0 [&>div]:h-full [&>div]:w-full [&>iframe]:h-full [&>iframe]:w-full"
+                  aria-label={t('auth.loginGoogle')}
+                />
+              </div>
             </div>
             </ScrollReveal>
           </section>

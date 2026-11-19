@@ -6,6 +6,7 @@ import { getMembershipDetail } from '../../../services/membershipService'
 import { getApiErrorMessage } from '../../../services/apiService'
 import { parsePersistedDirectPayment } from '../../../services/paymentService'
 import { useTranslation } from 'react-i18next'
+import { formatRupiah } from '../../../utils/formatters'
 
 interface FinalisasiState {
   bookingId?: string
@@ -123,7 +124,6 @@ function FinalisasiOrder() {
     }
   }, [bookingId, bookingIdsKey, membershipId, navigate, t])
 
-  const formatRupiah = (value: number) => `Rp ${value.toLocaleString('id-ID')}`
 
   return (
     <div className="flex min-h-screen flex-col bg-white font-body text-[#343133]">

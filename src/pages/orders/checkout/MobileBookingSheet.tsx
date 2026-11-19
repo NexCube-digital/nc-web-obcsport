@@ -3,6 +3,7 @@ import { CalendarDays, ChevronDown, Clock, ShoppingCart } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import BookingCalendar from './BookingCalendar'
 import TimeSlotPicker from './TimeSlotPicker'
+import { formatRupiah } from '../../../utils/formatters'
 
 interface MobileBookingSheetProps {
   isOpen: boolean
@@ -35,8 +36,6 @@ interface MobileBookingSheetProps {
   maxSessionHours: number
   durationStepHours?: number
 }
-
-const formatRupiah = (value: number) => `Rp ${value.toLocaleString('id-ID')}`
 
 // Perkiraan awal tinggi bar bawah sebelum diukur
 const DEFAULT_BAR_HEIGHT = 140

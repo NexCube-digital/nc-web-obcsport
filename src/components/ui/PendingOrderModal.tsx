@@ -4,6 +4,7 @@ import type { DirectPaymentInfo } from '../../services/paymentService'
 import { useTranslation } from 'react-i18next'
 import usePublicSiteContact from '../../hooks/usePublicSiteContact'
 import { getWhatsAppHref } from '../../services/siteContactService'
+import { formatRupiah } from '../../utils/formatters'
 
 export interface PendingBookingItem {
   id: string
@@ -27,8 +28,6 @@ interface PendingOrderModalProps {
 }
 
 const FONT_MONTSERRAT = "font-['Montserrat',sans-serif]"
-const formatRupiah = (value: number) => `Rp ${value.toLocaleString('id-ID')}`
-
 function PendingOrderModal({
   date,
   time,
