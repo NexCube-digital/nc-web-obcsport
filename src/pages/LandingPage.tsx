@@ -49,7 +49,11 @@ function LandingPage() {
           <Promo />
         </DeferredSection>
 
-        <DeferredSection placeholderClassName="min-h-[720px] sm:min-h-[640px]">
+        <DeferredSection
+          id="lapangan"
+          className="scroll-mt-24"
+          placeholderClassName="min-h-[720px] sm:min-h-[640px]"
+        >
 			<Court />
 		</DeferredSection>
 

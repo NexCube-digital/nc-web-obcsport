@@ -2,6 +2,7 @@
   "common": {
     "loading": "Loading page...",
     "home": "Home",
+    "booking": "Book a court",
     "eventRental": "Event Rental",
     "membership": "Membership",
     "profile": "Profile",

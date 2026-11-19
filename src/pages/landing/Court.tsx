@@ -63,7 +63,6 @@ export default function Court() {
 
   return (
     <section
-      id="lapangan"
       className="relative overflow-hidden border-y border-[#DDE5D5] bg-[#F3F6EE] px-3 py-10 sm:px-6 sm:py-18 lg:py-22"
     >
       <div

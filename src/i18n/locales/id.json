@@ -2,6 +2,7 @@
   "common": {
     "loading": "Memuat halaman...",
     "home": "Beranda",
+    "booking": "Booking",
     "eventRental": "Sewa Event",
     "membership": "Membership",
     "profile": "Profil",

@@ -6,6 +6,7 @@ type DeferredSectionProps = {
   placeholderClassName: string
   startAfterScroll?: boolean
   id?: string
+  className?: string
 }
 
 function DeferredSection({
@@ -13,6 +14,7 @@ function DeferredSection({
   placeholderClassName,
   startAfterScroll = false,
   id,
+  className,
 }: DeferredSectionProps) {
   const sectionRef = useRef<HTMLDivElement>(null)
   const [isEnabled, setIsEnabled] = useState(
@@ -54,7 +56,7 @@ function DeferredSection({
   }, [isEnabled, isVisible])
 
   return (
-    <div ref={sectionRef} id={id}>
+    <div ref={sectionRef} id={id} className={className}>
       {isVisible ? (
         <Suspense fallback={<div aria-hidden="true" className={placeholderClassName} />}>
           <ScrollReveal>{children}</ScrollReveal>

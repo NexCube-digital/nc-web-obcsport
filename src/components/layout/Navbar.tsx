@@ -200,7 +200,7 @@ function Navbar({
           {/* Kiri: logo */}
           <div className="flex shrink-0 items-center">
             {/* Logo: sedikit membesar saat hover, group agar teks ikut berubah warna */}
-            <Link to="/home" className="group flex items-center gap-4 shrink-0">
+            <Link to="/" className="group flex items-center gap-4 shrink-0">
               <img
                 src={logo}
                 alt="OBC Sport Center"
