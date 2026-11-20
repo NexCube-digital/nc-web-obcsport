@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import { useAuth } from "../../hooks/useAuth";
 import LandingNavbar from "../../components/layout/LandingNavbar";
 import {
   fallbackCourtImage,
@@ -17,11 +18,13 @@ import {
   formatCourtPrice,
   type PublicCourt,
 } from "./publicCourt";
+import type { FacilityCard } from "../main/home/Court";
 
 export default function DetailCourt() {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
   const { t } = useTranslation();
+  const { isLoggedIn } = useAuth();
   const [court, setCourt] = useState<PublicCourt | null>(null);
   const [status, setStatus] = useState<"loading" | "ready" | "error">(
     "loading",
@@ -72,6 +75,23 @@ export default function DetailCourt() {
     );
 
   const image = getCourtImages(court)[0] ?? fallbackCourtImage;
+  const checkoutFacility: FacilityCard = {
+    id: court.id,
+    name: court.name,
+    description: court.description || court.resourceType,
+    badge: t("booking.available"),
+    buttonLabel: t("booking.bookCourt"),
+    image,
+    sportTypes: court.sportTypes,
+    slotMinutes: court.slotMinutes,
+    fromPrice: court.fromPrice,
+    fromPriceFormatted: court.fromPriceFormatted,
+    amenities: court.amenities,
+    location: court.location,
+  };
+  const checkoutSportType = court.sportTypes.includes("sepakbola")
+    ? "sepakbola"
+    : court.sportTypes[0] ?? "futsal";
 
   return (
     <PageShell>
@@ -166,7 +186,12 @@ export default function DetailCourt() {
               )}
             </div>
             <Link
-              to="/register"
+              to={isLoggedIn ? "/checkout" : "/register"}
+              state={isLoggedIn ? {
+                resourceId: court.id,
+                sportType: checkoutSportType,
+                facility: checkoutFacility,
+              } : undefined}
               className="mt-4 inline-flex h-11 w-full items-center justify-center rounded-xl bg-[#CDF178] font-heading text-sm font-bold text-[#34410D] transition-colors hover:bg-[#B5DC52]"
             >
               {t("landing.courtBookNow")}

@@ -1,5 +1,7 @@
+import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
-import { toDateKey } from '../../../utils/orders/checkoutDateUtils'
+import CalendarSelect from '../../../components/ui/CalendarSelect'
+import { getZonedParts, toDateKey } from '../../../utils/orders/checkoutDateUtils'
 
 interface BookingCalendarProps {
   variant: 'desktop' | 'mobile'
@@ -21,17 +23,42 @@ function BookingCalendar({
   onSelectDate,
 }: BookingCalendarProps) {
   const { t, i18n } = useTranslation()
-  const monthLabel = new Intl.DateTimeFormat(i18n.language, { month: 'long' }).format(new Date(viewYear, viewMonth, 1))
+  const locale = i18n.resolvedLanguage?.startsWith('en') ? 'en-US' : 'id-ID'
+  const monthLabel = new Intl.DateTimeFormat(locale, { month: 'long', year: 'numeric' }).format(new Date(viewYear, viewMonth, 1))
+  const monthOptions = Array.from({ length: 12 }, (_, month) => ({
+    value: String(month),
+    label: new Intl.DateTimeFormat(locale, { month: 'long' }).format(new Date(2024, month, 1)),
+    disabled: false,
+  }))
+  const currentDateParts = getZonedParts(new Date())
+  const currentYear = Number(currentDateParts.year)
+  const currentMonth = Number(currentDateParts.month) - 1
+  const yearOptions = Array.from({ length: 11 }, (_, index) => currentYear + index)
+  const monthSelectOptions = monthOptions.map((month) => ({
+    ...month,
+    disabled: viewYear === currentYear && Number(month.value) < currentMonth,
+  }))
+  const selectMonth = (value: string) => {
+    const nextMonth = Number(value)
+    if (viewYear === currentYear && nextMonth < currentMonth) return
+    onChangeMonth(nextMonth - viewMonth)
+  }
+  const selectYear = (value: string) => {
+    const nextYear = Number(value)
+    const nextMonth = nextYear === currentYear ? Math.max(viewMonth, currentMonth) : viewMonth
+    onChangeMonth((nextYear - viewYear) * 12 + nextMonth - viewMonth)
+  }
+  const isNextMonthDisabled = viewYear > currentYear + 10
+    || (viewYear === currentYear + 10 && viewMonth === 11)
   const dayHeaders = Array.from({ length: 7 }, (_, index) =>
-    new Intl.DateTimeFormat(i18n.language, { weekday: 'short', timeZone: 'UTC' }).format(new Date(Date.UTC(2024, 0, index + 1))),
+    new Intl.DateTimeFormat(locale, { weekday: 'short', timeZone: 'UTC' }).format(new Date(Date.UTC(2024, 0, index + 1))),
   )
   const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate()
   const leadingBlanks = (new Date(viewYear, viewMonth, 1).getDay() + 6) % 7
   const prevMonthDays = new Date(viewYear, viewMonth, 0).getDate()
-  const today = new Date()
-  const todayKey = toDateKey(today.getFullYear(), today.getMonth(), today.getDate())
-  const isPreviousMonthDisabled = viewYear < today.getFullYear()
-    || (viewYear === today.getFullYear() && viewMonth <= today.getMonth())
+  const todayKey = `${currentDateParts.year}-${currentDateParts.month}-${currentDateParts.day}`
+  const isPreviousMonthDisabled = viewYear < currentYear
+    || (viewYear === currentYear && viewMonth <= currentMonth)
 
   if (variant === 'mobile') {
     const cells = [
@@ -52,8 +79,8 @@ function BookingCalendar({
     }
 
     return (
-      <section className="mt-5 rounded-2xl border border-[#E5E5E5] bg-white p-5">
-        <div className="flex items-center justify-between">
+      <section aria-label={monthLabel} className="mt-5 rounded-2xl border border-[#E5E5E5] bg-white p-5">
+        <div className="grid grid-cols-[32px_minmax(0,1fr)_84px_32px] items-center gap-1.5">
           <button
             type="button"
             aria-label={t('common.previous')}
@@ -61,22 +88,18 @@ function BookingCalendar({
             disabled={isPreviousMonthDisabled}
             className="flex h-8 w-8 items-center justify-center rounded-lg border border-[#E5E5E5] bg-white text-[#121212] cursor-pointer disabled:cursor-not-allowed disabled:opacity-40"
           >
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
-              <path d="m15 18-6-6 6-6" />
-            </svg>
+            <ChevronLeft size={16} aria-hidden="true" />
           </button>
-          <h3 className="font-heading text-base font-bold text-[#343133]">
-            {monthLabel} {viewYear}
-          </h3>
+          <CalendarSelect label={t('bookingPage.chooseMonth')} value={String(viewMonth)} options={monthSelectOptions} onSelect={selectMonth} />
+          <CalendarSelect label={t('bookingPage.chooseYear')} value={String(viewYear)} options={yearOptions.map((year) => ({ value: String(year), label: String(year) }))} onSelect={selectYear} />
           <button
             type="button"
             aria-label={t('common.next')}
             onClick={() => onChangeMonth(1)}
-            className="flex h-8 w-8 items-center justify-center rounded-lg border border-[#E5E5E5] bg-white text-[#121212] cursor-pointer"
+            disabled={isNextMonthDisabled}
+            className="flex h-8 w-8 items-center justify-center rounded-lg border border-[#E5E5E5] bg-white text-[#121212] cursor-pointer disabled:cursor-not-allowed disabled:opacity-40"
           >
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
-              <path d="m9 18 6-6-6-6" />
-            </svg>
+            <ChevronRight size={16} aria-hidden="true" />
           </button>
         </div>
 
@@ -136,17 +159,16 @@ function BookingCalendar({
   ]
 
   return (
-    <section className="mt-3 rounded-2xl border border-[#D4D4D4] bg-white p-5 pb-8">
-      <div className="flex items-center justify-between">
-        <h3 className="font-heading text-lg font-bold text-[#343133]">{monthLabel} {viewYear}</h3>
-        <div className="flex gap-2">
-          <button type="button" aria-label={t('common.previous')} onClick={() => onChangeMonth(-1)} disabled={isPreviousMonthDisabled} className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#F7F6EF] text-[#121212] cursor-pointer disabled:cursor-not-allowed disabled:opacity-40">
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><path d="m15 18-6-6 6-6" /></svg>
-          </button>
-          <button type="button" aria-label={t('common.next')} onClick={() => onChangeMonth(1)} className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#F7F6EF] text-[#121212] cursor-pointer">
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg>
-          </button>
-        </div>
+    <section aria-label={monthLabel} className="mt-3 rounded-2xl border border-[#D4D4D4] bg-white p-5 pb-8">
+      <div className="grid grid-cols-[32px_minmax(0,1fr)_84px_32px] items-center gap-1.5">
+        <button type="button" aria-label={t('common.previous')} onClick={() => onChangeMonth(-1)} disabled={isPreviousMonthDisabled} className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#F7F6EF] text-[#121212] cursor-pointer disabled:cursor-not-allowed disabled:opacity-40">
+          <ChevronLeft size={16} aria-hidden="true" />
+        </button>
+        <CalendarSelect label={t('bookingPage.chooseMonth')} value={String(viewMonth)} options={monthSelectOptions} onSelect={selectMonth} />
+        <CalendarSelect label={t('bookingPage.chooseYear')} value={String(viewYear)} options={yearOptions.map((year) => ({ value: String(year), label: String(year) }))} onSelect={selectYear} />
+        <button type="button" aria-label={t('common.next')} onClick={() => onChangeMonth(1)} disabled={isNextMonthDisabled} className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#F7F6EF] text-[#121212] cursor-pointer disabled:cursor-not-allowed disabled:opacity-40">
+          <ChevronRight size={16} aria-hidden="true" />
+        </button>
       </div>
 
       <div className="mt-4 flex items-center gap-4 text-[11px] text-[#343133]">

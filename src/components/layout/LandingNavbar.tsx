@@ -28,13 +28,19 @@ function NavbarLanding() {
   // State bahasa aktif dan dropdown
   const activeLang = i18n.resolvedLanguage?.startsWith('en') ? LANGUAGES[1] : LANGUAGES[0]
   const [isLangOpen, setIsLangOpen] = useState(false)
+  const isLegacyBookingActive = location.pathname === '/' && location.hash === '#lapangan'
   const isHomeActive = location.pathname === '/' && location.hash !== '#lapangan'
-  const isBookingActive = location.pathname === '/' && location.hash === '#lapangan'
+  const isBookingActive = location.pathname === '/booking' || isLegacyBookingActive
 
   useEffect(() => {
-    if (!isBookingActive) return
-    document.getElementById('lapangan')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-  }, [isBookingActive])
+    if (location.pathname === '/booking') {
+      window.scrollTo({ top: 0, behavior: 'auto' })
+      return
+    }
+    if (isLegacyBookingActive) {
+      document.getElementById('lapangan')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }
+  }, [isLegacyBookingActive, location.pathname])
 
   const handleSelectLang = (lang: Language) => {
     void i18n.changeLanguage(lang.code === 'ENG' ? 'en' : 'id')
@@ -73,8 +79,7 @@ function NavbarLanding() {
             {t('common.home')}
           </Link>
           <Link
-            to="/#lapangan"
-            onClick={() => document.getElementById('lapangan')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+            to="/booking"
             aria-current={isBookingActive ? 'page' : undefined}
             className={`inline-flex min-w-0 flex-1 items-center justify-center gap-1.5 rounded-lg px-2 py-2 font-heading text-xs font-semibold transition-colors lg:flex-none lg:rounded-md lg:py-1.5 lg:text-sm ${isBookingActive ? 'bg-white text-[#404F14] shadow-sm lg:bg-transparent lg:shadow-none' : 'text-[#68665F] hover:bg-white/70 hover:text-[#404F14] lg:hover:bg-transparent'}`}
           >

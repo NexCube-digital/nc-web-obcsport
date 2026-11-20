@@ -27,6 +27,11 @@ type UseBookingScheduleOptions = {
   isMobile: boolean
   maxAllowedSessionHours: number
   durationStepHours: number
+  initialBooking?: {
+    bookingDate: string
+    startTime: string
+    endTime: string
+  }
 }
 
 export function useBookingSchedule({
@@ -36,14 +41,31 @@ export function useBookingSchedule({
   isMobile,
   maxAllowedSessionHours,
   durationStepHours,
+  initialBooking,
 }: UseBookingScheduleOptions) {
   const { t, i18n } = useTranslation()
-  const [viewYear, setViewYear] = useState(() => Number(getZonedParts(new Date()).year))
-  const [viewMonth, setViewMonth] = useState(() => Number(getZonedParts(new Date()).month) - 1)
+  const currentDateParts = getZonedParts(new Date())
+  const initialBookingDate = initialBooking?.bookingDate
+  const initialStartTime = initialBooking?.startTime
+  const initialEndTime = initialBooking?.endTime
+  const requestedDuration = initialStartTime && initialEndTime
+    ? timeToMinutes(initialEndTime) - timeToMinutes(initialStartTime)
+    : 0
+  const initialDuration = Math.max(isSoccer ? 120 : 60, requestedDuration)
+  const [viewYear, setViewYear] = useState(() =>
+    Number(initialBookingDate?.slice(0, 4) ?? currentDateParts.year),
+  )
+  const [viewMonth, setViewMonth] = useState(() =>
+    Number(initialBookingDate?.slice(5, 7) ?? currentDateParts.month) - 1,
+  )
   const [currentTime, setCurrentTime] = useState(() => new Date())
-  const [selectedDate, setSelectedDate] = useState<string | null>(() => isMobile ? getTodayKey() : null)
-  const [selectedStartTime, setSelectedStartTime] = useState<string | null>(null)
-  const [selectedDurationMinutes, setSelectedDurationMinutes] = useState(isSoccer ? 120 : 60)
+  const [selectedDate, setSelectedDate] = useState<string | null>(
+    () => initialBookingDate ?? (isMobile ? getTodayKey() : null),
+  )
+  const [selectedStartTime, setSelectedStartTime] = useState<string | null>(
+    () => initialStartTime ?? null,
+  )
+  const [selectedDurationMinutes, setSelectedDurationMinutes] = useState(initialDuration)
   const [isConfirmed, setIsConfirmed] = useState(false)
   const [conflictMessage, setConflictMessage] = useState<string | null>(null)
 

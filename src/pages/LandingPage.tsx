@@ -8,7 +8,7 @@ const Footer = lazy(() => import('../components/layout/Footer'))
 const Promo = lazy(() => import('./landing/Promo'))
 const Highlight = lazy(() => import('./landing/Highlight'))
 const Court = lazy(() => import('./landing/Court'))
-const Booking = lazy(() => import('./landing/Booking'))
+const Booking = lazy(() => import('./landing/Sections'))
 const Testimoni = lazy(() => import('./landing/Testimoni'))
 const UnitBisnis = lazy(() => import('./landing/UnitBisnis'))
 

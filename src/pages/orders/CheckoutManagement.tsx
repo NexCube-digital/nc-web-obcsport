@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useState } from 'react'
+import { lazy, Suspense, useEffect, useLayoutEffect, useMemo, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import { useTranslation } from 'react-i18next'
@@ -24,6 +24,9 @@ type CheckoutState = {
   resourceId?: string
   sportType?: string
   facility?: FacilityCard
+  bookingDate?: string
+  startTime?: string
+  endTime?: string
 }
 
 function DetailOrder() {
@@ -31,18 +34,31 @@ function DetailOrder() {
   const navigate = useNavigate()
   const location = useLocation()
   const isMobile = useIsMobile()
+  useLayoutEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'auto' })
+  }, [])
   const checkoutState = (location.state as CheckoutState | null) ?? readSessionJSON<CheckoutState>(CHECKOUT_STATE_STORAGE_KEY, {})
   const resourceId = checkoutState.resourceId
   const sportType = checkoutState.sportType ?? 'futsal'
   const isSoccer = sportType === 'sepakbola'
   const durationStepHours = isSoccer ? 2 : 1
   const maxAllowedSessionHours = isSoccer ? 6 : MAX_SESSION_HOURS
-  const facility = checkoutState.facility ?? {
-    ...COURT_FACILITIES[0],
-    description: COURT_FACILITIES[0].description,
-    badge: t('booking.available'),
-    buttonLabel: t('booking.bookCourt'),
-  }
+  const initialBooking = checkoutState.bookingDate && checkoutState.startTime && checkoutState.endTime
+    ? {
+        bookingDate: checkoutState.bookingDate,
+        startTime: checkoutState.startTime,
+        endTime: checkoutState.endTime,
+      }
+    : undefined
+  const facility = useMemo(
+    () => checkoutState.facility ?? {
+      ...COURT_FACILITIES[0],
+      description: COURT_FACILITIES[0].description,
+      badge: t('booking.available'),
+      buttonLabel: t('booking.bookCourt'),
+    },
+    [checkoutState.facility, t],
+  )
   const facilityImage = facility.image || fallbackCourtImage
 
   const schedule = useBookingSchedule({
@@ -52,6 +68,7 @@ function DetailOrder() {
     isMobile,
     maxAllowedSessionHours,
     durationStepHours,
+    initialBooking,
   })
   const cart = useCheckoutCart()
   const [isSheetOpen, setIsSheetOpen] = useState(false)
